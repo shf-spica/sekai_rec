@@ -8,6 +8,13 @@ import io
 from PIL import Image
 import time
 
+try:
+    import python_multipart  # noqa: F401
+except ImportError:
+    raise RuntimeError(
+        'Form data requires "python-multipart". Install with: pip install python-multipart'
+    ) from None
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
