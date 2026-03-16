@@ -1,9 +1,15 @@
 import os
+import sqlite3
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 from paddleocr import PaddleOCR
 import numpy as np
 import cv2
@@ -18,7 +24,212 @@ except ImportError:
         'Form data requires "python-multipart". Install with: pip install python-multipart'
     ) from None
 
+try:
+    from passlib.context import CryptContext
+    from jose import jwt
+except ImportError:
+    CryptContext = None
+    jwt = None
+
 app = FastAPI()
+
+# Auth
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_HOURS = 24 * 7  # 7 days
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto") if CryptContext else None
+security = HTTPBearer(auto_error=False)
+
+# SQLite
+_db_path = Path(__file__).resolve().parent / "prsk_ocr.db"
+
+
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(_db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def init_db():
+    with get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                song_id INTEGER NOT NULL,
+                difficulty TEXT NOT NULL,
+                perfect INTEGER NOT NULL,
+                great INTEGER NOT NULL,
+                good INTEGER NOT NULL,
+                bad INTEGER NOT NULL,
+                miss INTEGER NOT NULL,
+                point INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(user_id, song_id, difficulty),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+
+init_db()
+
+
+def _require_auth():
+    if pwd_ctx is None or jwt is None:
+        raise HTTPException(status_code=503, detail="Auth not configured (install passlib and python-jose)")
+    return True
+
+
+class RegisterBody(BaseModel):
+    username: str
+    password: str
+
+
+class LoginBody(BaseModel):
+    username: str
+    password: str
+
+
+class RecordBody(BaseModel):
+    song_id: int
+    difficulty: str
+    perfect: int
+    great: int
+    good: int
+    bad: int
+    miss: int
+    point: int
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    _require_auth()
+    if not credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT id, username FROM users WHERE id = ?", (int(user_id),)
+            ).fetchone()
+        if row:
+            return {"id": row["id"], "username": row["username"]}
+    except Exception:
+        pass
+    return None
+
+
+@app.post("/api/auth/register")
+async def api_register(body: RegisterBody):
+    _require_auth()
+    username = (body.username or "").strip()
+    password = body.password or ""
+    if len(username) < 2:
+        raise HTTPException(status_code=400, detail="Username too short")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    password_hash = pwd_ctx.hash(password)
+    created = datetime.utcnow().isoformat() + "Z"
+    try:
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                (username, password_hash, created),
+            )
+            user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        token = jwt.encode(
+            {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
+            JWT_SECRET,
+            algorithm=JWT_ALGORITHM,
+        )
+        return {"access_token": token, "user": {"id": user_id, "username": username}}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+
+@app.post("/api/auth/login")
+async def api_login(body: LoginBody):
+    _require_auth()
+    username = (body.username or "").strip()
+    password = body.password or ""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id, username, password_hash FROM users WHERE username = ?", (username,)
+        ).fetchone()
+    if not row or not pwd_ctx.verify(password, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = jwt.encode(
+        {"sub": str(row["id"]), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
+        JWT_SECRET,
+        algorithm=JWT_ALGORITHM,
+    )
+    return {"access_token": token, "user": {"id": row["id"], "username": row["username"]}}
+
+
+@app.get("/api/auth/me")
+async def api_me(user=Depends(get_current_user)):
+    if user is None:
+        return {"user": None}
+    return {"user": user}
+
+
+@app.post("/api/records")
+async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    _require_auth()
+    user_id = user["id"]
+    difficulty = (body.difficulty or "").strip().lower() or "master"
+    created = datetime.utcnow().isoformat() + "Z"
+    with get_db() as conn:
+        existing = conn.execute(
+            "SELECT id, point FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
+            (user_id, body.song_id, difficulty),
+        ).fetchone()
+        if existing and existing["point"] >= body.point:
+            return {"saved": False, "message": "Existing record has higher or equal point"}
+        if existing:
+            conn.execute(
+                """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, created_at=?
+                   WHERE id = ?""",
+                (body.perfect, body.great, body.good, body.bad, body.miss, body.point, created, existing["id"]),
+            )
+        else:
+            conn.execute(
+                """INSERT INTO records (user_id, song_id, difficulty, perfect, great, good, bad, miss, point, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, body.song_id, difficulty, body.perfect, body.great, body.good, body.bad, body.miss, body.point, created),
+            )
+    return {"saved": True}
+
+
+@app.get("/api/records")
+async def api_list_records(user=Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, created_at FROM records WHERE user_id = ? ORDER BY created_at DESC",
+            (user["id"],),
+        ).fetchall()
+    return {"records": [dict(r) for r in rows]}
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

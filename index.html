@@ -22,9 +22,38 @@
         画像OCRツール
       </h1>
       <p class="app-subtitle">ndlocr-lite (WASM) で高精度テキスト抽出</p>
-      <div class="model-status" id="model-status">
-        <span class="status-dot loading"></span>
-        <span>モデル初期化中...</span>
+      <div class="header-actions">
+        <div class="model-status" id="model-status">
+          <span class="status-dot loading"></span>
+          <span>モデル初期化中...</span>
+        </div>
+        <div class="auth-area" id="auth-area">
+          <span class="auth-user" id="auth-user" style="display: none;"></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="auth-login-btn">ログイン</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="auth-register-btn">新規登録</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+        </div>
+      </div>
+      <div class="auth-modal" id="auth-modal" style="display: none;" aria-hidden="true">
+        <div class="auth-modal-backdrop" id="auth-modal-backdrop"></div>
+        <div class="auth-modal-content">
+          <h3 class="auth-modal-title" id="auth-modal-title">ログイン</h3>
+          <form id="auth-form">
+            <label class="auth-field">
+              <span>ユーザー名</span>
+              <input type="text" id="auth-username" autocomplete="username" required minlength="2">
+            </label>
+            <label class="auth-field">
+              <span>パスワード</span>
+              <input type="password" id="auth-password" autocomplete="current-password" required minlength="6">
+            </label>
+            <p class="auth-error" id="auth-error"></p>
+            <div class="auth-modal-actions">
+              <button type="button" class="btn btn-ghost" id="auth-modal-cancel">キャンセル</button>
+              <button type="submit" class="btn btn-primary" id="auth-submit">ログイン</button>
+            </div>
+          </form>
+        </div>
       </div>
     </header>
 

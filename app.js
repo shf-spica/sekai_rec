@@ -9,11 +9,12 @@ import { parseGameResult } from './ocr-postprocess.js';
 // State
 // ========================================
 const state = {
-  files: [],       // { id, file, dataUrl }[]
+  files: [],
   isProcessing: false,
   results: [],
-  /** { songs: [{ id, title, difficulties }] } または 従来の string[]（songs.json のみの場合） */
   songDatabase: null,
+  user: null,
+  token: localStorage.getItem('prsk_ocr_token') || null,
 };
 
 let fileIdCounter = 0;
@@ -33,6 +34,63 @@ const ocrBtn = $('#ocr-btn');
 const clearBtn = $('#clear-btn');
 const copyAllBtn = $('#copy-all-btn');
 const modelStatus = $('#model-status');
+const authArea = $('#auth-area');
+const authUser = $('#auth-user');
+const authLoginBtn = $('#auth-login-btn');
+const authRegisterBtn = $('#auth-register-btn');
+const authLogoutBtn = $('#auth-logout-btn');
+const authModal = $('#auth-modal');
+const authModalBackdrop = $('#auth-modal-backdrop');
+const authModalTitle = $('#auth-modal-title');
+const authForm = $('#auth-form');
+const authUsername = $('#auth-username');
+const authPassword = $('#auth-password');
+const authError = $('#auth-error');
+const authModalCancel = $('#auth-modal-cancel');
+const authSubmit = $('#auth-submit');
+
+// ========================================
+// API (認証付き)
+// ========================================
+async function apiCall(path, options = {}) {
+  const headers = { ...options.headers, 'Content-Type': 'application/json' };
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+  const res = await fetch(path, { ...options, headers });
+  const data = res.ok ? await res.json().catch(() => ({})) : null;
+  if (!res.ok) {
+    const err = new Error(data?.detail || res.statusText || 'Request failed');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+async function saveRecord(parsed) {
+  if (!state.token || !parsed?.songId || !parsed?.difficulty || parsed?.judgmentsSumError) return null;
+  const j = parsed.judgments;
+  if (typeof j?.PERFECT !== 'number' || typeof j?.GREAT !== 'number' || typeof j?.GOOD !== 'number' ||
+      typeof j?.BAD !== 'number' || typeof j?.MISS !== 'number') return null;
+  const point = (j.PERFECT * 3) + (j.GREAT * 2) + (j.GOOD * 1);
+  try {
+    return await apiCall('/api/records', {
+      method: 'POST',
+      body: JSON.stringify({
+        song_id: parsed.songId,
+        difficulty: parsed.difficulty,
+        perfect: j.PERFECT,
+        great: j.GREAT,
+        good: j.GOOD,
+        bad: j.BAD,
+        miss: j.MISS,
+        point,
+      }),
+    });
+  } catch (e) {
+    console.warn('Failed to save record', e);
+    return null;
+  }
+}
 
 // ========================================
 // File Handling
@@ -189,12 +247,20 @@ async function processImages() {
 
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
 
+      let recordSaved = null;
+      if (state.token && parsed && !parsed.judgmentsSumError && parsed.songId != null && parsed.difficulty) {
+        try {
+          recordSaved = await saveRecord(parsed);
+        } catch (_) {}
+      }
+
       state.results.push({
         entry,
         rawText: ocrResult.fullText || '',
         parsed: parsed,
         elapsed,
         error: null,
+        recordSaved: recordSaved?.saved ?? false,
       });
       updateProgressItem(i, 'done', 100);
     } catch (err) {
@@ -263,11 +329,11 @@ function renderResults(results) {
     let copyText = rawText;
 
     if (r.parsed) {
-      const { songTitle, matchConfidence, difficulty, judgments, judgmentsSumError, rawText: rt } = r.parsed;
+      const { songTitle, matchConfidence, difficulty, judgments, judgmentsSumError, point, rawText: rt } = r.parsed;
       rawText = rt;
 
       const confClass = matchConfidence >= 0.8 ? 'conf-high' : (matchConfidence >= 0.4 ? 'conf-med' : 'conf-low');
-      const difficultyLabel = difficulty ? `難易度: ${difficulty}` : '';
+      const difficultyLabel = difficulty ? `難易度: ${difficulty.toUpperCase()}` : '';
 
       const p = (key) => (typeof judgments[key] === 'number' ? judgments[key] : 0);
       const hasValidNumbers = !judgmentsSumError && ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].every(k => typeof judgments[k] === 'number');
@@ -297,6 +363,8 @@ function renderResults(results) {
           </div>
           ${difficultyLabel ? `<div class="result-difficulty">${escapeHtml(difficultyLabel)}</div>` : ''}
           ${judgmentsSumError ? '<div class="result-sum-error">数字の総和が総ノーツ数と一致しません（数字または難易度の認識エラー）</div>' : ''}
+          ${point != null && !judgmentsSumError ? `<div class="result-point">Point: <strong>${point.toLocaleString()}</strong></div>` : ''}
+          ${r.recordSaved ? '<div class="result-record-saved">記録を保存しました</div>' : ''}
           ${badgeHtml}
           <div class="judgments-grid">
             ${judgmentHtml}
@@ -416,6 +484,83 @@ clearBtn.addEventListener('click', clearFiles);
 copyAllBtn.addEventListener('click', copyAllResults);
 
 // ========================================
+// Auth UI
+// ========================================
+function renderAuthArea() {
+  if (!authUser || !authLoginBtn || !authRegisterBtn || !authLogoutBtn) return;
+  if (state.user) {
+    authUser.textContent = state.user.username;
+    authUser.style.display = '';
+    authLoginBtn.style.display = 'none';
+    authRegisterBtn.style.display = 'none';
+    authLogoutBtn.style.display = '';
+  } else {
+    authUser.style.display = 'none';
+    authLogoutBtn.style.display = 'none';
+    authLoginBtn.style.display = '';
+    authRegisterBtn.style.display = '';
+  }
+}
+
+function openAuthModal(mode) {
+  if (!authModal || !authForm) return;
+  authModal.dataset.mode = mode;
+  authModalTitle.textContent = mode === 'register' ? '新規登録' : 'ログイン';
+  authSubmit.textContent = mode === 'register' ? '登録' : 'ログイン';
+  authUsername.value = '';
+  authPassword.value = '';
+  authError.textContent = '';
+  authModal.style.display = 'flex';
+  authModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeAuthModal() {
+  if (!authModal) return;
+  authModal.style.display = 'none';
+  authModal.setAttribute('aria-hidden', 'true');
+}
+
+async function submitAuth(e) {
+  e.preventDefault();
+  const mode = authModal?.dataset.mode || 'login';
+  const username = (authUsername?.value || '').trim();
+  const password = authPassword?.value || '';
+  authError.textContent = '';
+  if (username.length < 2) {
+    authError.textContent = 'ユーザー名は2文字以上です';
+    return;
+  }
+  if (password.length < 6) {
+    authError.textContent = 'パスワードは6文字以上です';
+    return;
+  }
+  try {
+    const path = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      authError.textContent = data.detail || res.statusText || '失敗しました';
+      return;
+    }
+    if (data.access_token && data.user) {
+      state.token = data.access_token;
+      state.user = data.user;
+      localStorage.setItem('prsk_ocr_token', state.token);
+      closeAuthModal();
+      renderAuthArea();
+    } else {
+      authError.textContent = '応答が不正です';
+    }
+  } catch (err) {
+    authError.textContent = err.message || '通信エラー';
+  }
+}
+
+// ========================================
 // Initialization
 // ========================================
 
@@ -438,6 +583,30 @@ async function init() {
   } catch (e) {
     console.error("Error loading song database", e);
   }
+
+  if (state.token) {
+    try {
+      const data = await apiCall('/api/auth/me');
+      if (data?.user) state.user = data.user;
+      else state.token = null, localStorage.removeItem('prsk_ocr_token');
+    } catch (_) {
+      state.token = null;
+      localStorage.removeItem('prsk_ocr_token');
+    }
+  }
+  renderAuthArea();
+
+  if (authLoginBtn) authLoginBtn.addEventListener('click', () => openAuthModal('login'));
+  if (authRegisterBtn) authRegisterBtn.addEventListener('click', () => openAuthModal('register'));
+  if (authLogoutBtn) authLogoutBtn.addEventListener('click', () => {
+    state.user = null;
+    state.token = null;
+    localStorage.removeItem('prsk_ocr_token');
+    renderAuthArea();
+  });
+  if (authModalBackdrop) authModalBackdrop.addEventListener('click', closeAuthModal);
+  if (authModalCancel) authModalCancel.addEventListener('click', closeAuthModal);
+  if (authForm) authForm.addEventListener('submit', submitAuth);
 
   updateModelStatus();
   ocrBtn.disabled = false;

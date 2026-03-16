@@ -526,6 +526,12 @@ function getDifficultyFromLines(lines) {
     return null;
 }
 
+/** 判定数からポイントを計算: point = PERFECT*3 + GREAT*2 + GOOD*1 */
+export function calcPoint(judgments) {
+    const p = (k) => (typeof judgments[k] === 'number' ? judgments[k] : 0);
+    return p('PERFECT') * 3 + p('GREAT') * 2 + p('GOOD') * 1;
+}
+
 /** songDatabase から songId と difficulty で totalNoteCount を取得 */
 function getTotalNoteCount(songDatabase, songId, difficulty) {
     if (!songDatabase?.songs || songId == null || !difficulty) return null;
@@ -546,14 +552,16 @@ export function parseGameResult(ocrResult, songDatabase) {
     const difficulty = getDifficultyFromLines(parsed.lines);
     const totalNoteCount = getTotalNoteCount(songDatabase, matchedSong.id, difficulty);
     const { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
+    const point = calcPoint(judgments);
 
     return {
         rawText: parsed.text,
         songTitle: matchedSong.title,
         songId: matchedSong.id,
         matchConfidence: matchedSong.score.toFixed(2),
-        difficulty: difficulty ? difficulty.toUpperCase() : null,
+        difficulty: difficulty ? difficulty.toLowerCase() : null,
         judgments,
         judgmentsSumError: judgmentsSumError || false,
+        point,
     };
 }

@@ -729,6 +729,17 @@ body::before {
   margin-top: var(--space-xs);
 }
 
+.result-point {
+  margin-top: var(--space-sm);
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.result-point strong {
+  color: var(--accent-secondary);
+  font-size: 1.1rem;
+}
+
 .result-sum-error {
   margin-top: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
@@ -841,12 +852,103 @@ body::before {
 /* ========================================
    Model Status
    ======================================== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.auth-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.auth-user {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-right: var(--space-xs);
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+
+.auth-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.auth-modal-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  min-width: 280px;
+  max-width: 100%;
+}
+
+.auth-modal-title {
+  margin-bottom: var(--space-md);
+  font-size: 1.25rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.auth-field span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.auth-field input {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.auth-error {
+  color: var(--error);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-md);
+  min-height: 1.2em;
+}
+
+.auth-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: var(--space-md);
+}
+
+.result-record-saved {
+  margin-top: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--success);
+}
+
 .model-status {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  margin-top: var(--space-md);
   padding: var(--space-sm) var(--space-md);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
