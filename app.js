@@ -263,10 +263,17 @@ function renderResults(results) {
     let copyText = rawText;
 
     if (r.parsed) {
-      const { songTitle, matchConfidence, judgments, rawText: rt } = r.parsed;
+      const { songTitle, matchConfidence, difficulty, judgments, judgmentsSumError, rawText: rt } = r.parsed;
       rawText = rt;
 
       const confClass = matchConfidence >= 0.8 ? 'conf-high' : (matchConfidence >= 0.4 ? 'conf-med' : 'conf-low');
+      const difficultyLabel = difficulty ? `難易度: ${difficulty}` : '';
+
+      const p = (key) => (typeof judgments[key] === 'number' ? judgments[key] : 0);
+      const hasValidNumbers = !judgmentsSumError && ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].every(k => typeof judgments[k] === 'number');
+      const isAllPerfect = hasValidNumbers && p('MISS') === 0 && p('BAD') === 0 && p('GOOD') === 0 && p('GREAT') === 0;
+      const isFullCombo = hasValidNumbers && p('MISS') === 0 && p('BAD') === 0 && p('GOOD') === 0;
+      const badgeClass = isAllPerfect ? 'badge-all-perfect' : (isFullCombo ? 'badge-full-combo' : '');
 
       const judgmentHtml = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(j => `
         <div class="judgment-item">
@@ -275,6 +282,12 @@ function renderResults(results) {
         </div>
       `).join('');
 
+      let badgeHtml = '';
+      if (badgeClass) {
+        const label = isAllPerfect ? 'ALL PERFECT' : 'FULL COMBO';
+        badgeHtml = `<div class="result-badge ${badgeClass}">${label}</div>`;
+      }
+
       parsedHtml = `
         <div class="parsed-result">
           <div class="song-match">
@@ -282,6 +295,9 @@ function renderResults(results) {
             <span class="match-title">${escapeHtml(songTitle)}</span>
             <span class="match-conf ${confClass}">信頼度: ${Math.round(matchConfidence * 100)}%</span>
           </div>
+          ${difficultyLabel ? `<div class="result-difficulty">${escapeHtml(difficultyLabel)}</div>` : ''}
+          ${judgmentsSumError ? '<div class="result-sum-error">数字の総和が総ノーツ数と一致しません（数字または難易度の認識エラー）</div>' : ''}
+          ${badgeHtml}
           <div class="judgments-grid">
             ${judgmentHtml}
           </div>

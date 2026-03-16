@@ -213,36 +213,80 @@ function findBestSongMatch(lines, songDatabase) {
 // ========================================
 
 /**
- * 隣接する数字行を1つにマージした場合の値を試す（例: "135"+"8"→1358, "8"+"135"→8135）。
- * 候補を返す: [ mergedValue, 使用したインデックスの配列 ]。マージしない場合は [aNum, [i]]
+ * 数字行の配列を 5 つの連続区間に分割するインデックスを列挙する（0 < s1 < s2 < s3 < s4 < K）
+ * 各区間の文字列を連結して1整数にし、5数の順序は PERFECT, GREAT, GOOD, BAD, MISS に対応
  */
-function tryMergeTwo(aVal, bVal, aY, bY, yGapMax) {
-    if (Math.abs((bY ?? 0) - (aY ?? 0)) > (yGapMax ?? 70)) return null;
-    const combinedForward = parseInt(aVal + bVal, 10);
-    const combinedBackward = parseInt(bVal + aVal, 10);
-    if (!Number.isNaN(combinedForward) && combinedForward <= 9999 && combinedForward >= 0) {
-        if (!Number.isNaN(combinedBackward) && combinedBackward <= 9999 && combinedBackward >= 0) {
-            return [combinedForward, combinedBackward];
+function* partitionIntoFive(K) {
+    if (K < 5) return;
+    for (let s1 = 1; s1 <= K - 4; s1++) {
+        for (let s2 = s1 + 1; s2 <= K - 3; s2++) {
+            for (let s3 = s2 + 1; s3 <= K - 2; s3++) {
+                for (let s4 = s3 + 1; s4 <= K - 1; s4++) {
+                    yield [s1, s2, s3, s4];
+                }
+            }
         }
-        return [combinedForward];
     }
-    if (!Number.isNaN(combinedBackward) && combinedBackward <= 9999 && combinedBackward >= 0) {
-        return [combinedBackward];
-    }
-    return null;
 }
 
 /**
- * 改行で分割された数字行をマージする。
- * 隣接2行を「前+後」「後+前」の両方でマージ候補を試し、totalNoteCount が与えられていれば
- * その値に一致する候補を優先する（PERFECT が totalNoteCount に近い／または5数の和が totalNoteCount に一致）。
- * 例: "358"+"1"→1358, "135"+"8"→1358, "1"+"358"→1358
+ * 数字行の文字列配列を、与えた分割 [s1,s2,s3,s4] で5区間にし、各区間を連結して整数化して返す
  */
-function mergeSplitNumberLines(numberLines, totalNoteCount) {
+function mergePartition(texts, s1, s2, s3, s4) {
+    const g0 = texts.slice(0, s1).join('');
+    const g1 = texts.slice(s1, s2).join('');
+    const g2 = texts.slice(s2, s3).join('');
+    const g3 = texts.slice(s3, s4).join('');
+    const g4 = texts.slice(s4).join('');
+    const n0 = parseInt(g0, 10);
+    const n1 = parseInt(g1, 10);
+    const n2 = parseInt(g2, 10);
+    const n3 = parseInt(g3, 10);
+    const n4 = parseInt(g4, 10);
+    if (Number.isNaN(n0) || Number.isNaN(n1) || Number.isNaN(n2) || Number.isNaN(n3) || Number.isNaN(n4)) return null;
+    if (n0 < 0 || n1 < 0 || n2 < 0 || n3 < 0 || n4 < 0) return null;
+    if (n0 > 9999 || n1 > 9999 || n2 > 9999 || n3 > 9999 || n4 > 9999) return null;
+    return [n0, n1, n2, n3, n4];
+}
+
+/**
+ * 数字行から、総和が totalNoteCount と一致する5数（PERFECT,GREAT,GOOD,BAD,MISS）の組み合わせを探す
+ * @param {Array<{text}>} numberLines - 読み順ソート済みの数字行
+ * @param {number} totalNoteCount - 楽曲の総ノーツ数
+ * @returns {{ judgments: Object, sumError: boolean }} 見つかれば sumError: false、なければ sumError: true でベストエフォート
+ */
+function findJudgmentsBySum(numberLines, totalNoteCount) {
+    const texts = numberLines.map(l => l.text.trim());
+    const K = texts.length;
+    const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
+
+    if (K < 5) {
+        const judgments = Object.fromEntries(keys.map(k => [k, '不明']));
+        return { judgments, sumError: true };
+    }
+
+    for (const [s1, s2, s3, s4] of partitionIntoFive(K)) {
+        const five = mergePartition(texts, s1, s2, s3, s4);
+        if (!five) continue;
+        const sum = five[0] + five[1] + five[2] + five[3] + five[4];
+        if (sum === totalNoteCount) {
+            const judgments = Object.fromEntries(keys.map((k, i) => [k, five[i]]));
+            return { judgments, sumError: false };
+        }
+    }
+
+    // 一致する分割がなければエラー（数字または難易度の認識ミス）。ベストエフォートは出さず不明扱い
+    const judgments = Object.fromEntries(keys.map(k => [k, '不明']));
+    return { judgments, sumError: true };
+}
+
+/**
+ * totalNoteCount なし時用：隣接する「1桁」と「複数桁」を1つにマージしてから Y 位置でキーワードに割り当てる
+ */
+function mergeNumberLinesFallback(numberLines) {
     if (numberLines.length === 0) return numberLines;
     const used = new Set();
     const result = [];
-
     for (let i = 0; i < numberLines.length; i++) {
         if (used.has(i)) continue;
         const a = numberLines[i];
@@ -250,75 +294,60 @@ function mergeSplitNumberLines(numberLines, totalNoteCount) {
         const aNum = parseInt(aVal, 10);
         const aY = a.y ?? 0;
         const aOrder = a.readingOrder ?? i;
-
-        let bestMerged = aNum;
-        let bestUsedJ = -1;
-        let bestScore = -1; // totalNoteCount との一致度
-
+        let merged = aNum;
+        let usedJ = -1;
         for (let j = i + 1; j < numberLines.length; j++) {
             if (used.has(j)) continue;
             const b = numberLines[j];
             const bVal = b.text.trim();
             const bY = b.y ?? 0;
-            const tries = tryMergeTwo(aVal, bVal, aY, bY, 70);
-            if (!tries) continue;
-            for (const merged of tries) {
-                let score = 0;
-                if (totalNoteCount != null) {
-                    if (merged === totalNoteCount) score = 10; // PERFECT が総ノーツ数と一致
-                    else if (Math.abs(merged - totalNoteCount) < 100) score = 5;
+            if (Math.abs((bY ?? 0) - aY) > 70) break;
+            const a1 = aVal.length === 1;
+            const b1 = bVal.length === 1;
+            if (a1 !== b1) {
+                const single = a1 ? aVal : bVal;
+                const multi = a1 ? bVal : aVal;
+                const combined = parseInt(single + multi, 10);
+                if (!Number.isNaN(combined) && combined <= 9999 && combined >= 0) {
+                    merged = combined;
+                    usedJ = j;
                 }
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMerged = merged;
-                    bestUsedJ = j;
-                } else if (bestUsedJ < 0 && score >= 0) {
-                    bestMerged = merged;
-                    bestUsedJ = j;
-                }
+                break;
             }
-            break; // 隣接1ペアのみマージ（連続3行以上は次のループで）
         }
-
-        if (bestUsedJ >= 0) {
-            used.add(i);
-            used.add(bestUsedJ);
-            result.push({ text: String(bestMerged), y: aY, readingOrder: aOrder, mergedValue: bestMerged });
-        } else {
-            result.push({ ...a, mergedValue: aNum });
-        }
+        if (usedJ >= 0) used.add(i), used.add(usedJ);
+        result.push({ ...a, mergedValue: merged });
     }
-
     return result;
 }
 
 /**
  * OCRのテキスト行からプロセカの判定数（PERFECT, GREAT, GOOD, BAD, MISS）を抽出する
- * @param {Array} lines - テキスト行
- * @param {number|null} totalNoteCount - 楽曲の総ノーツ数（あれば数字マージの優先に利用）
+ * totalNoteCount がある場合：数字行を5区間に分割し総和が totalNoteCount と一致する組み合わせのみ採用。一致しなければエラー（不明）。
+ * totalNoteCount がない場合：キーワード＋Y位置で割り当て（従来ロジック）。
+ * @returns {{ judgments: Object, sumError: boolean }}
  */
 function extractJudgments(lines, totalNoteCount) {
-    const judgments = {
-        PERFECT: null,
-        GREAT: null,
-        GOOD: null,
-        BAD: null,
-        MISS: null
-    };
+    const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
+    const numberLines = lines
+        .filter(l => /^[0-9]{1,4}$/.test(l.text.trim()))
+        .sort((a, b) => (a.readingOrder != null ? a.readingOrder - b.readingOrder : (a.y || 0) - (b.y || 0)));
 
+    if (totalNoteCount != null && numberLines.length >= 5) {
+        return findJudgmentsBySum(numberLines, totalNoteCount);
+    }
+
+    const judgments = { PERFECT: null, GREAT: null, GOOD: null, BAD: null, MISS: null };
     const fullText = lines.map(l => l.text).join('\n').toUpperCase();
 
-    // パターン1: 「PERFECT 1234」のように同じ行に含まれている場合
-    for (const key of Object.keys(judgments)) {
+    for (const key of keys) {
         const regex = new RegExp(`${key}\\s*[\\:：\\-]?\\s*([0-9]{1,4})`, 'i');
         const match = fullText.match(regex);
-        if (match && match[1]) {
-            judgments[key] = parseInt(match[1], 10);
-        }
+        if (match && match[1]) judgments[key] = parseInt(match[1], 10);
     }
 
     if (Object.values(judgments).every(v => v !== null)) {
-        return filterValidJudgments(judgments);
+        return { judgments: filterValidJudgments(judgments), sumError: false };
     }
 
     // パターン2: キーワードと数字の位置ベースマッチング
@@ -363,34 +392,23 @@ function extractJudgments(lines, totalNoteCount) {
         }
     }
 
-    let numberLines = lines
-        .filter(l => /^[0-9]{1,4}$/.test(l.text.trim()))
-        .sort((a, b) => (a.readingOrder != null ? a.readingOrder - b.readingOrder : (a.y || 0) - (b.y || 0)));
-
-    // 改行で分割された数字をマージ（totalNoteCount があればそれを手がかりに採用候補を選択）
-    numberLines = mergeSplitNumberLines(numberLines, totalNoteCount);
-    numberLines.sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
-
-    if (keysFound.length > 0 && numberLines.length >= keysFound.length) {
+    const merged = mergeNumberLinesFallback(numberLines);
+    merged.sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
+    if (keysFound.length > 0 && merged.length >= keysFound.length) {
         for (const kf of keysFound) {
             if (judgments[kf.key] === null) {
-                let closestNum = null;
+                let closest = null;
                 let minDiff = Infinity;
-                for (const numLine of numberLines) {
-                    const diff = Math.abs((numLine.y ?? 0) - kf.y);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closestNum = numLine;
-                    }
+                for (const numLine of merged) {
+                    const d = Math.abs((numLine.y ?? 0) - kf.y);
+                    if (d < minDiff) minDiff = d, closest = numLine;
                 }
-                if (closestNum && minDiff < 80) {
-                    judgments[kf.key] = closestNum.mergedValue;
-                }
+                if (closest && minDiff < 80) judgments[kf.key] = closest.mergedValue;
             }
         }
     }
 
-    return filterValidJudgments(judgments);
+    return { judgments: filterValidJudgments(judgments), sumError: false };
 }
 
 function filterValidJudgments(judgments) {
@@ -488,13 +506,15 @@ export function parseGameResult(ocrResult, songDatabase) {
     const matchedSong = findBestSongMatch(parsed.lines, songDatabase);
     const difficulty = getDifficultyFromLines(parsed.lines);
     const totalNoteCount = getTotalNoteCount(songDatabase, matchedSong.id, difficulty);
-    const judgments = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
+    const { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
 
     return {
         rawText: parsed.text,
         songTitle: matchedSong.title,
         songId: matchedSong.id,
         matchConfidence: matchedSong.score.toFixed(2),
-        judgments: judgments,
+        difficulty: difficulty ? difficulty.toUpperCase() : null,
+        judgments,
+        judgmentsSumError: judgmentsSumError || false,
     };
 }

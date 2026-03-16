@@ -723,6 +723,49 @@ body::before {
   color: var(--error);
 }
 
+.result-difficulty {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.result-sum-error {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-sm);
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.result-badge {
+  margin-top: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.badge-full-combo {
+  background: linear-gradient(135deg, #ff9ff3 0%, #f368e0 100%);
+  color: #1a0a14;
+}
+
+.badge-all-perfect {
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
+  background-size: 200% 100%;
+  animation: rainbow-shift 2.5s ease infinite;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+@keyframes rainbow-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
 .judgments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
