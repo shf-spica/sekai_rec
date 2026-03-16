@@ -1,6 +1,6 @@
 /**
  * 画像OCRツール - app.js
- * ndlocr-lite (WASM) でOCR処理を実行する
+ * サーバー (PaddleOCR) でOCR処理を実行する
  */
 
 import { parseGameResult } from './ocr-postprocess.js';
@@ -13,13 +13,9 @@ const state = {
   isProcessing: false,
   results: [],
   songList: [],
-  modelReady: false,
 };
 
 let fileIdCounter = 0;
-let ocrWorker = null;
-let pendingOCR = new Map(); // id → { resolve, reject }
-let ocrIdCounter = 0;
 
 // ========================================
 // DOM Elements
@@ -117,148 +113,44 @@ function renderPreview() {
 window.__removeFile = removeFile;
 
 // ========================================
-// Image → ImageData conversion
+// OCR Server (PaddleOCR)
 // ========================================
 
-function fileToImageData(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(img.src);
-      resolve(imageData);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(img.src);
-      reject(new Error('画像の読み込みに失敗しました'));
-    };
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-// ========================================
-// OCR Worker Communication
-// ========================================
-
-function initWorker() {
-  ocrWorker = new Worker(
-    new URL('./ocr-worker.js', import.meta.url),
-    { type: 'module' }
-  );
-
-  ocrWorker.addEventListener('message', (e) => {
-    const msg = e.data;
-
-    switch (msg.type) {
-      case 'OCR_PROGRESS':
-        if (msg.id) {
-          // OCR処理中の進捗（特定ファイル）
-          // 現在は進捗バーで対応済み
-        } else {
-          // モデル初期化の進捗
-          updateModelStatus(msg);
-        }
-        break;
-
-      case 'OCR_COMPLETE': {
-        state.modelReady = true;
-        const pending = pendingOCR.get(msg.id);
-        if (pending) {
-          pending.resolve({
-            textBlocks: msg.textBlocks,
-            fullText: msg.txt,
-            processingTime: msg.processingTime,
-          });
-          pendingOCR.delete(msg.id);
-        }
-        break;
-      }
-
-      case 'OCR_ERROR': {
-        if (msg.stage === 'initialization') {
-          // 初期化エラー
-          ocrBtn.disabled = true;
-          ocrBtn.textContent = '初期化失敗';
-          if (modelStatus) {
-            modelStatus.innerHTML = `
-              <span class="status-dot error"></span>
-              <span>エラー: ${msg.error}</span>
-            `;
-          }
-        } else if (msg.id) {
-          // OCR処理エラー
-          const pending = pendingOCR.get(msg.id);
-          if (pending) {
-            pending.reject(new Error(msg.error));
-            pendingOCR.delete(msg.id);
-          }
-        }
-        break;
-      }
-    }
-  });
-
-  ocrWorker.postMessage({ type: 'INITIALIZE' });
-}
-
-function updateModelStatus(msg) {
+function updateModelStatus() {
   if (!modelStatus) return;
-
-  if (msg.stage === 'initialized') {
-    // モデル初期化完了
-    state.modelReady = true;
-    ocrBtn.disabled = false;
-    ocrBtn.textContent = 'OCR実行';
-    modelStatus.innerHTML = `
-      <span class="status-dot ready"></span>
-      <span>ndlocr-lite 準備完了 (WASM)</span>
-    `;
-    return;
-  }
-
-  const pct = Math.round(msg.progress * 100);
-  if (msg.stage === 'loading_models') {
-    modelStatus.innerHTML = `
-      <span class="status-dot loading"></span>
-      <span>${msg.message}</span>
-      <div class="model-progress-bar">
-        <div class="model-progress-fill" style="width: ${pct}%"></div>
-      </div>
-      <span class="model-progress-text">${pct}%</span>
-    `;
-  } else {
-    modelStatus.innerHTML = `
-      <span class="status-dot loading"></span>
-      <span>${msg.message || 'モデル読込中...'}</span>
-    `;
-  }
+  modelStatus.innerHTML = `
+    <span class="status-dot ready"></span>
+    <span>サーバーOCR 準備完了 (PaddleOCR)</span>
+  `;
 }
 
 /**
- * Worker経由でOCR実行
+ * サーバー経由でOCR実行
  * @param {File} file
- * @returns {Promise<Object>} ndlocr-liteの結果 { textBlocks, fullText, processingTime }
+ * @returns {Promise<Object>} { textBlocks, fullText, processingTime }
  */
-async function ocrViaWorker(file) {
-  // FileをImageDataに変換してWorkerに送信
-  const imageData = await fileToImageData(file);
+async function ocrViaServer(file) {
+  const formData = new FormData();
+  formData.append('file', file);
 
-  return new Promise((resolve, reject) => {
-    const id = String(++ocrIdCounter);
-    pendingOCR.set(id, { resolve, reject });
-
-    ocrWorker.postMessage({
-      type: 'OCR_PROCESS',
-      id,
-      imageData,
-      startTime: Date.now(),
-    });
+  const start = performance.now();
+  const res = await fetch('/ocr', {
+    method: 'POST',
+    body: formData,
   });
+
+  if (!res.ok) {
+    throw new Error(`OCR API error: ${res.status}`);
+  }
+
+  const data = await res.json();
+  const elapsedMs = Math.round(performance.now() - start);
+
+  return {
+    textBlocks: data.textBlocks || [],
+    fullText: data.fullText || '',
+    processingTime: data.processingTime ?? elapsedMs,
+  };
 }
 
 // ========================================
@@ -266,7 +158,7 @@ async function ocrViaWorker(file) {
 // ========================================
 
 async function processImages() {
-  if (state.files.length === 0 || state.isProcessing || !state.modelReady) return;
+  if (state.files.length === 0 || state.isProcessing) return;
 
   state.isProcessing = true;
   ocrBtn.disabled = true;
@@ -284,7 +176,7 @@ async function processImages() {
     updateProgressItem(i, 'active', 30);
 
     try {
-      const ocrResult = await ocrViaWorker(entry.file);
+      const ocrResult = await ocrViaServer(entry.file);
 
       updateProgressItem(i, 'active', 80);
 
@@ -525,10 +417,9 @@ async function init() {
     console.error("Error loading songs.json", e);
   }
 
-  // ndlocr-lite Worker を起動
-  ocrBtn.disabled = true;
-  ocrBtn.textContent = 'モデル読込中...';
-  initWorker();
+  updateModelStatus();
+  ocrBtn.disabled = false;
+  ocrBtn.textContent = 'OCR実行';
 }
 
 init();

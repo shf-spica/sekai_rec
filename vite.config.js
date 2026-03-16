@@ -19,7 +19,9 @@ export default defineConfig({
   },
 
   server: {
-    // 外部アクセス許可
     host: true,
+    proxy: {
+      '/ocr': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+    },
   },
 });

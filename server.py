@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from paddleocr import PaddleOCR
 import numpy as np
@@ -8,6 +9,13 @@ from PIL import Image
 import time
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
 
