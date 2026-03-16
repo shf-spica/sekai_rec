@@ -1,6 +1,9 @@
+import os
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from paddleocr import PaddleOCR
 import numpy as np
 import cv2
@@ -98,4 +101,9 @@ async def ocr_image(file: UploadFile = File(...)):
             "processingTime": elapsed_ms,
         }
     )
+
+
+# フロント一式を配信（/ocr は上で定義済みのため優先される）
+_static_dir = os.path.dirname(os.path.abspath(__file__))
+app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
 
