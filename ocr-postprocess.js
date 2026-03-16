@@ -229,24 +229,65 @@ function* partitionIntoFive(K) {
     }
 }
 
+/** 配列の全順列を生成（要素数は高々5程度の想定） */
+function* permutations(arr) {
+    if (arr.length <= 1) {
+        yield arr;
+        return;
+    }
+    for (let i = 0; i < arr.length; i++) {
+        const rest = arr.slice(0, i).concat(arr.slice(i + 1));
+        for (const p of permutations(rest)) {
+            yield [arr[i], ...p];
+        }
+    }
+}
+
 /**
- * 数字行の文字列配列を、与えた分割 [s1,s2,s3,s4] で5区間にし、各区間を連結して整数化して返す
+ * 1つのグループ（文字列配列）を連結して整数にしたときの候補を返す
+ * OCRの読み順が論理順と異なることがあるため、グループ内の並び順の全順列を試す
  */
-function mergePartition(texts, s1, s2, s3, s4) {
-    const g0 = texts.slice(0, s1).join('');
-    const g1 = texts.slice(s1, s2).join('');
-    const g2 = texts.slice(s2, s3).join('');
-    const g3 = texts.slice(s3, s4).join('');
-    const g4 = texts.slice(s4).join('');
-    const n0 = parseInt(g0, 10);
-    const n1 = parseInt(g1, 10);
-    const n2 = parseInt(g2, 10);
-    const n3 = parseInt(g3, 10);
-    const n4 = parseInt(g4, 10);
-    if (Number.isNaN(n0) || Number.isNaN(n1) || Number.isNaN(n2) || Number.isNaN(n3) || Number.isNaN(n4)) return null;
-    if (n0 < 0 || n1 < 0 || n2 < 0 || n3 < 0 || n4 < 0) return null;
-    if (n0 > 9999 || n1 > 9999 || n2 > 9999 || n3 > 9999 || n4 > 9999) return null;
-    return [n0, n1, n2, n3, n4];
+function groupToNumberCandidates(strings) {
+    if (strings.length === 0) return [];
+    const seen = new Set();
+    for (const p of permutations(strings)) {
+        const s = p.join('');
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n) && n >= 0 && n <= 9999) seen.add(n);
+    }
+    return [...seen];
+}
+
+/**
+ * 数字行の文字列配列を、与えた分割で5区間にし、各区間から取りうる整数候補のリストを返す
+ * 各区間では文字列の並び順の全順列を試し、総和が totalNoteCount と一致する5数があればそれを返す
+ */
+function mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount) {
+    const g0 = texts.slice(0, s1);
+    const g1 = texts.slice(s1, s2);
+    const g2 = texts.slice(s2, s3);
+    const g3 = texts.slice(s3, s4);
+    const g4 = texts.slice(s4);
+    const c0 = groupToNumberCandidates(g0);
+    const c1 = groupToNumberCandidates(g1);
+    const c2 = groupToNumberCandidates(g2);
+    const c3 = groupToNumberCandidates(g3);
+    const c4 = groupToNumberCandidates(g4);
+    if (c0.length === 0 || c1.length === 0 || c2.length === 0 || c3.length === 0 || c4.length === 0) return null;
+    for (const n0 of c0) {
+        for (const n1 of c1) {
+            for (const n2 of c2) {
+                for (const n3 of c3) {
+                    for (const n4 of c4) {
+                        if (n0 + n1 + n2 + n3 + n4 === totalNoteCount) {
+                            return [n0, n1, n2, n3, n4];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return null;
 }
 
 /**
@@ -266,10 +307,8 @@ function findJudgmentsBySum(numberLines, totalNoteCount) {
     }
 
     for (const [s1, s2, s3, s4] of partitionIntoFive(K)) {
-        const five = mergePartition(texts, s1, s2, s3, s4);
-        if (!five) continue;
-        const sum = five[0] + five[1] + five[2] + five[3] + five[4];
-        if (sum === totalNoteCount) {
+        const five = mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount);
+        if (five) {
             const judgments = Object.fromEntries(keys.map((k, i) => [k, five[i]]));
             return { judgments, sumError: false };
         }
