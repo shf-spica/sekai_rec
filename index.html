@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ndlocr-lite (WASM) で複数画像をOCR処理し、プロセカのリザルトを解析するWebアプリ">
+  <title>画像OCRツール - ndlocr-lite WASM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1 class="app-title">
+        <span class="title-icon">📄</span>
+        画像OCRツール
+      </h1>
+      <p class="app-subtitle">ndlocr-lite (WASM) で高精度テキスト抽出</p>
+      <div class="model-status" id="model-status">
+        <span class="status-dot loading"></span>
+        <span>モデル初期化中...</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Upload Section -->
+      <section class="upload-section" id="upload-section">
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-zone-content">
+            <div class="drop-icon">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <p class="drop-text">画像をドラッグ＆ドロップ</p>
+            <p class="drop-subtext">または</p>
+            <label class="file-select-btn" for="file-input">
+              ファイルを選択
+            </label>
+            <input type="file" id="file-input" accept="image/*" multiple hidden>
+            <p class="drop-hint">PNG, JPG, WEBP 対応 ・ 複数選択可</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview Section -->
+      <section class="preview-section" id="preview-section" style="display: none;">
+        <div class="section-header">
+          <h2 class="section-title">アップロード画像</h2>
+          <div class="section-actions">
+            <button class="btn btn-ghost" id="clear-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              クリア
+            </button>
+            <button class="btn btn-primary" id="ocr-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              OCR実行
+            </button>
+          </div>
+        </div>
+        <div class="preview-grid" id="preview-grid"></div>
+      </section>
+
+      <!-- Language Selection (kept for compatibility) -->
+      <section class="lang-section" id="lang-section">
+        <div class="section-header">
+          <h2 class="section-title">OCR設定</h2>
+        </div>
+        <div class="lang-options">
+          <label class="lang-option">
+            <input type="checkbox" id="lang-jpn" value="jpn" checked>
+            <span class="lang-label">日本語</span>
+          </label>
+          <label class="lang-option">
+            <input type="checkbox" id="lang-eng" value="eng" checked>
+            <span class="lang-label">English</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="results-section" id="results-section" style="display: none;">
+        <div class="section-header">
+          <h2 class="section-title">OCR結果</h2>
+          <button class="btn btn-ghost" id="copy-all-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            すべてコピー
+          </button>
+        </div>
+        <div class="results-list" id="results-list"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Powered by <a href="https://github.com/ndl-lab/ndlocr-lite" target="_blank"
+          rel="noopener">ndlocr-lite (WASM)</a> &
+        <a href="https://onnxruntime.ai/" target="_blank" rel="noopener">ONNX Runtime Web</a></p>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "prsk_ocr",
+  "version": "3.0.0",
+  "description": "Project Sekai OCR Tool with ndlocr-lite",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "onnxruntime-web": "^1.20.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

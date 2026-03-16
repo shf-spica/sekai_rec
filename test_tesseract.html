@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <input type="file" id="file" />
+  <button id="btn">Run OCR</button>
+  <script>
+    document.getElementById('btn').onclick = async () => {
+      const file = document.getElementById('file').files[0];
+      if (!file) return;
+      const worker = await Tesseract.createWorker();
+      await worker.loadLanguage('eng+jpn');
+      await worker.initialize('eng+jpn');
+      const res = await worker.recognize(file);
+      await worker.terminate();
+      console.log(res.data.text);
+    };
+  </script>
+</body>
+</html>
