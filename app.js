@@ -12,7 +12,8 @@ const state = {
   files: [],       // { id, file, dataUrl }[]
   isProcessing: false,
   results: [],
-  songList: [],
+  /** { songs: [{ id, title, difficulties }] } または 従来の string[]（songs.json のみの場合） */
+  songDatabase: null,
 };
 
 let fileIdCounter = 0;
@@ -182,8 +183,8 @@ async function processImages() {
 
       // プロセカ特化の後処理
       let parsed = null;
-      if (state.songList.length > 0) {
-        parsed = parseGameResult(ocrResult, state.songList);
+      if (state.songDatabase && (state.songDatabase.songs?.length > 0 || (Array.isArray(state.songDatabase) && state.songDatabase.length > 0))) {
+        parsed = parseGameResult(ocrResult, state.songDatabase);
       }
 
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
@@ -403,18 +404,23 @@ copyAllBtn.addEventListener('click', copyAllResults);
 // ========================================
 
 async function init() {
-  console.log("Loading songs.json...");
-
+  console.log("Loading song database...");
   try {
-    const res = await fetch('songs.json');
+    const res = await fetch('songDatabase.json');
     if (res.ok) {
-      state.songList = await res.json();
-      console.log(`Loaded ${state.songList.length} songs.`);
+      state.songDatabase = await res.json();
+      const n = state.songDatabase?.songs?.length ?? 0;
+      console.log(`Loaded songDatabase.json: ${n} songs.`);
     } else {
-      console.warn("Failed to load songs.json", res.status);
+      console.warn("songDatabase.json not found, trying songs.json");
+      const fallback = await fetch('songs.json');
+      if (fallback.ok) {
+        state.songDatabase = await fallback.json();
+        console.log(`Loaded songs.json: ${state.songDatabase.length} titles (no totalNoteCount).`);
+      }
     }
   } catch (e) {
-    console.error("Error loading songs.json", e);
+    console.error("Error loading song database", e);
   }
 
   updateModelStatus();

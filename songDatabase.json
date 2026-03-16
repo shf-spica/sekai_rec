@@ -1,0 +1,7347 @@
+{
+  "updatedAt": "2026-03-16T23:15:49.099227+00:00",
+  "songs": [
+    {
+      "id": 1,
+      "title": "Tell Your World",
+      "difficulties": {
+        "easy": 220,
+        "normal": 492,
+        "hard": 719,
+        "expert": 961,
+        "master": 1147,
+        "append": 1353
+      }
+    },
+    {
+      "id": 2,
+      "title": "ロキ",
+      "difficulties": {
+        "easy": 166,
+        "normal": 296,
+        "hard": 635,
+        "expert": 827,
+        "master": 975,
+        "append": 1040
+      }
+    },
+    {
+      "id": 3,
+      "title": "テオ",
+      "difficulties": {
+        "easy": 135,
+        "normal": 477,
+        "hard": 681,
+        "expert": 997,
+        "master": 1221
+      }
+    },
+    {
+      "id": 6,
+      "title": "ヒバナ -Reloaded-",
+      "difficulties": {
+        "easy": 198,
+        "normal": 394,
+        "hard": 568,
+        "expert": 808,
+        "master": 1060,
+        "append": 1351
+      }
+    },
+    {
+      "id": 8,
+      "title": "タイムマシン",
+      "difficulties": {
+        "easy": 193,
+        "normal": 268,
+        "hard": 488,
+        "expert": 719,
+        "master": 903
+      }
+    },
+    {
+      "id": 10,
+      "title": "ハッピーシンセサイザ",
+      "difficulties": {
+        "easy": 127,
+        "normal": 437,
+        "hard": 685,
+        "expert": 859,
+        "master": 1136,
+        "append": 1205
+      }
+    },
+    {
+      "id": 11,
+      "title": "ビバハピ",
+      "difficulties": {
+        "easy": 126,
+        "normal": 297,
+        "hard": 367,
+        "expert": 597,
+        "master": 722,
+        "append": 884
+      }
+    },
+    {
+      "id": 13,
+      "title": "Nostalogic",
+      "difficulties": {
+        "easy": 134,
+        "normal": 381,
+        "hard": 462,
+        "expert": 719,
+        "master": 985
+      }
+    },
+    {
+      "id": 15,
+      "title": "drop pop candy",
+      "difficulties": {
+        "easy": 156,
+        "normal": 322,
+        "hard": 546,
+        "expert": 773,
+        "master": 902
+      }
+    },
+    {
+      "id": 18,
+      "title": "アスノヨゾラ哨戒班",
+      "difficulties": {
+        "easy": 229,
+        "normal": 467,
+        "hard": 765,
+        "expert": 1073,
+        "master": 1208
+      }
+    },
+    {
+      "id": 19,
+      "title": "シャルル",
+      "difficulties": {
+        "easy": 128,
+        "normal": 338,
+        "hard": 562,
+        "expert": 701,
+        "master": 824,
+        "append": 1000
+      }
+    },
+    {
+      "id": 21,
+      "title": "脱法ロック",
+      "difficulties": {
+        "easy": 195,
+        "normal": 405,
+        "hard": 751,
+        "expert": 972,
+        "master": 1145
+      }
+    },
+    {
+      "id": 22,
+      "title": "命に嫌われている",
+      "difficulties": {
+        "easy": 120,
+        "normal": 367,
+        "hard": 515,
+        "expert": 756,
+        "master": 979
+      }
+    },
+    {
+      "id": 26,
+      "title": "劣等上等",
+      "difficulties": {
+        "easy": 148,
+        "normal": 371,
+        "hard": 520,
+        "expert": 825,
+        "master": 952,
+        "append": 939
+      }
+    },
+    {
+      "id": 27,
+      "title": "Just Be Friends",
+      "difficulties": {
+        "easy": 148,
+        "normal": 410,
+        "hard": 679,
+        "expert": 811,
+        "master": 989
+      }
+    },
+    {
+      "id": 28,
+      "title": "ドクター＝ファンクビート",
+      "difficulties": {
+        "easy": 160,
+        "normal": 436,
+        "hard": 677,
+        "expert": 984,
+        "master": 1198
+      }
+    },
+    {
+      "id": 36,
+      "title": "ミラクルペイント",
+      "difficulties": {
+        "easy": 266,
+        "normal": 618,
+        "hard": 812,
+        "expert": 1300,
+        "master": 1437
+      }
+    },
+    {
+      "id": 38,
+      "title": "ブリキノダンス",
+      "difficulties": {
+        "easy": 113,
+        "normal": 347,
+        "hard": 618,
+        "expert": 852,
+        "master": 967
+      }
+    },
+    {
+      "id": 41,
+      "title": "スイートマジック",
+      "difficulties": {
+        "easy": 151,
+        "normal": 399,
+        "hard": 659,
+        "expert": 920,
+        "master": 1224,
+        "append": 1126
+      }
+    },
+    {
+      "id": 43,
+      "title": "ネクストネスト",
+      "difficulties": {
+        "easy": 122,
+        "normal": 366,
+        "hard": 715,
+        "expert": 983,
+        "master": 1131
+      }
+    },
+    {
+      "id": 44,
+      "title": "Hand in Hand",
+      "difficulties": {
+        "easy": 165,
+        "normal": 427,
+        "hard": 637,
+        "expert": 809,
+        "master": 1072,
+        "append": 1020
+      }
+    },
+    {
+      "id": 45,
+      "title": "39みゅーじっく！",
+      "difficulties": {
+        "easy": 139,
+        "normal": 339,
+        "hard": 539,
+        "expert": 839,
+        "master": 1039,
+        "append": 1039
+      }
+    },
+    {
+      "id": 46,
+      "title": "グリーンライツ・セレナーデ",
+      "difficulties": {
+        "easy": 237,
+        "normal": 413,
+        "hard": 770,
+        "expert": 1034,
+        "master": 1174
+      }
+    },
+    {
+      "id": 47,
+      "title": "メルト",
+      "difficulties": {
+        "easy": 286,
+        "normal": 684,
+        "hard": 1056,
+        "expert": 1363,
+        "master": 1586
+      }
+    },
+    {
+      "id": 48,
+      "title": "ワールドイズマイン",
+      "difficulties": {
+        "easy": 307,
+        "normal": 614,
+        "hard": 899,
+        "expert": 1248,
+        "master": 1417
+      }
+    },
+    {
+      "id": 49,
+      "title": "初音ミクの消失",
+      "difficulties": {
+        "easy": 376,
+        "normal": 751,
+        "hard": 1116,
+        "expert": 1502,
+        "master": 1666
+      }
+    },
+    {
+      "id": 50,
+      "title": "Blessing",
+      "difficulties": {
+        "easy": 111,
+        "normal": 347,
+        "hard": 631,
+        "expert": 859,
+        "master": 986
+      }
+    },
+    {
+      "id": 51,
+      "title": "セカイはまだ始まってすらいない",
+      "difficulties": {
+        "easy": 122,
+        "normal": 400,
+        "hard": 565,
+        "expert": 774,
+        "master": 1027
+      }
+    },
+    {
+      "id": 52,
+      "title": "potatoになっていく",
+      "difficulties": {
+        "easy": 103,
+        "normal": 243,
+        "hard": 400,
+        "expert": 721,
+        "master": 863,
+        "append": 703
+      }
+    },
+    {
+      "id": 54,
+      "title": "Ready Steady",
+      "difficulties": {
+        "easy": 96,
+        "normal": 238,
+        "hard": 403,
+        "expert": 564,
+        "master": 667
+      }
+    },
+    {
+      "id": 55,
+      "title": "Forward",
+      "difficulties": {
+        "easy": 141,
+        "normal": 281,
+        "hard": 449,
+        "expert": 737,
+        "master": 895
+      }
+    },
+    {
+      "id": 57,
+      "title": "アイドル新鋭隊",
+      "difficulties": {
+        "easy": 153,
+        "normal": 343,
+        "hard": 497,
+        "expert": 754,
+        "master": 940
+      }
+    },
+    {
+      "id": 60,
+      "title": "悔やむと書いてミライ",
+      "difficulties": {
+        "easy": 190,
+        "normal": 440,
+        "hard": 541,
+        "expert": 815,
+        "master": 973
+      }
+    },
+    {
+      "id": 61,
+      "title": "携帯恋話",
+      "difficulties": {
+        "easy": 204,
+        "normal": 361,
+        "hard": 651,
+        "expert": 981,
+        "master": 1131
+      }
+    },
+    {
+      "id": 62,
+      "title": "ジャックポットサッドガール",
+      "difficulties": {
+        "easy": 206,
+        "normal": 258,
+        "hard": 491,
+        "expert": 647,
+        "master": 767
+      }
+    },
+    {
+      "id": 63,
+      "title": "needLe",
+      "difficulties": {
+        "easy": 216,
+        "normal": 430,
+        "hard": 662,
+        "expert": 889,
+        "master": 1029
+      }
+    },
+    {
+      "id": 64,
+      "title": "ステラ",
+      "difficulties": {
+        "easy": 251,
+        "normal": 503,
+        "hard": 694,
+        "expert": 955,
+        "master": 1190,
+        "append": 1553
+      }
+    },
+    {
+      "id": 66,
+      "title": "ハロ／ハワユ",
+      "difficulties": {
+        "easy": 104,
+        "normal": 271,
+        "hard": 501,
+        "expert": 690,
+        "master": 851
+      }
+    },
+    {
+      "id": 67,
+      "title": "自傷無色",
+      "difficulties": {
+        "easy": 112,
+        "normal": 291,
+        "hard": 443,
+        "expert": 614,
+        "master": 829
+      }
+    },
+    {
+      "id": 68,
+      "title": "ダンスロボットダンス",
+      "difficulties": {
+        "easy": 157,
+        "normal": 407,
+        "hard": 719,
+        "expert": 927,
+        "master": 1057
+      }
+    },
+    {
+      "id": 69,
+      "title": "フラジール",
+      "difficulties": {
+        "easy": 108,
+        "normal": 377,
+        "hard": 669,
+        "expert": 863,
+        "master": 1040,
+        "append": 999
+      }
+    },
+    {
+      "id": 70,
+      "title": "メルティランドナイトメア",
+      "difficulties": {
+        "easy": 167,
+        "normal": 397,
+        "hard": 595,
+        "expert": 934,
+        "master": 959
+      }
+    },
+    {
+      "id": 71,
+      "title": "ツギハギスタッカート",
+      "difficulties": {
+        "easy": 168,
+        "normal": 316,
+        "hard": 583,
+        "expert": 854,
+        "master": 861
+      }
+    },
+    {
+      "id": 72,
+      "title": "ブレス・ユア・ブレス",
+      "difficulties": {
+        "easy": 157,
+        "normal": 361,
+        "hard": 511,
+        "expert": 696,
+        "master": 873
+      }
+    },
+    {
+      "id": 73,
+      "title": "ニア",
+      "difficulties": {
+        "easy": 139,
+        "normal": 266,
+        "hard": 517,
+        "expert": 702,
+        "master": 841
+      }
+    },
+    {
+      "id": 74,
+      "title": "独りんぼエンヴィー",
+      "difficulties": {
+        "easy": 74,
+        "normal": 171,
+        "hard": 356,
+        "expert": 544,
+        "master": 589
+      }
+    },
+    {
+      "id": 75,
+      "title": "ウミユリ海底譚",
+      "difficulties": {
+        "easy": 119,
+        "normal": 287,
+        "hard": 497,
+        "expert": 737,
+        "master": 833
+      }
+    },
+    {
+      "id": 76,
+      "title": "セカイ",
+      "difficulties": {
+        "easy": 143,
+        "normal": 400,
+        "hard": 549,
+        "expert": 735,
+        "master": 858,
+        "append": 945
+      }
+    },
+    {
+      "id": 77,
+      "title": "ワーワーワールド",
+      "difficulties": {
+        "easy": 127,
+        "normal": 343,
+        "hard": 519,
+        "expert": 789,
+        "master": 960,
+        "append": 1170
+      }
+    },
+    {
+      "id": 78,
+      "title": "ぼうけんのしょがきえました！",
+      "difficulties": {
+        "easy": 278,
+        "normal": 472,
+        "hard": 711,
+        "expert": 951,
+        "master": 1092
+      }
+    },
+    {
+      "id": 81,
+      "title": "夜咄ディセイブ",
+      "difficulties": {
+        "easy": 184,
+        "normal": 424,
+        "hard": 851,
+        "expert": 1165,
+        "master": 1311
+      }
+    },
+    {
+      "id": 82,
+      "title": "alive",
+      "difficulties": {
+        "easy": 134,
+        "normal": 341,
+        "hard": 593,
+        "expert": 804,
+        "master": 1016
+      }
+    },
+    {
+      "id": 83,
+      "title": "Gimme×Gimme",
+      "difficulties": {
+        "easy": 137,
+        "normal": 348,
+        "hard": 613,
+        "expert": 842,
+        "master": 907
+      }
+    },
+    {
+      "id": 84,
+      "title": "ジャンキーナイトタウンオーケストラ",
+      "difficulties": {
+        "easy": 152,
+        "normal": 465,
+        "hard": 740,
+        "expert": 1070,
+        "master": 1374
+      }
+    },
+    {
+      "id": 85,
+      "title": "Leia - Remind",
+      "difficulties": {
+        "easy": 183,
+        "normal": 372,
+        "hard": 587,
+        "expert": 970,
+        "master": 1155
+      }
+    },
+    {
+      "id": 86,
+      "title": "on the rocks",
+      "difficulties": {
+        "easy": 169,
+        "normal": 425,
+        "hard": 565,
+        "expert": 857,
+        "master": 1004
+      }
+    },
+    {
+      "id": 87,
+      "title": "恋愛裁判",
+      "difficulties": {
+        "easy": 174,
+        "normal": 447,
+        "hard": 591,
+        "expert": 889,
+        "master": 1149
+      }
+    },
+    {
+      "id": 88,
+      "title": "チュルリラ・チュルリラ・ダッダッダ！",
+      "difficulties": {
+        "easy": 297,
+        "normal": 516,
+        "hard": 882,
+        "expert": 1246,
+        "master": 1401
+      }
+    },
+    {
+      "id": 89,
+      "title": "Color of Drops",
+      "difficulties": {
+        "easy": 182,
+        "normal": 392,
+        "hard": 537,
+        "expert": 796,
+        "master": 918,
+        "append": 1028
+      }
+    },
+    {
+      "id": 90,
+      "title": "限りなく灰色へ",
+      "difficulties": {
+        "easy": 108,
+        "normal": 227,
+        "hard": 470,
+        "expert": 818,
+        "master": 849
+      }
+    },
+    {
+      "id": 91,
+      "title": "ドラマツルギー",
+      "difficulties": {
+        "easy": 116,
+        "normal": 284,
+        "hard": 515,
+        "expert": 747,
+        "master": 862
+      }
+    },
+    {
+      "id": 92,
+      "title": "乙女解剖",
+      "difficulties": {
+        "easy": 177,
+        "normal": 359,
+        "hard": 509,
+        "expert": 834,
+        "master": 1002
+      }
+    },
+    {
+      "id": 93,
+      "title": "青く駆けろ！",
+      "difficulties": {
+        "easy": 255,
+        "normal": 471,
+        "hard": 757,
+        "expert": 919,
+        "master": 1048,
+        "append": 1446
+      }
+    },
+    {
+      "id": 94,
+      "title": "とても痛い痛がりたい",
+      "difficulties": {
+        "easy": 201,
+        "normal": 353,
+        "hard": 590,
+        "expert": 817,
+        "master": 915,
+        "append": 1226
+      }
+    },
+    {
+      "id": 95,
+      "title": "威風堂々",
+      "difficulties": {
+        "easy": 188,
+        "normal": 326,
+        "hard": 604,
+        "expert": 975,
+        "master": 1166,
+        "append": 1269
+      }
+    },
+    {
+      "id": 96,
+      "title": "from Y to Y",
+      "difficulties": {
+        "easy": 196,
+        "normal": 284,
+        "hard": 551,
+        "expert": 847,
+        "master": 982
+      }
+    },
+    {
+      "id": 97,
+      "title": "霽れを待つ",
+      "difficulties": {
+        "easy": 192,
+        "normal": 461,
+        "hard": 562,
+        "expert": 974,
+        "master": 1106
+      }
+    },
+    {
+      "id": 98,
+      "title": "ロストワンの号哭",
+      "difficulties": {
+        "easy": 142,
+        "normal": 343,
+        "hard": 600,
+        "expert": 947,
+        "master": 1157
+      }
+    },
+    {
+      "id": 99,
+      "title": "モア！ジャンプ！モア！",
+      "difficulties": {
+        "easy": 243,
+        "normal": 417,
+        "hard": 735,
+        "expert": 1011,
+        "master": 1257,
+        "append": 1518
+      }
+    },
+    {
+      "id": 100,
+      "title": "ECHO",
+      "difficulties": {
+        "easy": 157,
+        "normal": 279,
+        "hard": 404,
+        "expert": 659,
+        "master": 805,
+        "append": 1102
+      }
+    },
+    {
+      "id": 101,
+      "title": "RAD DOGS",
+      "difficulties": {
+        "easy": 204,
+        "normal": 418,
+        "hard": 743,
+        "expert": 1067,
+        "master": 1197,
+        "append": 1335
+      }
+    },
+    {
+      "id": 102,
+      "title": "幽霊東京",
+      "difficulties": {
+        "easy": 184,
+        "normal": 375,
+        "hard": 595,
+        "expert": 904,
+        "master": 1053
+      }
+    },
+    {
+      "id": 103,
+      "title": "ニジイロストーリーズ",
+      "difficulties": {
+        "easy": 284,
+        "normal": 428,
+        "hard": 673,
+        "expert": 881,
+        "master": 1054
+      }
+    },
+    {
+      "id": 104,
+      "title": "サンドリヨン 10th Anniversary",
+      "difficulties": {
+        "easy": 200,
+        "normal": 311,
+        "hard": 499,
+        "expert": 735,
+        "master": 913
+      }
+    },
+    {
+      "id": 105,
+      "title": "ワンスアポンアドリーム",
+      "difficulties": {
+        "easy": 161,
+        "normal": 264,
+        "hard": 478,
+        "expert": 683,
+        "master": 871,
+        "append": 1054
+      }
+    },
+    {
+      "id": 106,
+      "title": "お気に召すまま",
+      "difficulties": {
+        "easy": 151,
+        "normal": 339,
+        "hard": 583,
+        "expert": 808,
+        "master": 988
+      }
+    },
+    {
+      "id": 107,
+      "title": "ミルククラウン・オン・ソーネチカ",
+      "difficulties": {
+        "easy": 163,
+        "normal": 497,
+        "hard": 752,
+        "expert": 1025,
+        "master": 1226
+      }
+    },
+    {
+      "id": 108,
+      "title": "愛されなくても君がいる",
+      "difficulties": {
+        "easy": 194,
+        "normal": 407,
+        "hard": 589,
+        "expert": 914,
+        "master": 1075
+      }
+    },
+    {
+      "id": 109,
+      "title": "ヒビカセ",
+      "difficulties": {
+        "easy": 146,
+        "normal": 292,
+        "hard": 572,
+        "expert": 898,
+        "master": 1019
+      }
+    },
+    {
+      "id": 110,
+      "title": "千本桜",
+      "difficulties": {
+        "easy": 206,
+        "normal": 427,
+        "hard": 777,
+        "expert": 1000,
+        "master": 1257
+      }
+    },
+    {
+      "id": 111,
+      "title": "カトラリー",
+      "difficulties": {
+        "easy": 125,
+        "normal": 244,
+        "hard": 459,
+        "expert": 686,
+        "master": 806
+      }
+    },
+    {
+      "id": 112,
+      "title": "天使のクローバー",
+      "difficulties": {
+        "easy": 212,
+        "normal": 390,
+        "hard": 636,
+        "expert": 985,
+        "master": 1235
+      }
+    },
+    {
+      "id": 113,
+      "title": "ローリンガール",
+      "difficulties": {
+        "easy": 235,
+        "normal": 293,
+        "hard": 776,
+        "expert": 1156,
+        "master": 1396
+      }
+    },
+    {
+      "id": 114,
+      "title": "裏表ラバーズ",
+      "difficulties": {
+        "easy": 152,
+        "normal": 304,
+        "hard": 615,
+        "expert": 1017,
+        "master": 1151
+      }
+    },
+    {
+      "id": 115,
+      "title": "アンノウン・マザーグース",
+      "difficulties": {
+        "easy": 290,
+        "normal": 462,
+        "hard": 856,
+        "expert": 1080,
+        "master": 1292
+      }
+    },
+    {
+      "id": 116,
+      "title": "アイディスマイル",
+      "difficulties": {
+        "easy": 263,
+        "normal": 439,
+        "hard": 703,
+        "expert": 985,
+        "master": 1247,
+        "append": 1216
+      }
+    },
+    {
+      "id": 117,
+      "title": "ODDS＆ENDS",
+      "difficulties": {
+        "easy": 199,
+        "normal": 310,
+        "hard": 509,
+        "expert": 739,
+        "master": 921
+      }
+    },
+    {
+      "id": 118,
+      "title": "＊ハロー、プラネット。",
+      "difficulties": {
+        "easy": 219,
+        "normal": 343,
+        "hard": 730,
+        "expert": 931,
+        "master": 1076
+      }
+    },
+    {
+      "id": 119,
+      "title": "ワールズエンド・ダンスホール",
+      "difficulties": {
+        "easy": 131,
+        "normal": 233,
+        "hard": 694,
+        "expert": 957,
+        "master": 1044
+      }
+    },
+    {
+      "id": 120,
+      "title": "いかないで",
+      "difficulties": {
+        "easy": 230,
+        "normal": 384,
+        "hard": 626,
+        "expert": 977,
+        "master": 1173,
+        "append": 1212
+      }
+    },
+    {
+      "id": 121,
+      "title": "ロミオとシンデレラ",
+      "difficulties": {
+        "easy": 188,
+        "normal": 342,
+        "hard": 571,
+        "expert": 856,
+        "master": 1035
+      }
+    },
+    {
+      "id": 122,
+      "title": "ポジティブ☆ダンスタイム",
+      "difficulties": {
+        "easy": 201,
+        "normal": 507,
+        "hard": 637,
+        "expert": 965,
+        "master": 1154
+      }
+    },
+    {
+      "id": 123,
+      "title": "どりーみんチュチュ",
+      "difficulties": {
+        "easy": 225,
+        "normal": 367,
+        "hard": 567,
+        "expert": 873,
+        "master": 1074
+      }
+    },
+    {
+      "id": 124,
+      "title": "みくみくにしてあげる♪【してやんよ】",
+      "difficulties": {
+        "easy": 139,
+        "normal": 339,
+        "hard": 439,
+        "expert": 739,
+        "master": 939,
+        "append": 1039
+      }
+    },
+    {
+      "id": 125,
+      "title": "ボッカデラベリタ",
+      "difficulties": {
+        "easy": 196,
+        "normal": 416,
+        "hard": 615,
+        "expert": 884,
+        "master": 1119
+      }
+    },
+    {
+      "id": 126,
+      "title": "シネマ",
+      "difficulties": {
+        "easy": 105,
+        "normal": 254,
+        "hard": 465,
+        "expert": 616,
+        "master": 800,
+        "append": 992
+      }
+    },
+    {
+      "id": 127,
+      "title": "トンデモワンダーズ",
+      "difficulties": {
+        "easy": 356,
+        "normal": 465,
+        "hard": 707,
+        "expert": 1122,
+        "master": 1224,
+        "append": 1631
+      }
+    },
+    {
+      "id": 128,
+      "title": "Brand New Day",
+      "difficulties": {
+        "easy": 300,
+        "normal": 378,
+        "hard": 829,
+        "expert": 1260,
+        "master": 1316,
+        "append": 1894
+      }
+    },
+    {
+      "id": 129,
+      "title": "ビターチョコデコレーション",
+      "difficulties": {
+        "easy": 263,
+        "normal": 395,
+        "hard": 726,
+        "expert": 1059,
+        "master": 1377
+      }
+    },
+    {
+      "id": 130,
+      "title": "フロムトーキョー",
+      "difficulties": {
+        "easy": 137,
+        "normal": 227,
+        "hard": 441,
+        "expert": 640,
+        "master": 814
+      }
+    },
+    {
+      "id": 131,
+      "title": "初音ミクの激唱",
+      "difficulties": {
+        "easy": 409,
+        "normal": 707,
+        "hard": 963,
+        "expert": 1520,
+        "master": 1742
+      }
+    },
+    {
+      "id": 132,
+      "title": "「１」",
+      "difficulties": {
+        "easy": 190,
+        "normal": 368,
+        "hard": 444,
+        "expert": 619,
+        "master": 814,
+        "append": 1001
+      }
+    },
+    {
+      "id": 133,
+      "title": "悪魔の踊り方",
+      "difficulties": {
+        "easy": 147,
+        "normal": 290,
+        "hard": 588,
+        "expert": 792,
+        "master": 938
+      }
+    },
+    {
+      "id": 134,
+      "title": "テレキャスタービーボーイ",
+      "difficulties": {
+        "easy": 169,
+        "normal": 280,
+        "hard": 501,
+        "expert": 726,
+        "master": 898,
+        "append": 1159
+      }
+    },
+    {
+      "id": 135,
+      "title": "六兆年と一夜物語",
+      "difficulties": {
+        "easy": 283,
+        "normal": 448,
+        "hard": 741,
+        "expert": 1099,
+        "master": 1288,
+        "append": 1723
+      }
+    },
+    {
+      "id": 136,
+      "title": "チルドレンレコード",
+      "difficulties": {
+        "easy": 250,
+        "normal": 564,
+        "hard": 823,
+        "expert": 1234,
+        "master": 1502
+      }
+    },
+    {
+      "id": 137,
+      "title": "花を唄う",
+      "difficulties": {
+        "easy": 157,
+        "normal": 298,
+        "hard": 565,
+        "expert": 807,
+        "master": 878
+      }
+    },
+    {
+      "id": 138,
+      "title": "KING",
+      "difficulties": {
+        "easy": 222,
+        "normal": 466,
+        "hard": 694,
+        "expert": 1002,
+        "master": 1251,
+        "append": 1388
+      }
+    },
+    {
+      "id": 139,
+      "title": "夜に駆ける",
+      "difficulties": {
+        "easy": 182,
+        "normal": 357,
+        "hard": 594,
+        "expert": 932,
+        "master": 1140
+      }
+    },
+    {
+      "id": 140,
+      "title": "アイスドロップ",
+      "difficulties": {
+        "easy": 162,
+        "normal": 267,
+        "hard": 484,
+        "expert": 704,
+        "master": 802
+      }
+    },
+    {
+      "id": 141,
+      "title": "群青讃歌",
+      "difficulties": {
+        "easy": 199,
+        "normal": 344,
+        "hard": 475,
+        "expert": 711,
+        "master": 833,
+        "append": 1254
+      }
+    },
+    {
+      "id": 142,
+      "title": "再生",
+      "difficulties": {
+        "easy": 124,
+        "normal": 221,
+        "hard": 308,
+        "expert": 458,
+        "master": 547
+      }
+    },
+    {
+      "id": 143,
+      "title": "トラフィック・ジャム",
+      "difficulties": {
+        "easy": 177,
+        "normal": 371,
+        "hard": 638,
+        "expert": 896,
+        "master": 1089
+      }
+    },
+    {
+      "id": 144,
+      "title": "アイノマテリアル",
+      "difficulties": {
+        "easy": 159,
+        "normal": 291,
+        "hard": 457,
+        "expert": 643,
+        "master": 814
+      }
+    },
+    {
+      "id": 145,
+      "title": "ベノム",
+      "difficulties": {
+        "easy": 216,
+        "normal": 372,
+        "hard": 649,
+        "expert": 972,
+        "master": 1138
+      }
+    },
+    {
+      "id": 146,
+      "title": "リモコン",
+      "difficulties": {
+        "easy": 304,
+        "normal": 480,
+        "hard": 612,
+        "expert": 903,
+        "master": 1206
+      }
+    },
+    {
+      "id": 147,
+      "title": "からくりピエロ",
+      "difficulties": {
+        "easy": 163,
+        "normal": 306,
+        "hard": 489,
+        "expert": 714,
+        "master": 1005
+      }
+    },
+    {
+      "id": 148,
+      "title": "ray",
+      "difficulties": {
+        "easy": 213,
+        "normal": 333,
+        "hard": 597,
+        "expert": 978,
+        "master": 1092
+      }
+    },
+    {
+      "id": 149,
+      "title": "カナデトモスソラ",
+      "difficulties": {
+        "easy": 213,
+        "normal": 312,
+        "hard": 405,
+        "expert": 522,
+        "master": 703,
+        "append": 1020
+      }
+    },
+    {
+      "id": 150,
+      "title": "トキヲ・ファンカ",
+      "difficulties": {
+        "easy": 129,
+        "normal": 243,
+        "hard": 543,
+        "expert": 780,
+        "master": 859,
+        "append": 997
+      }
+    },
+    {
+      "id": 151,
+      "title": "泡沫未来",
+      "difficulties": {
+        "easy": 232,
+        "normal": 354,
+        "hard": 559,
+        "expert": 750,
+        "master": 903,
+        "append": 1070
+      }
+    },
+    {
+      "id": 152,
+      "title": "だれかの心臓になれたなら",
+      "difficulties": {
+        "easy": 169,
+        "normal": 323,
+        "hard": 553,
+        "expert": 811,
+        "master": 1044
+      }
+    },
+    {
+      "id": 153,
+      "title": "Miku",
+      "difficulties": {
+        "easy": 200,
+        "normal": 405,
+        "hard": 638,
+        "expert": 990,
+        "master": 1106
+      }
+    },
+    {
+      "id": 154,
+      "title": "地球最後の告白を",
+      "difficulties": {
+        "easy": 298,
+        "normal": 389,
+        "hard": 563,
+        "expert": 884,
+        "master": 1164,
+        "append": 1643
+      }
+    },
+    {
+      "id": 155,
+      "title": "心拍数♯0822",
+      "difficulties": {
+        "easy": 197,
+        "normal": 308,
+        "hard": 501,
+        "expert": 675,
+        "master": 843
+      }
+    },
+    {
+      "id": 156,
+      "title": "Beat Eater",
+      "difficulties": {
+        "easy": 118,
+        "normal": 251,
+        "hard": 481,
+        "expert": 772,
+        "master": 798,
+        "append": 852
+      }
+    },
+    {
+      "id": 157,
+      "title": "マシュマリー",
+      "difficulties": {
+        "easy": 328,
+        "normal": 469,
+        "hard": 848,
+        "expert": 1123,
+        "master": 1303
+      }
+    },
+    {
+      "id": 158,
+      "title": "ナンセンス文学",
+      "difficulties": {
+        "easy": 234,
+        "normal": 390,
+        "hard": 604,
+        "expert": 856,
+        "master": 1180
+      }
+    },
+    {
+      "id": 159,
+      "title": "STAGE OF SEKAI",
+      "difficulties": {
+        "easy": 278,
+        "normal": 454,
+        "hard": 621,
+        "expert": 1005,
+        "master": 1156
+      }
+    },
+    {
+      "id": 160,
+      "title": "ショウタイム・ルーラー",
+      "difficulties": {
+        "easy": 198,
+        "normal": 326,
+        "hard": 541,
+        "expert": 819,
+        "master": 1063,
+        "append": 1163
+      }
+    },
+    {
+      "id": 161,
+      "title": "magic number",
+      "difficulties": {
+        "easy": 98,
+        "normal": 280,
+        "hard": 535,
+        "expert": 818,
+        "master": 988
+      }
+    },
+    {
+      "id": 162,
+      "title": "エンドマークに希望と涙を添えて",
+      "difficulties": {
+        "easy": 440,
+        "normal": 697,
+        "hard": 1129,
+        "expert": 1553,
+        "master": 1948
+      }
+    },
+    {
+      "id": 163,
+      "title": "the EmpErroR",
+      "difficulties": {
+        "easy": 531,
+        "normal": 820,
+        "hard": 894,
+        "expert": 1223,
+        "master": 1593
+      }
+    },
+    {
+      "id": 164,
+      "title": "Don't Fight The Music",
+      "difficulties": {
+        "easy": 520,
+        "normal": 701,
+        "hard": 1175,
+        "expert": 1545,
+        "master": 1888
+      }
+    },
+    {
+      "id": 165,
+      "title": "そうだった！！",
+      "difficulties": {
+        "easy": 258,
+        "normal": 409,
+        "hard": 794,
+        "expert": 1175,
+        "master": 1297
+      }
+    },
+    {
+      "id": 166,
+      "title": "Glory Steady Go!",
+      "difficulties": {
+        "easy": 120,
+        "normal": 247,
+        "hard": 484,
+        "expert": 738,
+        "master": 875
+      }
+    },
+    {
+      "id": 167,
+      "title": "オルターエゴ",
+      "difficulties": {
+        "easy": 301,
+        "normal": 545,
+        "hard": 787,
+        "expert": 1175,
+        "master": 1557
+      }
+    },
+    {
+      "id": 168,
+      "title": "ダーリンダンス",
+      "difficulties": {
+        "easy": 190,
+        "normal": 332,
+        "hard": 572,
+        "expert": 824,
+        "master": 912
+      }
+    },
+    {
+      "id": 169,
+      "title": "少女レイ",
+      "difficulties": {
+        "easy": 326,
+        "normal": 561,
+        "hard": 816,
+        "expert": 1168,
+        "master": 1400,
+        "append": 1300
+      }
+    },
+    {
+      "id": 170,
+      "title": "ヴィラン",
+      "difficulties": {
+        "easy": 162,
+        "normal": 341,
+        "hard": 679,
+        "expert": 984,
+        "master": 1154
+      }
+    },
+    {
+      "id": 171,
+      "title": "カゲロウデイズ",
+      "difficulties": {
+        "easy": 370,
+        "normal": 599,
+        "hard": 871,
+        "expert": 1295,
+        "master": 1404,
+        "append": 1915
+      }
+    },
+    {
+      "id": 172,
+      "title": "Happy Halloween",
+      "difficulties": {
+        "easy": 150,
+        "normal": 357,
+        "hard": 533,
+        "expert": 827,
+        "master": 987,
+        "append": 832
+      }
+    },
+    {
+      "id": 173,
+      "title": "流星のパルス",
+      "difficulties": {
+        "easy": 231,
+        "normal": 478,
+        "hard": 656,
+        "expert": 958,
+        "master": 1123
+      }
+    },
+    {
+      "id": 174,
+      "title": "いーあるふぁんくらぶ",
+      "difficulties": {
+        "easy": 206,
+        "normal": 323,
+        "hard": 595,
+        "expert": 863,
+        "master": 1002,
+        "append": 1015
+      }
+    },
+    {
+      "id": 175,
+      "title": "拝啓ドッペルゲンガー",
+      "difficulties": {
+        "easy": 355,
+        "normal": 681,
+        "hard": 917,
+        "expert": 1368,
+        "master": 1654
+      }
+    },
+    {
+      "id": 176,
+      "title": "マシンガンポエムドール",
+      "difficulties": {
+        "easy": 349,
+        "normal": 626,
+        "hard": 1154,
+        "expert": 1730,
+        "master": 1819
+      }
+    },
+    {
+      "id": 177,
+      "title": "右肩の蝶",
+      "difficulties": {
+        "easy": 171,
+        "normal": 377,
+        "hard": 643,
+        "expert": 1058,
+        "master": 1315
+      }
+    },
+    {
+      "id": 178,
+      "title": "にっこり^^調査隊のテーマ",
+      "difficulties": {
+        "easy": 254,
+        "normal": 414,
+        "hard": 724,
+        "expert": 1026,
+        "master": 1195
+      }
+    },
+    {
+      "id": 179,
+      "title": "炉心融解",
+      "difficulties": {
+        "easy": 288,
+        "normal": 483,
+        "hard": 665,
+        "expert": 998,
+        "master": 1167
+      }
+    },
+    {
+      "id": 180,
+      "title": "ミライ",
+      "difficulties": {
+        "easy": 184,
+        "normal": 419,
+        "hard": 662,
+        "expert": 1017,
+        "master": 1281
+      }
+    },
+    {
+      "id": 181,
+      "title": "愛して愛して愛して",
+      "difficulties": {
+        "easy": 205,
+        "normal": 377,
+        "hard": 509,
+        "expert": 928,
+        "master": 1173
+      }
+    },
+    {
+      "id": 182,
+      "title": "Flyer!",
+      "difficulties": {
+        "easy": 261,
+        "normal": 408,
+        "hard": 598,
+        "expert": 861,
+        "master": 1083,
+        "append": 1189
+      }
+    },
+    {
+      "id": 183,
+      "title": "フィクサー",
+      "difficulties": {
+        "easy": 179,
+        "normal": 314,
+        "hard": 621,
+        "expert": 948,
+        "master": 1118
+      }
+    },
+    {
+      "id": 184,
+      "title": "Hello,world!",
+      "difficulties": {
+        "easy": 201,
+        "normal": 382,
+        "hard": 572,
+        "expert": 900,
+        "master": 949
+      }
+    },
+    {
+      "id": 185,
+      "title": "しっくおぶはうす！",
+      "difficulties": {
+        "easy": 262,
+        "normal": 509,
+        "hard": 790,
+        "expert": 1107,
+        "master": 1313
+      }
+    },
+    {
+      "id": 186,
+      "title": "初音天地開闢神話",
+      "difficulties": {
+        "easy": 734,
+        "normal": 882,
+        "hard": 1061,
+        "expert": 1581,
+        "master": 2021
+      }
+    },
+    {
+      "id": 187,
+      "title": "ロウワー",
+      "difficulties": {
+        "easy": 109,
+        "normal": 258,
+        "hard": 539,
+        "expert": 780,
+        "master": 850,
+        "append": 1045
+      }
+    },
+    {
+      "id": 188,
+      "title": "心予報",
+      "difficulties": {
+        "easy": 273,
+        "normal": 400,
+        "hard": 638,
+        "expert": 909,
+        "master": 1060,
+        "append": 1318
+      }
+    },
+    {
+      "id": 189,
+      "title": "ノマド",
+      "difficulties": {
+        "easy": 150,
+        "normal": 202,
+        "hard": 387,
+        "expert": 515,
+        "master": 592,
+        "append": 531
+      }
+    },
+    {
+      "id": 190,
+      "title": "悪ノ娘",
+      "difficulties": {
+        "easy": 130,
+        "normal": 214,
+        "hard": 413,
+        "expert": 609,
+        "master": 784
+      }
+    },
+    {
+      "id": 191,
+      "title": "悪ノ召使",
+      "difficulties": {
+        "easy": 130,
+        "normal": 214,
+        "hard": 413,
+        "expert": 609,
+        "master": 784
+      }
+    },
+    {
+      "id": 192,
+      "title": "去り人達のワルツ",
+      "difficulties": {
+        "easy": 200,
+        "normal": 356,
+        "hard": 475,
+        "expert": 672,
+        "master": 798
+      }
+    },
+    {
+      "id": 193,
+      "title": "ワールドワイドワンダー",
+      "difficulties": {
+        "easy": 129,
+        "normal": 309,
+        "hard": 439,
+        "expert": 626,
+        "master": 785,
+        "append": 817
+      }
+    },
+    {
+      "id": 194,
+      "title": "妄想感傷代償連盟",
+      "difficulties": {
+        "easy": 200,
+        "normal": 397,
+        "hard": 630,
+        "expert": 908,
+        "master": 966,
+        "append": 1092
+      }
+    },
+    {
+      "id": 195,
+      "title": "PaⅢ.SENSATION",
+      "difficulties": {
+        "easy": 323,
+        "normal": 394,
+        "hard": 758,
+        "expert": 1032,
+        "master": 1244
+      }
+    },
+    {
+      "id": 196,
+      "title": "オーダーメイド",
+      "difficulties": {
+        "easy": 139,
+        "normal": 210,
+        "hard": 331,
+        "expert": 480,
+        "master": 601,
+        "append": 634
+      }
+    },
+    {
+      "id": 197,
+      "title": "ラストスコア",
+      "difficulties": {
+        "easy": 214,
+        "normal": 401,
+        "hard": 759,
+        "expert": 1050,
+        "master": 1190
+      }
+    },
+    {
+      "id": 198,
+      "title": "グッバイ宣言",
+      "difficulties": {
+        "easy": 310,
+        "normal": 390,
+        "hard": 726,
+        "expert": 1017,
+        "master": 1259,
+        "append": 1233
+      }
+    },
+    {
+      "id": 199,
+      "title": "ゴーストルール",
+      "difficulties": {
+        "easy": 409,
+        "normal": 650,
+        "hard": 740,
+        "expert": 1174,
+        "master": 1473
+      }
+    },
+    {
+      "id": 200,
+      "title": "ガランド",
+      "difficulties": {
+        "easy": 205,
+        "normal": 350,
+        "hard": 557,
+        "expert": 761,
+        "master": 943
+      }
+    },
+    {
+      "id": 201,
+      "title": "神のまにまに",
+      "difficulties": {
+        "easy": 179,
+        "normal": 300,
+        "hard": 645,
+        "expert": 900,
+        "master": 1111
+      }
+    },
+    {
+      "id": 202,
+      "title": "Q",
+      "difficulties": {
+        "easy": 218,
+        "normal": 395,
+        "hard": 574,
+        "expert": 907,
+        "master": 998
+      }
+    },
+    {
+      "id": 203,
+      "title": "トリコロージュ",
+      "difficulties": {
+        "easy": 222,
+        "normal": 411,
+        "hard": 736,
+        "expert": 860,
+        "master": 999
+      }
+    },
+    {
+      "id": 204,
+      "title": "うっせぇわ",
+      "difficulties": {
+        "easy": 269,
+        "normal": 487,
+        "hard": 682,
+        "expert": 1035,
+        "master": 1302
+      }
+    },
+    {
+      "id": 205,
+      "title": "踊",
+      "difficulties": {
+        "easy": 242,
+        "normal": 409,
+        "hard": 640,
+        "expert": 882,
+        "master": 1083
+      }
+    },
+    {
+      "id": 206,
+      "title": "君色マリンスノウ",
+      "difficulties": {
+        "easy": 394,
+        "normal": 587,
+        "hard": 875,
+        "expert": 1339,
+        "master": 1415
+      }
+    },
+    {
+      "id": 207,
+      "title": "Peaky Peaky",
+      "difficulties": {
+        "easy": 159,
+        "normal": 312,
+        "hard": 538,
+        "expert": 747,
+        "master": 855
+      }
+    },
+    {
+      "id": 208,
+      "title": "僕らまだアンダーグラウンド",
+      "difficulties": {
+        "easy": 281,
+        "normal": 406,
+        "hard": 635,
+        "expert": 920,
+        "master": 1035
+      }
+    },
+    {
+      "id": 209,
+      "title": "メタモリボン",
+      "difficulties": {
+        "easy": 149,
+        "normal": 254,
+        "hard": 409,
+        "expert": 580,
+        "master": 685
+      }
+    },
+    {
+      "id": 210,
+      "title": "雨とペトラ",
+      "difficulties": {
+        "easy": 260,
+        "normal": 489,
+        "hard": 733,
+        "expert": 976,
+        "master": 1206
+      }
+    },
+    {
+      "id": 211,
+      "title": "イフ",
+      "difficulties": {
+        "easy": 163,
+        "normal": 357,
+        "hard": 559,
+        "expert": 845,
+        "master": 1062,
+        "append": 1270
+      }
+    },
+    {
+      "id": 212,
+      "title": "星空のメロディー",
+      "difficulties": {
+        "easy": 131,
+        "normal": 296,
+        "hard": 523,
+        "expert": 713,
+        "master": 821
+      }
+    },
+    {
+      "id": 213,
+      "title": "ヴァンパイア",
+      "difficulties": {
+        "easy": 288,
+        "normal": 449,
+        "hard": 699,
+        "expert": 1029,
+        "master": 1299,
+        "append": 1433
+      }
+    },
+    {
+      "id": 214,
+      "title": "パレットには君がいっぱい",
+      "difficulties": {
+        "easy": 189,
+        "normal": 294,
+        "hard": 656,
+        "expert": 900,
+        "master": 966
+      }
+    },
+    {
+      "id": 215,
+      "title": "ジウダス",
+      "difficulties": {
+        "easy": 172,
+        "normal": 361,
+        "hard": 654,
+        "expert": 769,
+        "master": 898
+      }
+    },
+    {
+      "id": 216,
+      "title": "ルカルカ★ナイトフィーバー",
+      "difficulties": {
+        "easy": 218,
+        "normal": 457,
+        "hard": 616,
+        "expert": 950,
+        "master": 1311
+      }
+    },
+    {
+      "id": 217,
+      "title": "街",
+      "difficulties": {
+        "easy": 206,
+        "normal": 288,
+        "hard": 422,
+        "expert": 668,
+        "master": 769
+      }
+    },
+    {
+      "id": 218,
+      "title": "メリュー",
+      "difficulties": {
+        "easy": 228,
+        "normal": 383,
+        "hard": 473,
+        "expert": 632,
+        "master": 983
+      }
+    },
+    {
+      "id": 219,
+      "title": "砂の惑星",
+      "difficulties": {
+        "easy": 175,
+        "normal": 314,
+        "hard": 661,
+        "expert": 873,
+        "master": 1062
+      }
+    },
+    {
+      "id": 220,
+      "title": "ドーナツホール 2024",
+      "difficulties": {
+        "easy": 419,
+        "normal": 581,
+        "hard": 745,
+        "expert": 1046,
+        "master": 1328,
+        "append": 1792
+      }
+    },
+    {
+      "id": 221,
+      "title": "マトリョシカ",
+      "difficulties": {
+        "easy": 182,
+        "normal": 355,
+        "hard": 674,
+        "expert": 887,
+        "master": 1104
+      }
+    },
+    {
+      "id": 222,
+      "title": "ピアノ×フォルテ×スキャンダル",
+      "difficulties": {
+        "easy": 239,
+        "normal": 334,
+        "hard": 735,
+        "expert": 1042,
+        "master": 1142
+      }
+    },
+    {
+      "id": 223,
+      "title": "千年の独奏歌",
+      "difficulties": {
+        "easy": 214,
+        "normal": 335,
+        "hard": 606,
+        "expert": 791,
+        "master": 906
+      }
+    },
+    {
+      "id": 224,
+      "title": "88☆彡",
+      "difficulties": {
+        "easy": 388,
+        "normal": 588,
+        "hard": 688,
+        "expert": 1088,
+        "master": 1188,
+        "append": 1388
+      }
+    },
+    {
+      "id": 225,
+      "title": "エゴロック",
+      "difficulties": {
+        "easy": 262,
+        "normal": 523,
+        "hard": 841,
+        "expert": 1041,
+        "master": 1277
+      }
+    },
+    {
+      "id": 226,
+      "title": "ロストエンファウンド",
+      "difficulties": {
+        "easy": 422,
+        "normal": 690,
+        "hard": 868,
+        "expert": 1082,
+        "master": 1271
+      }
+    },
+    {
+      "id": 227,
+      "title": "ONESELF",
+      "difficulties": {
+        "easy": 264,
+        "normal": 484,
+        "hard": 795,
+        "expert": 1063,
+        "master": 1163,
+        "append": 1406
+      }
+    },
+    {
+      "id": 228,
+      "title": "Goodbye",
+      "difficulties": {
+        "easy": 275,
+        "normal": 286,
+        "hard": 562,
+        "expert": 734,
+        "master": 860
+      }
+    },
+    {
+      "id": 229,
+      "title": "脳漿炸裂ガール",
+      "difficulties": {
+        "easy": 296,
+        "normal": 613,
+        "hard": 985,
+        "expert": 1349,
+        "master": 1500
+      }
+    },
+    {
+      "id": 230,
+      "title": "サラマンダー",
+      "difficulties": {
+        "easy": 419,
+        "normal": 576,
+        "hard": 825,
+        "expert": 1186,
+        "master": 1454
+      }
+    },
+    {
+      "id": 231,
+      "title": "アイデンティティ",
+      "difficulties": {
+        "easy": 459,
+        "normal": 671,
+        "hard": 873,
+        "expert": 1196,
+        "master": 1489
+      }
+    },
+    {
+      "id": 232,
+      "title": "青色絵具",
+      "difficulties": {
+        "easy": 253,
+        "normal": 446,
+        "hard": 619,
+        "expert": 846,
+        "master": 1058
+      }
+    },
+    {
+      "id": 233,
+      "title": "コスモスパイス",
+      "difficulties": {
+        "easy": 276,
+        "normal": 416,
+        "hard": 623,
+        "expert": 849,
+        "master": 1092
+      }
+    },
+    {
+      "id": 234,
+      "title": "徳川カップヌードル禁止令",
+      "difficulties": {
+        "easy": 264,
+        "normal": 498,
+        "hard": 758,
+        "expert": 1065,
+        "master": 1241
+      }
+    },
+    {
+      "id": 235,
+      "title": "Journey",
+      "difficulties": {
+        "easy": 219,
+        "normal": 512,
+        "hard": 922,
+        "expert": 1285,
+        "master": 1322,
+        "append": 1765
+      }
+    },
+    {
+      "id": 236,
+      "title": "Voices",
+      "difficulties": {
+        "easy": 358,
+        "normal": 674,
+        "hard": 810,
+        "expert": 1144,
+        "master": 1237
+      }
+    },
+    {
+      "id": 237,
+      "title": "君の夜をくれ",
+      "difficulties": {
+        "easy": 140,
+        "normal": 179,
+        "hard": 318,
+        "expert": 482,
+        "master": 662
+      }
+    },
+    {
+      "id": 238,
+      "title": "ブラック★ロックシューター",
+      "difficulties": {
+        "easy": 250,
+        "normal": 377,
+        "hard": 548,
+        "expert": 695,
+        "master": 930
+      }
+    },
+    {
+      "id": 239,
+      "title": "月光",
+      "difficulties": {
+        "easy": 190,
+        "normal": 347,
+        "hard": 660,
+        "expert": 1058,
+        "master": 1159
+      }
+    },
+    {
+      "id": 240,
+      "title": "踊れオーケストラ",
+      "difficulties": {
+        "easy": 260,
+        "normal": 459,
+        "hard": 610,
+        "expert": 845,
+        "master": 1068
+      }
+    },
+    {
+      "id": 241,
+      "title": "アサガオの散る頃に",
+      "difficulties": {
+        "easy": 210,
+        "normal": 273,
+        "hard": 478,
+        "expert": 748,
+        "master": 832
+      }
+    },
+    {
+      "id": 242,
+      "title": "トリノコシティ",
+      "difficulties": {
+        "easy": 291,
+        "normal": 360,
+        "hard": 514,
+        "expert": 753,
+        "master": 852
+      }
+    },
+    {
+      "id": 243,
+      "title": "Calc.",
+      "difficulties": {
+        "easy": 325,
+        "normal": 464,
+        "hard": 844,
+        "expert": 1126,
+        "master": 1295
+      }
+    },
+    {
+      "id": 244,
+      "title": "Awake Now",
+      "difficulties": {
+        "easy": 204,
+        "normal": 280,
+        "hard": 519,
+        "expert": 723,
+        "master": 884,
+        "append": 1049
+      }
+    },
+    {
+      "id": 245,
+      "title": "阿吽のビーツ",
+      "difficulties": {
+        "easy": 203,
+        "normal": 365,
+        "hard": 588,
+        "expert": 802,
+        "master": 918
+      }
+    },
+    {
+      "id": 246,
+      "title": "エイリアンエイリアン",
+      "difficulties": {
+        "easy": 278,
+        "normal": 461,
+        "hard": 798,
+        "expert": 1208,
+        "master": 1361
+      }
+    },
+    {
+      "id": 247,
+      "title": "Copycat",
+      "difficulties": {
+        "easy": 202,
+        "normal": 272,
+        "hard": 478,
+        "expert": 752,
+        "master": 997
+      }
+    },
+    {
+      "id": 248,
+      "title": "バグ",
+      "difficulties": {
+        "easy": 261,
+        "normal": 451,
+        "hard": 744,
+        "expert": 1101,
+        "master": 1343,
+        "append": 1490
+      }
+    },
+    {
+      "id": 249,
+      "title": "ぼくらの16bit戦争",
+      "difficulties": {
+        "easy": 337,
+        "normal": 591,
+        "hard": 726,
+        "expert": 1379,
+        "master": 1521
+      }
+    },
+    {
+      "id": 250,
+      "title": "腐れ外道とチョコレゐト",
+      "difficulties": {
+        "easy": 404,
+        "normal": 793,
+        "hard": 979,
+        "expert": 1396,
+        "master": 1763
+      }
+    },
+    {
+      "id": 251,
+      "title": "フロイライン＝ビブリォチカ",
+      "difficulties": {
+        "easy": 379,
+        "normal": 572,
+        "hard": 814,
+        "expert": 1222,
+        "master": 1456
+      }
+    },
+    {
+      "id": 252,
+      "title": "DREAM PLACE",
+      "difficulties": {
+        "easy": 226,
+        "normal": 432,
+        "hard": 716,
+        "expert": 937,
+        "master": 1172
+      }
+    },
+    {
+      "id": 253,
+      "title": "DAYBREAK FRONTLINE",
+      "difficulties": {
+        "easy": 247,
+        "normal": 479,
+        "hard": 770,
+        "expert": 1102,
+        "master": 1179,
+        "append": 1352
+      }
+    },
+    {
+      "id": 254,
+      "title": "未完成讃歌",
+      "difficulties": {
+        "easy": 391,
+        "normal": 636,
+        "hard": 853,
+        "expert": 1324,
+        "master": 1585
+      }
+    },
+    {
+      "id": 255,
+      "title": "夜もすがら君想ふ",
+      "difficulties": {
+        "easy": 317,
+        "normal": 501,
+        "hard": 679,
+        "expert": 1004,
+        "master": 1190
+      }
+    },
+    {
+      "id": 256,
+      "title": "ダブルラリアット",
+      "difficulties": {
+        "easy": 211,
+        "normal": 338,
+        "hard": 678,
+        "expert": 936,
+        "master": 1115,
+        "append": 1207
+      }
+    },
+    {
+      "id": 257,
+      "title": "てらてら",
+      "difficulties": {
+        "easy": 251,
+        "normal": 433,
+        "hard": 809,
+        "expert": 1035,
+        "master": 1262,
+        "append": 1450
+      }
+    },
+    {
+      "id": 258,
+      "title": "深海少女",
+      "difficulties": {
+        "easy": 272,
+        "normal": 449,
+        "hard": 620,
+        "expert": 867,
+        "master": 994
+      }
+    },
+    {
+      "id": 259,
+      "title": "the WALL",
+      "difficulties": {
+        "easy": 259,
+        "normal": 407,
+        "hard": 633,
+        "expert": 815,
+        "master": 1019
+      }
+    },
+    {
+      "id": 260,
+      "title": "ラブカ？",
+      "difficulties": {
+        "easy": 131,
+        "normal": 215,
+        "hard": 517,
+        "expert": 710,
+        "master": 878
+      }
+    },
+    {
+      "id": 261,
+      "title": "星屑ユートピア",
+      "difficulties": {
+        "easy": 402,
+        "normal": 582,
+        "hard": 780,
+        "expert": 1183,
+        "master": 1308
+      }
+    },
+    {
+      "id": 262,
+      "title": "帝国少女",
+      "difficulties": {
+        "easy": 182,
+        "normal": 409,
+        "hard": 684,
+        "expert": 962,
+        "master": 1178
+      }
+    },
+    {
+      "id": 263,
+      "title": "Highlight",
+      "difficulties": {
+        "easy": 132,
+        "normal": 266,
+        "hard": 414,
+        "expert": 596,
+        "master": 690
+      }
+    },
+    {
+      "id": 264,
+      "title": "パラソルサイダー",
+      "difficulties": {
+        "easy": 233,
+        "normal": 311,
+        "hard": 524,
+        "expert": 796,
+        "master": 880
+      }
+    },
+    {
+      "id": 265,
+      "title": "Change me",
+      "difficulties": {
+        "easy": 268,
+        "normal": 500,
+        "hard": 664,
+        "expert": 1019,
+        "master": 1247
+      }
+    },
+    {
+      "id": 266,
+      "title": "YY",
+      "difficulties": {
+        "easy": 197,
+        "normal": 349,
+        "hard": 792,
+        "expert": 976,
+        "master": 1175,
+        "append": 1249
+      }
+    },
+    {
+      "id": 267,
+      "title": "仮死化",
+      "difficulties": {
+        "easy": 304,
+        "normal": 455,
+        "hard": 724,
+        "expert": 1019,
+        "master": 1186,
+        "append": 1328
+      }
+    },
+    {
+      "id": 268,
+      "title": "ノンブレス・オブリージュ",
+      "difficulties": {
+        "easy": 342,
+        "normal": 459,
+        "hard": 927,
+        "expert": 1071,
+        "master": 1203
+      }
+    },
+    {
+      "id": 269,
+      "title": "ロンリーユニバース",
+      "difficulties": {
+        "easy": 184,
+        "normal": 339,
+        "hard": 621,
+        "expert": 781,
+        "master": 999
+      }
+    },
+    {
+      "id": 270,
+      "title": "泥中に咲く",
+      "difficulties": {
+        "easy": 141,
+        "normal": 249,
+        "hard": 535,
+        "expert": 646,
+        "master": 761
+      }
+    },
+    {
+      "id": 271,
+      "title": "あったかいと",
+      "difficulties": {
+        "easy": 351,
+        "normal": 516,
+        "hard": 789,
+        "expert": 1026,
+        "master": 1376
+      }
+    },
+    {
+      "id": 272,
+      "title": "ジェヘナ",
+      "difficulties": {
+        "easy": 233,
+        "normal": 352,
+        "hard": 702,
+        "expert": 1177,
+        "master": 1253,
+        "append": 1633
+      }
+    },
+    {
+      "id": 273,
+      "title": "フューチャー・イヴ",
+      "difficulties": {
+        "easy": 497,
+        "normal": 698,
+        "hard": 1087,
+        "expert": 1462,
+        "master": 1628
+      }
+    },
+    {
+      "id": 274,
+      "title": "それでもいいんだよ",
+      "difficulties": {
+        "easy": 248,
+        "normal": 367,
+        "hard": 712,
+        "expert": 897,
+        "master": 1009
+      }
+    },
+    {
+      "id": 275,
+      "title": "パラジクロロベンゼン",
+      "difficulties": {
+        "easy": 160,
+        "normal": 446,
+        "hard": 810,
+        "expert": 916,
+        "master": 1063
+      }
+    },
+    {
+      "id": 276,
+      "title": "シャンティ",
+      "difficulties": {
+        "easy": 322,
+        "normal": 467,
+        "hard": 844,
+        "expert": 942,
+        "master": 1187
+      }
+    },
+    {
+      "id": 277,
+      "title": "フォニイ",
+      "difficulties": {
+        "easy": 220,
+        "normal": 473,
+        "hard": 842,
+        "expert": 1064,
+        "master": 1244
+      }
+    },
+    {
+      "id": 278,
+      "title": "Bad ∞ End ∞ Night",
+      "difficulties": {
+        "easy": 211,
+        "normal": 397,
+        "hard": 726,
+        "expert": 875,
+        "master": 1018
+      }
+    },
+    {
+      "id": 279,
+      "title": "こちら、幸福安心委員会です。",
+      "difficulties": {
+        "easy": 166,
+        "normal": 371,
+        "hard": 683,
+        "expert": 898,
+        "master": 1096
+      }
+    },
+    {
+      "id": 280,
+      "title": "虚ろを扇ぐ",
+      "difficulties": {
+        "easy": 320,
+        "normal": 455,
+        "hard": 677,
+        "expert": 908,
+        "master": 1112,
+        "append": 1233
+      }
+    },
+    {
+      "id": 281,
+      "title": "気まぐれメルシィ",
+      "difficulties": {
+        "easy": 299,
+        "normal": 563,
+        "hard": 788,
+        "expert": 1247,
+        "master": 1465
+      }
+    },
+    {
+      "id": 282,
+      "title": "星空オーケストラ",
+      "difficulties": {
+        "easy": 314,
+        "normal": 463,
+        "hard": 777,
+        "expert": 1057,
+        "master": 1159
+      }
+    },
+    {
+      "id": 283,
+      "title": "レイニースノードロップ",
+      "difficulties": {
+        "easy": 422,
+        "normal": 552,
+        "hard": 997,
+        "expert": 1234,
+        "master": 1495
+      }
+    },
+    {
+      "id": 284,
+      "title": "インビジブル",
+      "difficulties": {
+        "easy": 339,
+        "normal": 542,
+        "hard": 909,
+        "expert": 1385,
+        "master": 1436
+      }
+    },
+    {
+      "id": 285,
+      "title": "ÅMARA(大未来電脳)",
+      "difficulties": {
+        "easy": 429,
+        "normal": 575,
+        "hard": 1031,
+        "expert": 1342,
+        "master": 1589
+      }
+    },
+    {
+      "id": 286,
+      "title": "Hello, Worker",
+      "difficulties": {
+        "easy": 245,
+        "normal": 419,
+        "hard": 523,
+        "expert": 773,
+        "master": 918
+      }
+    },
+    {
+      "id": 287,
+      "title": "私は、私達は",
+      "difficulties": {
+        "easy": 233,
+        "normal": 347,
+        "hard": 485,
+        "expert": 712,
+        "master": 918
+      }
+    },
+    {
+      "id": 288,
+      "title": "アンハッピーリフレイン",
+      "difficulties": {
+        "easy": 331,
+        "normal": 474,
+        "hard": 872,
+        "expert": 1137,
+        "master": 1353
+      }
+    },
+    {
+      "id": 289,
+      "title": "天ノ弱",
+      "difficulties": {
+        "easy": 265,
+        "normal": 334,
+        "hard": 685,
+        "expert": 982,
+        "master": 1131
+      }
+    },
+    {
+      "id": 290,
+      "title": "どんな結末がお望みだい？",
+      "difficulties": {
+        "easy": 215,
+        "normal": 325,
+        "hard": 494,
+        "expert": 638,
+        "master": 835
+      }
+    },
+    {
+      "id": 291,
+      "title": "フェレス",
+      "difficulties": {
+        "easy": 397,
+        "normal": 630,
+        "hard": 937,
+        "expert": 1374,
+        "master": 1397,
+        "append": 1744
+      }
+    },
+    {
+      "id": 292,
+      "title": "いちにのさんで",
+      "difficulties": {
+        "easy": 123,
+        "normal": 262,
+        "hard": 379,
+        "expert": 595,
+        "master": 715,
+        "append": 791
+      }
+    },
+    {
+      "id": 293,
+      "title": "アイロニ",
+      "difficulties": {
+        "easy": 131,
+        "normal": 261,
+        "hard": 605,
+        "expert": 861,
+        "master": 943
+      }
+    },
+    {
+      "id": 294,
+      "title": "それがあなたの幸せとしても",
+      "difficulties": {
+        "easy": 141,
+        "normal": 263,
+        "hard": 460,
+        "expert": 615,
+        "master": 814
+      }
+    },
+    {
+      "id": 295,
+      "title": "フロート・プランナー",
+      "difficulties": {
+        "easy": 199,
+        "normal": 344,
+        "hard": 445,
+        "expert": 685,
+        "master": 832
+      }
+    },
+    {
+      "id": 296,
+      "title": "カンタレラ",
+      "difficulties": {
+        "easy": 202,
+        "normal": 426,
+        "hard": 644,
+        "expert": 870,
+        "master": 1063
+      }
+    },
+    {
+      "id": 297,
+      "title": "p.h.",
+      "difficulties": {
+        "easy": 214,
+        "normal": 391,
+        "hard": 646,
+        "expert": 739,
+        "master": 872
+      }
+    },
+    {
+      "id": 298,
+      "title": "ネトゲ廃人シュプレヒコール",
+      "difficulties": {
+        "easy": 315,
+        "normal": 634,
+        "hard": 865,
+        "expert": 1156,
+        "master": 1463
+      }
+    },
+    {
+      "id": 299,
+      "title": "エゴイスト",
+      "difficulties": {
+        "easy": 316,
+        "normal": 612,
+        "hard": 923,
+        "expert": 1303,
+        "master": 1548
+      }
+    },
+    {
+      "id": 300,
+      "title": "ザムザ",
+      "difficulties": {
+        "easy": 169,
+        "normal": 251,
+        "hard": 694,
+        "expert": 779,
+        "master": 937,
+        "append": 1105
+      }
+    },
+    {
+      "id": 301,
+      "title": "私の恋はヘルファイア",
+      "difficulties": {
+        "easy": 520,
+        "normal": 566,
+        "hard": 1184,
+        "expert": 1491,
+        "master": 1638
+      }
+    },
+    {
+      "id": 302,
+      "title": "フレー",
+      "difficulties": {
+        "easy": 321,
+        "normal": 561,
+        "hard": 750,
+        "expert": 1067,
+        "master": 1328
+      }
+    },
+    {
+      "id": 303,
+      "title": "リンちゃんなう！",
+      "difficulties": {
+        "easy": 323,
+        "normal": 632,
+        "hard": 855,
+        "expert": 1098,
+        "master": 1409
+      }
+    },
+    {
+      "id": 304,
+      "title": "Iなんです",
+      "difficulties": {
+        "easy": 207,
+        "normal": 321,
+        "hard": 631,
+        "expert": 910,
+        "master": 1066,
+        "append": 1572
+      }
+    },
+    {
+      "id": 305,
+      "title": "ストロボラスト",
+      "difficulties": {
+        "easy": 183,
+        "normal": 298,
+        "hard": 489,
+        "expert": 726,
+        "master": 866
+      }
+    },
+    {
+      "id": 306,
+      "title": "1925",
+      "difficulties": {
+        "easy": 240,
+        "normal": 347,
+        "hard": 714,
+        "expert": 887,
+        "master": 1117
+      }
+    },
+    {
+      "id": 307,
+      "title": "おこちゃま戦争",
+      "difficulties": {
+        "easy": 276,
+        "normal": 413,
+        "hard": 861,
+        "expert": 1259,
+        "master": 1394
+      }
+    },
+    {
+      "id": 308,
+      "title": "ももいろの鍵",
+      "difficulties": {
+        "easy": 359,
+        "normal": 476,
+        "hard": 713,
+        "expert": 1073,
+        "master": 1187
+      }
+    },
+    {
+      "id": 309,
+      "title": "Afterglow",
+      "difficulties": {
+        "easy": 265,
+        "normal": 330,
+        "hard": 453,
+        "expert": 727,
+        "master": 844
+      }
+    },
+    {
+      "id": 310,
+      "title": "Flyway",
+      "difficulties": {
+        "easy": 361,
+        "normal": 491,
+        "hard": 733,
+        "expert": 1011,
+        "master": 1088,
+        "append": 1396
+      }
+    },
+    {
+      "id": 311,
+      "title": "夜明けと蛍",
+      "difficulties": {
+        "easy": 162,
+        "normal": 273,
+        "hard": 457,
+        "expert": 691,
+        "master": 852,
+        "append": 717
+      }
+    },
+    {
+      "id": 312,
+      "title": "ココロ",
+      "difficulties": {
+        "easy": 336,
+        "normal": 453,
+        "hard": 630,
+        "expert": 945,
+        "master": 1090
+      }
+    },
+    {
+      "id": 313,
+      "title": "FREELY TOMORROW",
+      "difficulties": {
+        "easy": 193,
+        "normal": 373,
+        "hard": 642,
+        "expert": 905,
+        "master": 1121
+      }
+    },
+    {
+      "id": 314,
+      "title": "陽だまりのセツナ",
+      "difficulties": {
+        "easy": 419,
+        "normal": 517,
+        "hard": 713,
+        "expert": 932,
+        "master": 1105
+      }
+    },
+    {
+      "id": 315,
+      "title": "What's up? Pop!",
+      "difficulties": {
+        "easy": 469,
+        "normal": 731,
+        "hard": 1175,
+        "expert": 1804,
+        "master": 2362
+      }
+    },
+    {
+      "id": 316,
+      "title": "ひつじがいっぴき",
+      "difficulties": {
+        "easy": 384,
+        "normal": 539,
+        "hard": 838,
+        "expert": 1120,
+        "master": 1305
+      }
+    },
+    {
+      "id": 317,
+      "title": "魔法みたいなミュージック！",
+      "difficulties": {
+        "easy": 374,
+        "normal": 431,
+        "hard": 744,
+        "expert": 1080,
+        "master": 1271
+      }
+    },
+    {
+      "id": 318,
+      "title": "Sharing The World",
+      "difficulties": {
+        "easy": 252,
+        "normal": 384,
+        "hard": 712,
+        "expert": 937,
+        "master": 1122
+      }
+    },
+    {
+      "id": 319,
+      "title": "Decade",
+      "difficulties": {
+        "easy": 212,
+        "normal": 334,
+        "hard": 618,
+        "expert": 839,
+        "master": 1057
+      }
+    },
+    {
+      "id": 320,
+      "title": "Booo!",
+      "difficulties": {
+        "easy": 166,
+        "normal": 427,
+        "hard": 599,
+        "expert": 823,
+        "master": 860
+      }
+    },
+    {
+      "id": 321,
+      "title": "アトラクトライト",
+      "difficulties": {
+        "easy": 396,
+        "normal": 691,
+        "hard": 878,
+        "expert": 1295,
+        "master": 1455
+      }
+    },
+    {
+      "id": 322,
+      "title": "絶え間なく藍色",
+      "difficulties": {
+        "easy": 287,
+        "normal": 403,
+        "hard": 682,
+        "expert": 1002,
+        "master": 1089
+      }
+    },
+    {
+      "id": 323,
+      "title": "快晴",
+      "difficulties": {
+        "easy": 415,
+        "normal": 582,
+        "hard": 959,
+        "expert": 1286,
+        "master": 1533
+      }
+    },
+    {
+      "id": 324,
+      "title": "箱庭のコラル",
+      "difficulties": {
+        "easy": 255,
+        "normal": 387,
+        "hard": 638,
+        "expert": 862,
+        "master": 981,
+        "append": 1220
+      }
+    },
+    {
+      "id": 325,
+      "title": "豚になってyeah yeah",
+      "difficulties": {
+        "easy": 129,
+        "normal": 259,
+        "hard": 432,
+        "expert": 705,
+        "master": 778
+      }
+    },
+    {
+      "id": 326,
+      "title": "天使の翼。",
+      "difficulties": {
+        "easy": 312,
+        "normal": 476,
+        "hard": 885,
+        "expert": 1072,
+        "master": 1340
+      }
+    },
+    {
+      "id": 327,
+      "title": "SnowMix♪",
+      "difficulties": {
+        "easy": 413,
+        "normal": 549,
+        "hard": 939,
+        "expert": 1321,
+        "master": 1441
+      }
+    },
+    {
+      "id": 328,
+      "title": "星界ちゃんと可不ちゃんのおつかい合騒曲",
+      "difficulties": {
+        "easy": 497,
+        "normal": 574,
+        "hard": 951,
+        "expert": 1491,
+        "master": 1626
+      }
+    },
+    {
+      "id": 329,
+      "title": "ヤミナベ!!!!",
+      "difficulties": {
+        "easy": 451,
+        "normal": 596,
+        "hard": 1121,
+        "expert": 1539,
+        "master": 2015
+      }
+    },
+    {
+      "id": 330,
+      "title": "インタビュア",
+      "difficulties": {
+        "easy": 254,
+        "normal": 305,
+        "hard": 546,
+        "expert": 1006,
+        "master": 1097
+      }
+    },
+    {
+      "id": 331,
+      "title": "39",
+      "difficulties": {
+        "easy": 339,
+        "normal": 539,
+        "hard": 839,
+        "expert": 1139,
+        "master": 1339
+      }
+    },
+    {
+      "id": 332,
+      "title": "エピローグに君はいない",
+      "difficulties": {
+        "easy": 154,
+        "normal": 221,
+        "hard": 406,
+        "expert": 596,
+        "master": 625
+      }
+    },
+    {
+      "id": 333,
+      "title": "Mr. Showtime",
+      "difficulties": {
+        "easy": 449,
+        "normal": 762,
+        "hard": 1067,
+        "expert": 1341,
+        "master": 1497
+      }
+    },
+    {
+      "id": 334,
+      "title": "Vampire's ∞ pathoS",
+      "difficulties": {
+        "easy": 309,
+        "normal": 401,
+        "hard": 761,
+        "expert": 992,
+        "master": 1100
+      }
+    },
+    {
+      "id": 335,
+      "title": "トラッシュ・アンド・トラッシュ！",
+      "difficulties": {
+        "easy": 400,
+        "normal": 483,
+        "hard": 693,
+        "expert": 1022,
+        "master": 1181
+      }
+    },
+    {
+      "id": 336,
+      "title": "Be The MUSIC!",
+      "difficulties": {
+        "easy": 225,
+        "normal": 446,
+        "hard": 870,
+        "expert": 1121,
+        "master": 1247
+      }
+    },
+    {
+      "id": 337,
+      "title": "METEOR",
+      "difficulties": {
+        "easy": 321,
+        "normal": 482,
+        "hard": 827,
+        "expert": 1160,
+        "master": 1323
+      }
+    },
+    {
+      "id": 338,
+      "title": "Where shall we go?",
+      "difficulties": {
+        "easy": 249,
+        "normal": 344,
+        "hard": 452,
+        "expert": 594,
+        "master": 735
+      }
+    },
+    {
+      "id": 339,
+      "title": "glow",
+      "difficulties": {
+        "easy": 294,
+        "normal": 359,
+        "hard": 644,
+        "expert": 875,
+        "master": 987,
+        "append": 855
+      }
+    },
+    {
+      "id": 340,
+      "title": "とても素敵な六月でした",
+      "difficulties": {
+        "easy": 372,
+        "normal": 524,
+        "hard": 889,
+        "expert": 1273,
+        "master": 1491
+      }
+    },
+    {
+      "id": 341,
+      "title": "難聴系男子が倒せない",
+      "difficulties": {
+        "easy": 305,
+        "normal": 394,
+        "hard": 737,
+        "expert": 1028,
+        "master": 1234
+      }
+    },
+    {
+      "id": 342,
+      "title": "Blue Star",
+      "difficulties": {
+        "easy": 272,
+        "normal": 448,
+        "hard": 688,
+        "expert": 1046,
+        "master": 1163
+      }
+    },
+    {
+      "id": 343,
+      "title": "スノーマン",
+      "difficulties": {
+        "easy": 217,
+        "normal": 403,
+        "hard": 726,
+        "expert": 1001,
+        "master": 1243
+      }
+    },
+    {
+      "id": 344,
+      "title": "脳内革命ガール",
+      "difficulties": {
+        "easy": 448,
+        "normal": 534,
+        "hard": 1005,
+        "expert": 1189,
+        "master": 1269
+      }
+    },
+    {
+      "id": 345,
+      "title": "演劇",
+      "difficulties": {
+        "easy": 364,
+        "normal": 384,
+        "hard": 729,
+        "expert": 983,
+        "master": 984
+      }
+    },
+    {
+      "id": 346,
+      "title": "嗚呼、素晴らしきニャン生",
+      "difficulties": {
+        "easy": 271,
+        "normal": 460,
+        "hard": 870,
+        "expert": 1125,
+        "master": 1374
+      }
+    },
+    {
+      "id": 347,
+      "title": "円尾坂の仕立屋",
+      "difficulties": {
+        "easy": 216,
+        "normal": 510,
+        "hard": 688,
+        "expert": 842,
+        "master": 1007
+      }
+    },
+    {
+      "id": 348,
+      "title": "悪徳のジャッジメント",
+      "difficulties": {
+        "easy": 177,
+        "normal": 340,
+        "hard": 555,
+        "expert": 777,
+        "master": 983
+      }
+    },
+    {
+      "id": 349,
+      "title": "悪食娘コンチータ",
+      "difficulties": {
+        "easy": 172,
+        "normal": 325,
+        "hard": 565,
+        "expert": 791,
+        "master": 851
+      }
+    },
+    {
+      "id": 350,
+      "title": "眠らせ姫からの贈り物",
+      "difficulties": {
+        "easy": 191,
+        "normal": 304,
+        "hard": 609,
+        "expert": 904,
+        "master": 1003
+      }
+    },
+    {
+      "id": 351,
+      "title": "相生",
+      "difficulties": {
+        "easy": 255,
+        "normal": 493,
+        "hard": 712,
+        "expert": 879,
+        "master": 1232
+      }
+    },
+    {
+      "id": 352,
+      "title": "命ばっかり",
+      "difficulties": {
+        "easy": 221,
+        "normal": 356,
+        "hard": 708,
+        "expert": 1037,
+        "master": 1092
+      }
+    },
+    {
+      "id": 353,
+      "title": "キティ",
+      "difficulties": {
+        "easy": 165,
+        "normal": 298,
+        "hard": 706,
+        "expert": 982,
+        "master": 982
+      }
+    },
+    {
+      "id": 354,
+      "title": "セツナトリップ",
+      "difficulties": {
+        "easy": 418,
+        "normal": 524,
+        "hard": 938,
+        "expert": 1275,
+        "master": 1370
+      }
+    },
+    {
+      "id": 355,
+      "title": "白い雪のプリンセスは",
+      "difficulties": {
+        "easy": 536,
+        "normal": 695,
+        "hard": 908,
+        "expert": 1273,
+        "master": 1478
+      }
+    },
+    {
+      "id": 356,
+      "title": "リアライズ",
+      "difficulties": {
+        "easy": 204,
+        "normal": 241,
+        "hard": 465,
+        "expert": 744,
+        "master": 851
+      }
+    },
+    {
+      "id": 357,
+      "title": "ブループラネット",
+      "difficulties": {
+        "easy": 320,
+        "normal": 478,
+        "hard": 962,
+        "expert": 1287,
+        "master": 1357
+      }
+    },
+    {
+      "id": 358,
+      "title": "心做し",
+      "difficulties": {
+        "easy": 136,
+        "normal": 234,
+        "hard": 456,
+        "expert": 676,
+        "master": 832
+      }
+    },
+    {
+      "id": 359,
+      "title": "名も無き革命",
+      "difficulties": {
+        "easy": 284,
+        "normal": 458,
+        "hard": 698,
+        "expert": 995,
+        "master": 1099
+      }
+    },
+    {
+      "id": 360,
+      "title": "太陽系デスコ",
+      "difficulties": {
+        "easy": 257,
+        "normal": 489,
+        "hard": 651,
+        "expert": 1018,
+        "master": 1188
+      }
+    },
+    {
+      "id": 361,
+      "title": "きゅうくらりん",
+      "difficulties": {
+        "easy": 351,
+        "normal": 427,
+        "hard": 768,
+        "expert": 1141,
+        "master": 1148
+      }
+    },
+    {
+      "id": 362,
+      "title": "Wonder Style",
+      "difficulties": {
+        "easy": 254,
+        "normal": 412,
+        "hard": 524,
+        "expert": 888,
+        "master": 1013
+      }
+    },
+    {
+      "id": 363,
+      "title": "UNDERWATER",
+      "difficulties": {
+        "easy": 195,
+        "normal": 393,
+        "hard": 565,
+        "expert": 971,
+        "master": 1062
+      }
+    },
+    {
+      "id": 364,
+      "title": "エターナルアリア",
+      "difficulties": {
+        "easy": 397,
+        "normal": 712,
+        "hard": 1004,
+        "expert": 1272,
+        "master": 1364
+      }
+    },
+    {
+      "id": 365,
+      "title": "恋は戦争",
+      "difficulties": {
+        "easy": 358,
+        "normal": 543,
+        "hard": 687,
+        "expert": 1081,
+        "master": 1262
+      }
+    },
+    {
+      "id": 366,
+      "title": "NEO",
+      "difficulties": {
+        "easy": 326,
+        "normal": 446,
+        "hard": 629,
+        "expert": 939,
+        "master": 988,
+        "append": 1365
+      }
+    },
+    {
+      "id": 367,
+      "title": "すきなことだけでいいです",
+      "difficulties": {
+        "easy": 297,
+        "normal": 419,
+        "hard": 683,
+        "expert": 1081,
+        "master": 1223
+      }
+    },
+    {
+      "id": 368,
+      "title": "アイムマイン",
+      "difficulties": {
+        "easy": 328,
+        "normal": 489,
+        "hard": 764,
+        "expert": 1058,
+        "master": 1189,
+        "append": 1245
+      }
+    },
+    {
+      "id": 369,
+      "title": "メランコリック",
+      "difficulties": {
+        "easy": 273,
+        "normal": 369,
+        "hard": 610,
+        "expert": 917,
+        "master": 1100
+      }
+    },
+    {
+      "id": 370,
+      "title": "人生",
+      "difficulties": {
+        "easy": 459,
+        "normal": 630,
+        "hard": 1057,
+        "expert": 1441,
+        "master": 2242
+      }
+    },
+    {
+      "id": 372,
+      "title": "天樂",
+      "difficulties": {
+        "easy": 532,
+        "normal": 642,
+        "hard": 1126,
+        "expert": 1396,
+        "master": 1554
+      }
+    },
+    {
+      "id": 373,
+      "title": "下剋上",
+      "difficulties": {
+        "easy": 407,
+        "normal": 457,
+        "hard": 908,
+        "expert": 1228,
+        "master": 1245
+      }
+    },
+    {
+      "id": 374,
+      "title": "チームメイト",
+      "difficulties": {
+        "easy": 255,
+        "normal": 380,
+        "hard": 612,
+        "expert": 803,
+        "master": 1090
+      }
+    },
+    {
+      "id": 375,
+      "title": "星を繋ぐ",
+      "difficulties": {
+        "easy": 178,
+        "normal": 301,
+        "hard": 544,
+        "expert": 753,
+        "master": 821,
+        "append": 1035
+      }
+    },
+    {
+      "id": 376,
+      "title": "我儘姫",
+      "difficulties": {
+        "easy": 171,
+        "normal": 374,
+        "hard": 683,
+        "expert": 1040,
+        "master": 1188
+      }
+    },
+    {
+      "id": 377,
+      "title": "悪役にキスシーンを",
+      "difficulties": {
+        "easy": 276,
+        "normal": 413,
+        "hard": 679,
+        "expert": 998,
+        "master": 1188
+      }
+    },
+    {
+      "id": 378,
+      "title": "スロウダウナー",
+      "difficulties": {
+        "easy": 313,
+        "normal": 461,
+        "hard": 702,
+        "expert": 1054,
+        "master": 1418
+      }
+    },
+    {
+      "id": 379,
+      "title": "ずんだパーリナイ",
+      "difficulties": {
+        "easy": 320,
+        "normal": 588,
+        "hard": 947,
+        "expert": 1407,
+        "master": 1522
+      }
+    },
+    {
+      "id": 380,
+      "title": "スターダストメドレー",
+      "difficulties": {
+        "easy": 372,
+        "normal": 554,
+        "hard": 922,
+        "expert": 1215,
+        "master": 1366
+      }
+    },
+    {
+      "id": 381,
+      "title": "新人類",
+      "difficulties": {
+        "easy": 286,
+        "normal": 526,
+        "hard": 943,
+        "expert": 1285,
+        "master": 1298
+      }
+    },
+    {
+      "id": 382,
+      "title": "心拍ペアリング",
+      "difficulties": {
+        "easy": 110,
+        "normal": 218,
+        "hard": 357,
+        "expert": 575,
+        "master": 696
+      }
+    },
+    {
+      "id": 383,
+      "title": "purpose",
+      "difficulties": {
+        "easy": 179,
+        "normal": 297,
+        "hard": 538,
+        "expert": 720,
+        "master": 812
+      }
+    },
+    {
+      "id": 384,
+      "title": "トワイライトライト",
+      "difficulties": {
+        "easy": 150,
+        "normal": 219,
+        "hard": 408,
+        "expert": 520,
+        "master": 619,
+        "append": 754
+      }
+    },
+    {
+      "id": 385,
+      "title": "神っぽいな",
+      "difficulties": {
+        "easy": 266,
+        "normal": 352,
+        "hard": 781,
+        "expert": 1035,
+        "master": 1162
+      }
+    },
+    {
+      "id": 386,
+      "title": "キラピピ★キラピカ",
+      "difficulties": {
+        "easy": 269,
+        "normal": 394,
+        "hard": 909,
+        "expert": 909,
+        "master": 909
+      }
+    },
+    {
+      "id": 387,
+      "title": "Hello Builder",
+      "difficulties": {
+        "easy": 212,
+        "normal": 363,
+        "hard": 619,
+        "expert": 847,
+        "master": 997
+      }
+    },
+    {
+      "id": 388,
+      "title": "初音ミクの激唱",
+      "difficulties": {
+        "append": 4500
+      }
+    },
+    {
+      "id": 390,
+      "title": "Dear",
+      "difficulties": {
+        "easy": 268,
+        "normal": 435,
+        "hard": 751,
+        "expert": 1032,
+        "master": 1233
+      }
+    },
+    {
+      "id": 391,
+      "title": "キュートなカノジョ",
+      "difficulties": {
+        "easy": 317,
+        "normal": 416,
+        "hard": 590,
+        "expert": 1006,
+        "master": 1208
+      }
+    },
+    {
+      "id": 392,
+      "title": "春嵐",
+      "difficulties": {
+        "easy": 228,
+        "normal": 450,
+        "hard": 798,
+        "expert": 1095,
+        "master": 1184
+      }
+    },
+    {
+      "id": 393,
+      "title": "Un-Lock",
+      "difficulties": {
+        "easy": 215,
+        "normal": 366,
+        "hard": 598,
+        "expert": 894,
+        "master": 1096
+      }
+    },
+    {
+      "id": 394,
+      "title": "ボトルケーキ",
+      "difficulties": {
+        "easy": 142,
+        "normal": 232,
+        "hard": 450,
+        "expert": 640,
+        "master": 759
+      }
+    },
+    {
+      "id": 395,
+      "title": "サマータイムレコード",
+      "difficulties": {
+        "easy": 337,
+        "normal": 528,
+        "hard": 815,
+        "expert": 1107,
+        "master": 1404
+      }
+    },
+    {
+      "id": 396,
+      "title": "東京テディベア",
+      "difficulties": {
+        "easy": 210,
+        "normal": 488,
+        "hard": 859,
+        "expert": 1172,
+        "master": 1449,
+        "append": 2024
+      }
+    },
+    {
+      "id": 397,
+      "title": "フィラメントフィーバー",
+      "difficulties": {
+        "easy": 252,
+        "normal": 345,
+        "hard": 648,
+        "expert": 864,
+        "master": 952
+      }
+    },
+    {
+      "id": 398,
+      "title": "Beyond the way",
+      "difficulties": {
+        "easy": 153,
+        "normal": 313,
+        "hard": 539,
+        "expert": 737,
+        "master": 900,
+        "append": 1017
+      }
+    },
+    {
+      "id": 399,
+      "title": "Disco No.39",
+      "difficulties": {
+        "easy": 292,
+        "normal": 465,
+        "hard": 739,
+        "expert": 950,
+        "master": 1115
+      }
+    },
+    {
+      "id": 400,
+      "title": "我らステインバスターズ！",
+      "difficulties": {
+        "easy": 139,
+        "normal": 252,
+        "hard": 504,
+        "expert": 797,
+        "master": 810
+      }
+    },
+    {
+      "id": 401,
+      "title": "まにまに",
+      "difficulties": {
+        "easy": 211,
+        "normal": 428,
+        "hard": 689,
+        "expert": 893,
+        "master": 1014
+      }
+    },
+    {
+      "id": 402,
+      "title": "エンヴィーベイビー",
+      "difficulties": {
+        "easy": 307,
+        "normal": 505,
+        "hard": 675,
+        "expert": 969,
+        "master": 1251
+      }
+    },
+    {
+      "id": 403,
+      "title": "番凩",
+      "difficulties": {
+        "easy": 133,
+        "normal": 336,
+        "hard": 512,
+        "expert": 716,
+        "master": 892
+      }
+    },
+    {
+      "id": 404,
+      "title": "blender",
+      "difficulties": {
+        "easy": 149,
+        "normal": 331,
+        "hard": 524,
+        "expert": 812,
+        "master": 781
+      }
+    },
+    {
+      "id": 405,
+      "title": "MOTTO!!!",
+      "difficulties": {
+        "easy": 241,
+        "normal": 298,
+        "hard": 556,
+        "expert": 881,
+        "master": 1067,
+        "append": 1225
+      }
+    },
+    {
+      "id": 406,
+      "title": "ARQETYPE",
+      "difficulties": {
+        "easy": 266,
+        "normal": 369,
+        "hard": 723,
+        "expert": 827,
+        "master": 951
+      }
+    },
+    {
+      "id": 407,
+      "title": "初めての恋が終わる時",
+      "difficulties": {
+        "easy": 300,
+        "normal": 394,
+        "hard": 649,
+        "expert": 822,
+        "master": 995
+      }
+    },
+    {
+      "id": 408,
+      "title": "CIRCUS PANIC!!!",
+      "difficulties": {
+        "easy": 290,
+        "normal": 428,
+        "hard": 754,
+        "expert": 1083,
+        "master": 1239
+      }
+    },
+    {
+      "id": 409,
+      "title": "25時の情熱",
+      "difficulties": {
+        "easy": 125,
+        "normal": 225,
+        "hard": 525,
+        "expert": 625,
+        "master": 725
+      }
+    },
+    {
+      "id": 410,
+      "title": "マーシャル・マキシマイザー",
+      "difficulties": {
+        "easy": 296,
+        "normal": 352,
+        "hard": 522,
+        "expert": 694,
+        "master": 895
+      }
+    },
+    {
+      "id": 411,
+      "title": "世界を照らすテトラッド",
+      "difficulties": {
+        "easy": 228,
+        "normal": 356,
+        "hard": 679,
+        "expert": 850,
+        "master": 1072,
+        "append": 1210
+      }
+    },
+    {
+      "id": 412,
+      "title": "デビルじゃないもん",
+      "difficulties": {
+        "easy": 297,
+        "normal": 562,
+        "hard": 631,
+        "expert": 854,
+        "master": 879
+      }
+    },
+    {
+      "id": 413,
+      "title": "さよならプリンセス",
+      "difficulties": {
+        "easy": 311,
+        "normal": 401,
+        "hard": 709,
+        "expert": 812,
+        "master": 1131
+      }
+    },
+    {
+      "id": 414,
+      "title": "HERO",
+      "difficulties": {
+        "easy": 339,
+        "normal": 390,
+        "hard": 751,
+        "expert": 1194,
+        "master": 1278
+      }
+    },
+    {
+      "id": 415,
+      "title": "ラッキー☆オーブ",
+      "difficulties": {
+        "easy": 165,
+        "normal": 220,
+        "hard": 505,
+        "expert": 802,
+        "master": 919
+      }
+    },
+    {
+      "id": 416,
+      "title": "limbo",
+      "difficulties": {
+        "easy": 295,
+        "normal": 384,
+        "hard": 608,
+        "expert": 900,
+        "master": 958
+      }
+    },
+    {
+      "id": 417,
+      "title": "くうになる",
+      "difficulties": {
+        "easy": 147,
+        "normal": 277,
+        "hard": 581,
+        "expert": 769,
+        "master": 945
+      }
+    },
+    {
+      "id": 418,
+      "title": "金木犀",
+      "difficulties": {
+        "easy": 149,
+        "normal": 292,
+        "hard": 556,
+        "expert": 814,
+        "master": 899
+      }
+    },
+    {
+      "id": 420,
+      "title": "imaginary love story",
+      "difficulties": {
+        "easy": 297,
+        "normal": 479,
+        "hard": 662,
+        "expert": 1019,
+        "master": 1214
+      }
+    },
+    {
+      "id": 421,
+      "title": "CR詠ZY",
+      "difficulties": {
+        "easy": 149,
+        "normal": 340,
+        "hard": 434,
+        "expert": 615,
+        "master": 728
+      }
+    },
+    {
+      "id": 422,
+      "title": "JUMPIN’ OVER !",
+      "difficulties": {
+        "easy": 217,
+        "normal": 340,
+        "hard": 598,
+        "expert": 858,
+        "master": 863
+      }
+    },
+    {
+      "id": 423,
+      "title": "レグルス",
+      "difficulties": {
+        "easy": 296,
+        "normal": 387,
+        "hard": 680,
+        "expert": 949,
+        "master": 1014,
+        "append": 1268
+      }
+    },
+    {
+      "id": 424,
+      "title": "インテグラル",
+      "difficulties": {
+        "easy": 351,
+        "normal": 479,
+        "hard": 701,
+        "expert": 868,
+        "master": 868,
+        "append": 1357
+      }
+    },
+    {
+      "id": 425,
+      "title": "Cool Me Down",
+      "difficulties": {
+        "easy": 405,
+        "normal": 544,
+        "hard": 874,
+        "expert": 1159,
+        "master": 1250
+      }
+    },
+    {
+      "id": 426,
+      "title": "On&On",
+      "difficulties": {
+        "easy": 234,
+        "normal": 245,
+        "hard": 503,
+        "expert": 712,
+        "master": 859
+      }
+    },
+    {
+      "id": 427,
+      "title": "幽光、1/fのゆらめき",
+      "difficulties": {
+        "easy": 165,
+        "normal": 285,
+        "hard": 567,
+        "expert": 718,
+        "master": 877
+      }
+    },
+    {
+      "id": 428,
+      "title": "ときめきジェットコースター",
+      "difficulties": {
+        "easy": 228,
+        "normal": 369,
+        "hard": 587,
+        "expert": 1016,
+        "master": 1234
+      }
+    },
+    {
+      "id": 429,
+      "title": "はぐ",
+      "difficulties": {
+        "easy": 208,
+        "normal": 348,
+        "hard": 576,
+        "expert": 851,
+        "master": 983,
+        "append": 1109
+      }
+    },
+    {
+      "id": 430,
+      "title": "『んっあっあっ。』",
+      "difficulties": {
+        "easy": 204,
+        "normal": 338,
+        "hard": 495,
+        "expert": 742,
+        "master": 1071
+      }
+    },
+    {
+      "id": 431,
+      "title": "flos",
+      "difficulties": {
+        "easy": 236,
+        "normal": 294,
+        "hard": 543,
+        "expert": 694,
+        "master": 893
+      }
+    },
+    {
+      "id": 432,
+      "title": "強風オールバック",
+      "difficulties": {
+        "easy": 155,
+        "normal": 361,
+        "hard": 478,
+        "expert": 714,
+        "master": 955
+      }
+    },
+    {
+      "id": 433,
+      "title": "ヒアソビ",
+      "difficulties": {
+        "easy": 217,
+        "normal": 382,
+        "hard": 655,
+        "expert": 1053,
+        "master": 1116
+      }
+    },
+    {
+      "id": 434,
+      "title": "1000年生きてる",
+      "difficulties": {
+        "easy": 106,
+        "normal": 236,
+        "hard": 500,
+        "expert": 673,
+        "master": 757
+      }
+    },
+    {
+      "id": 435,
+      "title": "リレイアウター",
+      "difficulties": {
+        "easy": 317,
+        "normal": 440,
+        "hard": 738,
+        "expert": 960,
+        "master": 1203
+      }
+    },
+    {
+      "id": 436,
+      "title": "古書屋敷殺人事件",
+      "difficulties": {
+        "easy": 174,
+        "normal": 409,
+        "hard": 615,
+        "expert": 823,
+        "master": 974
+      }
+    },
+    {
+      "id": 437,
+      "title": "え？あぁ、そう。",
+      "difficulties": {
+        "easy": 189,
+        "normal": 378,
+        "hard": 521,
+        "expert": 838,
+        "master": 1028
+      }
+    },
+    {
+      "id": 438,
+      "title": "ハイドアンド・シーク",
+      "difficulties": {
+        "easy": 237,
+        "normal": 321,
+        "hard": 532,
+        "expert": 764,
+        "master": 898
+      }
+    },
+    {
+      "id": 439,
+      "title": "一千光年",
+      "difficulties": {
+        "easy": 414,
+        "normal": 410,
+        "hard": 804,
+        "expert": 941,
+        "master": 1141,
+        "append": 1496
+      }
+    },
+    {
+      "id": 440,
+      "title": "ショウタイム×オーディエンス",
+      "difficulties": {
+        "easy": 395,
+        "normal": 544,
+        "hard": 756,
+        "expert": 1091,
+        "master": 1220
+      }
+    },
+    {
+      "id": 441,
+      "title": "酔いどれ知らず",
+      "difficulties": {
+        "easy": 163,
+        "normal": 240,
+        "hard": 612,
+        "expert": 865,
+        "master": 1048,
+        "append": 1120
+      }
+    },
+    {
+      "id": 442,
+      "title": "すれすれ",
+      "difficulties": {
+        "easy": 139,
+        "normal": 169,
+        "hard": 360,
+        "expert": 521,
+        "master": 595
+      }
+    },
+    {
+      "id": 443,
+      "title": "林檎売りの泡沫少女",
+      "difficulties": {
+        "easy": 349,
+        "normal": 428,
+        "hard": 656,
+        "expert": 1009,
+        "master": 1048
+      }
+    },
+    {
+      "id": 444,
+      "title": "心泥夢(syndrome)",
+      "difficulties": {
+        "easy": 256,
+        "normal": 396,
+        "hard": 879,
+        "expert": 1221,
+        "master": 1383
+      }
+    },
+    {
+      "id": 445,
+      "title": "Twilight Melody",
+      "difficulties": {
+        "easy": 191,
+        "normal": 493,
+        "hard": 734,
+        "expert": 943,
+        "master": 1128
+      }
+    },
+    {
+      "id": 446,
+      "title": "オーバーコード",
+      "difficulties": {
+        "easy": 231,
+        "normal": 369,
+        "hard": 707,
+        "expert": 1113,
+        "master": 1253
+      }
+    },
+    {
+      "id": 447,
+      "title": "folern",
+      "difficulties": {
+        "easy": 329,
+        "normal": 479,
+        "hard": 861,
+        "expert": 1392,
+        "master": 1486,
+        "append": 1794
+      }
+    },
+    {
+      "id": 448,
+      "title": "Sage",
+      "difficulties": {
+        "easy": 408,
+        "normal": 595,
+        "hard": 956,
+        "expert": 1259,
+        "master": 1352,
+        "append": 1812
+      }
+    },
+    {
+      "id": 449,
+      "title": "MarbleBlue.",
+      "difficulties": {
+        "easy": 579,
+        "normal": 729,
+        "hard": 1109,
+        "expert": 1437,
+        "master": 1460,
+        "append": 2500
+      }
+    },
+    {
+      "id": 450,
+      "title": "オペラ！スペースオペラ！",
+      "difficulties": {
+        "easy": 303,
+        "normal": 478,
+        "hard": 725,
+        "expert": 986,
+        "master": 1198,
+        "append": 1403
+      }
+    },
+    {
+      "id": 451,
+      "title": "熱異常",
+      "difficulties": {
+        "easy": 194,
+        "normal": 428,
+        "hard": 696,
+        "expert": 978,
+        "master": 1197
+      }
+    },
+    {
+      "id": 452,
+      "title": "サイバーパンクデッドボーイ",
+      "difficulties": {
+        "easy": 236,
+        "normal": 370,
+        "hard": 699,
+        "expert": 917,
+        "master": 1014
+      }
+    },
+    {
+      "id": 454,
+      "title": "えれくとりっく・えんじぇぅ",
+      "difficulties": {
+        "easy": 198,
+        "normal": 417,
+        "hard": 663,
+        "expert": 927,
+        "master": 1176
+      }
+    },
+    {
+      "id": 455,
+      "title": "ド屑",
+      "difficulties": {
+        "easy": 141,
+        "normal": 229,
+        "hard": 597,
+        "expert": 844,
+        "master": 817
+      }
+    },
+    {
+      "id": 456,
+      "title": "幾望の月",
+      "difficulties": {
+        "easy": 245,
+        "normal": 316,
+        "hard": 610,
+        "expert": 892,
+        "master": 998
+      }
+    },
+    {
+      "id": 457,
+      "title": "Supernova",
+      "difficulties": {
+        "easy": 193,
+        "normal": 281,
+        "hard": 504,
+        "expert": 750,
+        "master": 890,
+        "append": 1016
+      }
+    },
+    {
+      "id": 458,
+      "title": "抜錨",
+      "difficulties": {
+        "easy": 195,
+        "normal": 317,
+        "hard": 711,
+        "expert": 831,
+        "master": 954
+      }
+    },
+    {
+      "id": 460,
+      "title": "LEADER",
+      "difficulties": {
+        "easy": 154,
+        "normal": 265,
+        "hard": 508,
+        "expert": 763,
+        "master": 940
+      }
+    },
+    {
+      "id": 461,
+      "title": "おどロボ",
+      "difficulties": {
+        "easy": 279,
+        "normal": 452,
+        "hard": 885,
+        "expert": 1266,
+        "master": 1339
+      }
+    },
+    {
+      "id": 462,
+      "title": "レッドランドマーカー",
+      "difficulties": {
+        "easy": 318,
+        "normal": 418,
+        "hard": 718,
+        "expert": 1018,
+        "master": 1105
+      }
+    },
+    {
+      "id": 463,
+      "title": "ハッピーチートデー",
+      "difficulties": {
+        "easy": 178,
+        "normal": 266,
+        "hard": 507,
+        "expert": 645,
+        "master": 817
+      }
+    },
+    {
+      "id": 464,
+      "title": "Intergalactic Bound",
+      "difficulties": {
+        "easy": 208,
+        "normal": 484,
+        "hard": 526,
+        "expert": 918,
+        "master": 996
+      }
+    },
+    {
+      "id": 465,
+      "title": "嬢王",
+      "difficulties": {
+        "easy": 441,
+        "normal": 555,
+        "hard": 994,
+        "expert": 1266,
+        "master": 1456,
+        "append": 1972
+      }
+    },
+    {
+      "id": 466,
+      "title": "ガーネットの涙",
+      "difficulties": {
+        "easy": 192,
+        "normal": 304,
+        "hard": 504,
+        "expert": 774,
+        "master": 904
+      }
+    },
+    {
+      "id": 467,
+      "title": "あいのうた",
+      "difficulties": {
+        "easy": 174,
+        "normal": 308,
+        "hard": 581,
+        "expert": 950,
+        "master": 1064
+      }
+    },
+    {
+      "id": 468,
+      "title": "十六歳の心臓",
+      "difficulties": {
+        "easy": 308,
+        "normal": 585,
+        "hard": 797,
+        "expert": 1162,
+        "master": 1470
+      }
+    },
+    {
+      "id": 469,
+      "title": "ラグトレイン",
+      "difficulties": {
+        "easy": 196,
+        "normal": 393,
+        "hard": 503,
+        "expert": 705,
+        "master": 920,
+        "append": 1038
+      }
+    },
+    {
+      "id": 470,
+      "title": "ハジメテノオト",
+      "difficulties": {
+        "easy": 139,
+        "normal": 239,
+        "hard": 339,
+        "expert": 539,
+        "master": 639
+      }
+    },
+    {
+      "id": 471,
+      "title": "ULTRA C",
+      "difficulties": {
+        "easy": 134,
+        "normal": 238,
+        "hard": 500,
+        "expert": 651,
+        "master": 769
+      }
+    },
+    {
+      "id": 472,
+      "title": "成敗いたAAAAAす！",
+      "difficulties": {
+        "easy": 402,
+        "normal": 462,
+        "hard": 724,
+        "expert": 1022,
+        "master": 1199
+      }
+    },
+    {
+      "id": 473,
+      "title": "マインドブランド",
+      "difficulties": {
+        "easy": 254,
+        "normal": 336,
+        "hard": 678,
+        "expert": 764,
+        "master": 1023
+      }
+    },
+    {
+      "id": 474,
+      "title": "キラー",
+      "difficulties": {
+        "easy": 286,
+        "normal": 344,
+        "hard": 628,
+        "expert": 825,
+        "master": 1013,
+        "append": 1267
+      }
+    },
+    {
+      "id": 475,
+      "title": "ちがう!!!",
+      "difficulties": {
+        "easy": 211,
+        "normal": 355,
+        "hard": 735,
+        "expert": 930,
+        "master": 1074
+      }
+    },
+    {
+      "id": 476,
+      "title": "Shadow Shadow",
+      "difficulties": {
+        "easy": 128,
+        "normal": 306,
+        "hard": 422,
+        "expert": 601,
+        "master": 783
+      }
+    },
+    {
+      "id": 477,
+      "title": "モザイクロール (Reloaded)",
+      "difficulties": {
+        "easy": 223,
+        "normal": 417,
+        "hard": 634,
+        "expert": 871,
+        "master": 876
+      }
+    },
+    {
+      "id": 478,
+      "title": "フューエル",
+      "difficulties": {
+        "easy": 193,
+        "normal": 312,
+        "hard": 515,
+        "expert": 698,
+        "master": 930
+      }
+    },
+    {
+      "id": 480,
+      "title": "おちゃめ機能",
+      "difficulties": {
+        "easy": 262,
+        "normal": 425,
+        "hard": 656,
+        "expert": 933,
+        "master": 1171
+      }
+    },
+    {
+      "id": 481,
+      "title": "明鏡止水",
+      "difficulties": {
+        "easy": 211,
+        "normal": 331,
+        "hard": 557,
+        "expert": 728,
+        "master": 938
+      }
+    },
+    {
+      "id": 482,
+      "title": "だめにんげんだ!",
+      "difficulties": {
+        "easy": 285,
+        "normal": 419,
+        "hard": 706,
+        "expert": 917,
+        "master": 976
+      }
+    },
+    {
+      "id": 483,
+      "title": "アコトバ",
+      "difficulties": {
+        "easy": 157,
+        "normal": 291,
+        "hard": 475,
+        "expert": 664,
+        "master": 857
+      }
+    },
+    {
+      "id": 484,
+      "title": "Henceforth",
+      "difficulties": {
+        "easy": 227,
+        "normal": 366,
+        "hard": 572,
+        "expert": 916,
+        "master": 1057
+      }
+    },
+    {
+      "id": 485,
+      "title": "だんだん早くなる",
+      "difficulties": {
+        "easy": 196,
+        "normal": 419,
+        "hard": 521,
+        "expert": 851,
+        "master": 918
+      }
+    },
+    {
+      "id": 486,
+      "title": "おぎゃりないざー",
+      "difficulties": {
+        "easy": 337,
+        "normal": 501,
+        "hard": 1054,
+        "expert": 1387,
+        "master": 1637,
+        "append": 2050
+      }
+    },
+    {
+      "id": 487,
+      "title": "ダイジョブですか？",
+      "difficulties": {
+        "easy": 474,
+        "normal": 530,
+        "hard": 1073,
+        "expert": 1495,
+        "master": 1674,
+        "append": 2555
+      }
+    },
+    {
+      "id": 488,
+      "title": "メモリア",
+      "difficulties": {
+        "easy": 579,
+        "normal": 778,
+        "hard": 1324,
+        "expert": 1637,
+        "master": 1771,
+        "append": 2117
+      }
+    },
+    {
+      "id": 489,
+      "title": "熱風",
+      "difficulties": {
+        "easy": 329,
+        "normal": 400,
+        "hard": 674,
+        "expert": 871,
+        "master": 925,
+        "append": 1207
+      }
+    },
+    {
+      "id": 490,
+      "title": "ルーマー",
+      "difficulties": {
+        "easy": 214,
+        "normal": 355,
+        "hard": 561,
+        "expert": 863,
+        "master": 1015
+      }
+    },
+    {
+      "id": 491,
+      "title": "キャットラビング",
+      "difficulties": {
+        "easy": 204,
+        "normal": 323,
+        "hard": 624,
+        "expert": 934,
+        "master": 1053
+      }
+    },
+    {
+      "id": 492,
+      "title": "私は雨",
+      "difficulties": {
+        "easy": 242,
+        "normal": 289,
+        "hard": 506,
+        "expert": 823,
+        "master": 918
+      }
+    },
+    {
+      "id": 493,
+      "title": "きょうもハレバレ",
+      "difficulties": {
+        "easy": 221,
+        "normal": 290,
+        "hard": 623,
+        "expert": 793,
+        "master": 1033
+      }
+    },
+    {
+      "id": 494,
+      "title": "ポッピンキャンディ☆フィーバー！",
+      "difficulties": {
+        "easy": 224,
+        "normal": 392,
+        "hard": 715,
+        "expert": 1140,
+        "master": 1323
+      }
+    },
+    {
+      "id": 495,
+      "title": "スーパーヒーロー",
+      "difficulties": {
+        "easy": 172,
+        "normal": 338,
+        "hard": 728,
+        "expert": 904,
+        "master": 909
+      }
+    },
+    {
+      "id": 496,
+      "title": "シルバーコレクター",
+      "difficulties": {
+        "easy": 275,
+        "normal": 484,
+        "hard": 735,
+        "expert": 1113,
+        "master": 1178
+      }
+    },
+    {
+      "id": 497,
+      "title": "烈火",
+      "difficulties": {
+        "easy": 305,
+        "normal": 354,
+        "hard": 574,
+        "expert": 786,
+        "master": 948
+      }
+    },
+    {
+      "id": 498,
+      "title": "はしる! とおく! とどく!",
+      "difficulties": {
+        "easy": 206,
+        "normal": 369,
+        "hard": 538,
+        "expert": 742,
+        "master": 957
+      }
+    },
+    {
+      "id": 499,
+      "title": "混沌ブギ",
+      "difficulties": {
+        "easy": 400,
+        "normal": 507,
+        "hard": 683,
+        "expert": 962,
+        "master": 1189,
+        "append": 1615
+      }
+    },
+    {
+      "id": 500,
+      "title": "余花にみとれて",
+      "difficulties": {
+        "easy": 152,
+        "normal": 217,
+        "hard": 389,
+        "expert": 599,
+        "master": 613
+      }
+    },
+    {
+      "id": 501,
+      "title": "Bad Apple!! feat.SEKAI",
+      "difficulties": {
+        "easy": 250,
+        "normal": 477,
+        "hard": 679,
+        "expert": 883,
+        "master": 1181,
+        "append": 1328
+      }
+    },
+    {
+      "id": 502,
+      "title": "Help me, ERINNNNNN!!",
+      "difficulties": {
+        "easy": 295,
+        "normal": 517,
+        "hard": 994,
+        "expert": 1168,
+        "master": 1318,
+        "append": 1564
+      }
+    },
+    {
+      "id": 503,
+      "title": "超最終鬼畜妹フランドール・Ｓ",
+      "difficulties": {
+        "easy": 401,
+        "normal": 448,
+        "hard": 857,
+        "expert": 1175,
+        "master": 1270,
+        "append": 1914
+      }
+    },
+    {
+      "id": 504,
+      "title": "I know 愛脳.",
+      "difficulties": {
+        "easy": 180,
+        "normal": 385,
+        "hard": 749,
+        "expert": 1016,
+        "master": 1119
+      }
+    },
+    {
+      "id": 505,
+      "title": "コールボーイ",
+      "difficulties": {
+        "easy": 162,
+        "normal": 279,
+        "hard": 461,
+        "expert": 809,
+        "master": 836
+      }
+    },
+    {
+      "id": 506,
+      "title": "QUEEN",
+      "difficulties": {
+        "easy": 239,
+        "normal": 521,
+        "hard": 776,
+        "expert": 1164,
+        "master": 1385
+      }
+    },
+    {
+      "id": 507,
+      "title": "エンパープル",
+      "difficulties": {
+        "easy": 181,
+        "normal": 288,
+        "hard": 549,
+        "expert": 813,
+        "master": 877,
+        "append": 1126
+      }
+    },
+    {
+      "id": 508,
+      "title": "ヘイヴン",
+      "difficulties": {
+        "easy": 234,
+        "normal": 312,
+        "hard": 595,
+        "expert": 875,
+        "master": 977
+      }
+    },
+    {
+      "id": 509,
+      "title": "ライアーダンサー",
+      "difficulties": {
+        "easy": 260,
+        "normal": 337,
+        "hard": 678,
+        "expert": 892,
+        "master": 1224
+      }
+    },
+    {
+      "id": 510,
+      "title": "失敗作少女",
+      "difficulties": {
+        "easy": 176,
+        "normal": 222,
+        "hard": 596,
+        "expert": 805,
+        "master": 986
+      }
+    },
+    {
+      "id": 511,
+      "title": "如月アテンション",
+      "difficulties": {
+        "easy": 214,
+        "normal": 455,
+        "hard": 755,
+        "expert": 855,
+        "master": 1155
+      }
+    },
+    {
+      "id": 512,
+      "title": "合成するミライ",
+      "difficulties": {
+        "easy": 367,
+        "normal": 467,
+        "hard": 764,
+        "expert": 969,
+        "master": 1094
+      }
+    },
+    {
+      "id": 513,
+      "title": "CH4NGE",
+      "difficulties": {
+        "easy": 158,
+        "normal": 300,
+        "hard": 417,
+        "expert": 789,
+        "master": 1101
+      }
+    },
+    {
+      "id": 515,
+      "title": "イガク",
+      "difficulties": {
+        "easy": 284,
+        "normal": 497,
+        "hard": 648,
+        "expert": 892,
+        "master": 1226
+      }
+    },
+    {
+      "id": 516,
+      "title": "あちこちデートさん",
+      "difficulties": {
+        "easy": 166,
+        "normal": 221,
+        "hard": 433,
+        "expert": 693,
+        "master": 829
+      }
+    },
+    {
+      "id": 517,
+      "title": "メリーゴーラウンド",
+      "difficulties": {
+        "easy": 218,
+        "normal": 375,
+        "hard": 609,
+        "expert": 874,
+        "master": 1024
+      }
+    },
+    {
+      "id": 518,
+      "title": "みかぼし",
+      "difficulties": {
+        "easy": 303,
+        "normal": 435,
+        "hard": 771,
+        "expert": 984,
+        "master": 1114
+      }
+    },
+    {
+      "id": 519,
+      "title": "夏夜ノ唄",
+      "difficulties": {
+        "easy": 176,
+        "normal": 321,
+        "hard": 388,
+        "expert": 695,
+        "master": 787
+      }
+    },
+    {
+      "id": 520,
+      "title": "透明エレジー",
+      "difficulties": {
+        "easy": 274,
+        "normal": 349,
+        "hard": 633,
+        "expert": 848,
+        "master": 1058
+      }
+    },
+    {
+      "id": 521,
+      "title": "オーバーライド",
+      "difficulties": {
+        "easy": 247,
+        "normal": 369,
+        "hard": 700,
+        "expert": 1004,
+        "master": 1265
+      }
+    },
+    {
+      "id": 522,
+      "title": "WAVE",
+      "difficulties": {
+        "easy": 174,
+        "normal": 244,
+        "hard": 497,
+        "expert": 794,
+        "master": 837
+      }
+    },
+    {
+      "id": 523,
+      "title": "きみとぼくのレゾナンス",
+      "difficulties": {
+        "easy": 307,
+        "normal": 407,
+        "hard": 591,
+        "expert": 896,
+        "master": 1115
+      }
+    },
+    {
+      "id": 524,
+      "title": "それでも僕らは歌うことをやめない",
+      "difficulties": {
+        "easy": 171,
+        "normal": 300,
+        "hard": 609,
+        "expert": 705,
+        "master": 814
+      }
+    },
+    {
+      "id": 525,
+      "title": "アンテナ39",
+      "difficulties": {
+        "easy": 239,
+        "normal": 439,
+        "hard": 639,
+        "expert": 1039,
+        "master": 1139
+      }
+    },
+    {
+      "id": 526,
+      "title": "彗星ノ銀河",
+      "difficulties": {
+        "easy": 137,
+        "normal": 189,
+        "hard": 469,
+        "expert": 688,
+        "master": 699
+      }
+    },
+    {
+      "id": 527,
+      "title": "Unpoison",
+      "difficulties": {
+        "easy": 156,
+        "normal": 275,
+        "hard": 553,
+        "expert": 714,
+        "master": 897
+      }
+    },
+    {
+      "id": 529,
+      "title": "カルチャ",
+      "difficulties": {
+        "easy": 169,
+        "normal": 327,
+        "hard": 512,
+        "expert": 797,
+        "master": 1037
+      }
+    },
+    {
+      "id": 530,
+      "title": "キャットフード",
+      "difficulties": {
+        "easy": 274,
+        "normal": 427,
+        "hard": 602,
+        "expert": 895,
+        "master": 1107
+      }
+    },
+    {
+      "id": 531,
+      "title": "メズマライザー",
+      "difficulties": {
+        "easy": 271,
+        "normal": 440,
+        "hard": 761,
+        "expert": 1218,
+        "master": 1451
+      }
+    },
+    {
+      "id": 532,
+      "title": "レイヤーノート",
+      "difficulties": {
+        "easy": 112,
+        "normal": 213,
+        "hard": 391,
+        "expert": 563,
+        "master": 679
+      }
+    },
+    {
+      "id": 533,
+      "title": "転生林檎",
+      "difficulties": {
+        "easy": 208,
+        "normal": 307,
+        "hard": 641,
+        "expert": 851,
+        "master": 879
+      }
+    },
+    {
+      "id": 534,
+      "title": "ワールド・ランプシェード [reunion]",
+      "difficulties": {
+        "easy": 356,
+        "normal": 512,
+        "hard": 724,
+        "expert": 895,
+        "master": 1155
+      }
+    },
+    {
+      "id": 536,
+      "title": "Fire◎Flower (Rerec)",
+      "difficulties": {
+        "easy": 238,
+        "normal": 403,
+        "hard": 568,
+        "expert": 734,
+        "master": 863
+      }
+    },
+    {
+      "id": 537,
+      "title": "花に風",
+      "difficulties": {
+        "easy": 194,
+        "normal": 289,
+        "hard": 625,
+        "expert": 755,
+        "master": 960
+      }
+    },
+    {
+      "id": 538,
+      "title": "オールセーブチャレンジ",
+      "difficulties": {
+        "easy": 222,
+        "normal": 347,
+        "hard": 630,
+        "expert": 795,
+        "master": 918
+      }
+    },
+    {
+      "id": 539,
+      "title": "イレヴンス",
+      "difficulties": {
+        "easy": 172,
+        "normal": 235,
+        "hard": 419,
+        "expert": 677,
+        "master": 699
+      }
+    },
+    {
+      "id": 540,
+      "title": "虚無さん",
+      "difficulties": {
+        "easy": 128,
+        "normal": 251,
+        "hard": 526,
+        "expert": 650,
+        "master": 899
+      }
+    },
+    {
+      "id": 541,
+      "title": "メインキャラクター",
+      "difficulties": {
+        "easy": 322,
+        "normal": 388,
+        "hard": 655,
+        "expert": 951,
+        "master": 1043
+      }
+    },
+    {
+      "id": 542,
+      "title": "Blackjack",
+      "difficulties": {
+        "easy": 221,
+        "normal": 321,
+        "hard": 621,
+        "expert": 921,
+        "master": 1021
+      }
+    },
+    {
+      "id": 543,
+      "title": "生命性シンドロウム",
+      "difficulties": {
+        "easy": 461,
+        "normal": 617,
+        "hard": 871,
+        "expert": 1299,
+        "master": 1493,
+        "append": 2357
+      }
+    },
+    {
+      "id": 544,
+      "title": "妄想アスパルテーム",
+      "difficulties": {
+        "easy": 312,
+        "normal": 410,
+        "hard": 577,
+        "expert": 828,
+        "master": 1134
+      }
+    },
+    {
+      "id": 545,
+      "title": "脳天",
+      "difficulties": {
+        "easy": 239,
+        "normal": 297,
+        "hard": 489,
+        "expert": 901,
+        "master": 975
+      }
+    },
+    {
+      "id": 546,
+      "title": "その音が鳴るなら",
+      "difficulties": {
+        "easy": 263,
+        "normal": 382,
+        "hard": 686,
+        "expert": 952,
+        "master": 958
+      }
+    },
+    {
+      "id": 547,
+      "title": "終焉逃避行",
+      "difficulties": {
+        "easy": 147,
+        "normal": 278,
+        "hard": 522,
+        "expert": 721,
+        "master": 816
+      }
+    },
+    {
+      "id": 548,
+      "title": "ぼくのかみさま",
+      "difficulties": {
+        "easy": 230,
+        "normal": 350,
+        "hard": 486,
+        "expert": 792,
+        "master": 876,
+        "append": 989
+      }
+    },
+    {
+      "id": 549,
+      "title": "化けの花",
+      "difficulties": {
+        "easy": 282,
+        "normal": 346,
+        "hard": 579,
+        "expert": 875,
+        "master": 1003
+      }
+    },
+    {
+      "id": 551,
+      "title": "ロストアンブレラ",
+      "difficulties": {
+        "easy": 249,
+        "normal": 280,
+        "hard": 629,
+        "expert": 804,
+        "master": 926
+      }
+    },
+    {
+      "id": 552,
+      "title": "M@GICAL☆CURE! LOVE ♥ SHOT!",
+      "difficulties": {
+        "easy": 396,
+        "normal": 581,
+        "hard": 828,
+        "expert": 980,
+        "master": 1215
+      }
+    },
+    {
+      "id": 553,
+      "title": "パリィ",
+      "difficulties": {
+        "easy": 212,
+        "normal": 293,
+        "hard": 689,
+        "expert": 963,
+        "master": 1024
+      }
+    },
+    {
+      "id": 554,
+      "title": "snooze",
+      "difficulties": {
+        "easy": 248,
+        "normal": 416,
+        "hard": 798,
+        "expert": 961,
+        "master": 1142,
+        "append": 1429
+      }
+    },
+    {
+      "id": 555,
+      "title": "フュージョン",
+      "difficulties": {
+        "easy": 297,
+        "normal": 436,
+        "hard": 808,
+        "expert": 1056,
+        "master": 1184,
+        "append": 1555
+      }
+    },
+    {
+      "id": 556,
+      "title": "サイハテ",
+      "difficulties": {
+        "easy": 190,
+        "normal": 465,
+        "hard": 675,
+        "expert": 840,
+        "master": 999
+      }
+    },
+    {
+      "id": 557,
+      "title": "花溺れ",
+      "difficulties": {
+        "easy": 145,
+        "normal": 231,
+        "hard": 520,
+        "expert": 780,
+        "master": 895
+      }
+    },
+    {
+      "id": 558,
+      "title": "のだ",
+      "difficulties": {
+        "easy": 229,
+        "normal": 377,
+        "hard": 592,
+        "expert": 918,
+        "master": 927,
+        "append": 1346
+      }
+    },
+    {
+      "id": 559,
+      "title": "おどりゃんせ",
+      "difficulties": {
+        "easy": 245,
+        "normal": 437,
+        "hard": 732,
+        "expert": 1100,
+        "master": 1303
+      }
+    },
+    {
+      "id": 560,
+      "title": "アイリッド",
+      "difficulties": {
+        "easy": 157,
+        "normal": 250,
+        "hard": 572,
+        "expert": 813,
+        "master": 960
+      }
+    },
+    {
+      "id": 561,
+      "title": "プロトディスコ",
+      "difficulties": {
+        "easy": 227,
+        "normal": 317,
+        "hard": 562,
+        "expert": 913,
+        "master": 1057,
+        "append": 1404
+      }
+    },
+    {
+      "id": 562,
+      "title": "アンヘル",
+      "difficulties": {
+        "easy": 291,
+        "normal": 382,
+        "hard": 652,
+        "expert": 917,
+        "master": 1187,
+        "append": 1503
+      }
+    },
+    {
+      "id": 564,
+      "title": "そこに在る、光。",
+      "difficulties": {
+        "easy": 227,
+        "normal": 228,
+        "hard": 301,
+        "expert": 403,
+        "master": 408
+      }
+    },
+    {
+      "id": 565,
+      "title": "夏に透明",
+      "difficulties": {
+        "easy": 151,
+        "normal": 288,
+        "hard": 553,
+        "expert": 691,
+        "master": 788
+      }
+    },
+    {
+      "id": 566,
+      "title": "パンダヒーロー",
+      "difficulties": {
+        "easy": 204,
+        "normal": 317,
+        "hard": 738,
+        "expert": 820,
+        "master": 1003
+      }
+    },
+    {
+      "id": 567,
+      "title": "結ンデ開イテ羅刹ト骸",
+      "difficulties": {
+        "easy": 330,
+        "normal": 502,
+        "hard": 656,
+        "expert": 826,
+        "master": 903
+      }
+    },
+    {
+      "id": 569,
+      "title": "シークレット・シーカー",
+      "difficulties": {
+        "easy": 262,
+        "normal": 474,
+        "hard": 672,
+        "expert": 894,
+        "master": 1019
+      }
+    },
+    {
+      "id": 570,
+      "title": "スター",
+      "difficulties": {
+        "easy": 148,
+        "normal": 296,
+        "hard": 567,
+        "expert": 799,
+        "master": 889
+      }
+    },
+    {
+      "id": 571,
+      "title": "偽物人間40号",
+      "difficulties": {
+        "easy": 220,
+        "normal": 307,
+        "hard": 454,
+        "expert": 775,
+        "master": 823
+      }
+    },
+    {
+      "id": 572,
+      "title": "飾って",
+      "difficulties": {
+        "easy": 122,
+        "normal": 199,
+        "hard": 349,
+        "expert": 515,
+        "master": 520
+      }
+    },
+    {
+      "id": 573,
+      "title": "はじまりの未来",
+      "difficulties": {
+        "easy": 357,
+        "normal": 439,
+        "hard": 758,
+        "expert": 972,
+        "master": 1111
+      }
+    },
+    {
+      "id": 574,
+      "title": "SToRY",
+      "difficulties": {
+        "easy": 246,
+        "normal": 334,
+        "hard": 557,
+        "expert": 705,
+        "master": 784
+      }
+    },
+    {
+      "id": 575,
+      "title": "FUN!!",
+      "difficulties": {
+        "easy": 155,
+        "normal": 322,
+        "hard": 476,
+        "expert": 622,
+        "master": 744
+      }
+    },
+    {
+      "id": 576,
+      "title": "ファイアダンス",
+      "difficulties": {
+        "easy": 136,
+        "normal": 252,
+        "hard": 483,
+        "expert": 606,
+        "master": 680
+      }
+    },
+    {
+      "id": 577,
+      "title": "スマイル*シンフォニー",
+      "difficulties": {
+        "easy": 121,
+        "normal": 216,
+        "hard": 360,
+        "expert": 594,
+        "master": 667
+      }
+    },
+    {
+      "id": 578,
+      "title": "ハローセカイ",
+      "difficulties": {
+        "easy": 187,
+        "normal": 320,
+        "hard": 451,
+        "expert": 621,
+        "master": 759
+      }
+    },
+    {
+      "id": 579,
+      "title": "Worlders",
+      "difficulties": {
+        "easy": 246,
+        "normal": 329,
+        "hard": 794,
+        "expert": 924,
+        "master": 1060
+      }
+    },
+    {
+      "id": 580,
+      "title": "三日月ステップ",
+      "difficulties": {
+        "easy": 186,
+        "normal": 325,
+        "hard": 547,
+        "expert": 891,
+        "master": 969
+      }
+    },
+    {
+      "id": 581,
+      "title": "厨病激発ボーイ",
+      "difficulties": {
+        "easy": 284,
+        "normal": 438,
+        "hard": 730,
+        "expert": 1118,
+        "master": 1355
+      }
+    },
+    {
+      "id": 582,
+      "title": "アンチユー",
+      "difficulties": {
+        "easy": 192,
+        "normal": 247,
+        "hard": 453,
+        "expert": 610,
+        "master": 820
+      }
+    },
+    {
+      "id": 583,
+      "title": "アクセラレイト",
+      "difficulties": {
+        "easy": 150,
+        "normal": 321,
+        "hard": 637,
+        "expert": 810,
+        "master": 917,
+        "append": 1126
+      }
+    },
+    {
+      "id": 584,
+      "title": "IMAWANOKIWA",
+      "difficulties": {
+        "easy": 370,
+        "normal": 400,
+        "hard": 925,
+        "expert": 1256,
+        "master": 1423,
+        "append": 1949
+      }
+    },
+    {
+      "id": 585,
+      "title": "ペンタトニック",
+      "difficulties": {
+        "easy": 260,
+        "normal": 289,
+        "hard": 503,
+        "expert": 733,
+        "master": 1103,
+        "append": 1288
+      }
+    },
+    {
+      "id": 586,
+      "title": "ヤンキーボーイ・ヤンキーガール",
+      "difficulties": {
+        "easy": 191,
+        "normal": 299,
+        "hard": 575,
+        "expert": 903,
+        "master": 1087
+      }
+    },
+    {
+      "id": 587,
+      "title": "ルルブ",
+      "difficulties": {
+        "easy": 271,
+        "normal": 480,
+        "hard": 850,
+        "expert": 1143,
+        "master": 1296
+      }
+    },
+    {
+      "id": 588,
+      "title": "プラネットヒーロー",
+      "difficulties": {
+        "easy": 385,
+        "normal": 519,
+        "hard": 893,
+        "expert": 1128,
+        "master": 1467
+      }
+    },
+    {
+      "id": 589,
+      "title": "バレリーコ",
+      "difficulties": {
+        "easy": 196,
+        "normal": 471,
+        "hard": 711,
+        "expert": 965,
+        "master": 1115
+      }
+    },
+    {
+      "id": 590,
+      "title": "マンハッタン",
+      "difficulties": {
+        "easy": 255,
+        "normal": 463,
+        "hard": 709,
+        "expert": 901,
+        "master": 1247
+      }
+    },
+    {
+      "id": 591,
+      "title": "吉原ラメント 再来盤",
+      "difficulties": {
+        "easy": 282,
+        "normal": 498,
+        "hard": 862,
+        "expert": 1135,
+        "master": 1108
+      }
+    },
+    {
+      "id": 592,
+      "title": "クイーンオブハート",
+      "difficulties": {
+        "easy": 385,
+        "normal": 582,
+        "hard": 875,
+        "expert": 1189,
+        "master": 1212
+      }
+    },
+    {
+      "id": 593,
+      "title": "クリスタルスノウ",
+      "difficulties": {
+        "easy": 249,
+        "normal": 278,
+        "hard": 507,
+        "expert": 694,
+        "master": 773
+      }
+    },
+    {
+      "id": 594,
+      "title": "Call!!",
+      "difficulties": {
+        "easy": 115,
+        "normal": 260,
+        "hard": 413,
+        "expert": 549,
+        "master": 765
+      }
+    },
+    {
+      "id": 595,
+      "title": "エンヴィキャットウォーク",
+      "difficulties": {
+        "easy": 222,
+        "normal": 363,
+        "hard": 806,
+        "expert": 932,
+        "master": 1222
+      }
+    },
+    {
+      "id": 596,
+      "title": "D/N/A",
+      "difficulties": {
+        "easy": 310,
+        "normal": 417,
+        "hard": 740,
+        "expert": 913,
+        "master": 1276
+      }
+    },
+    {
+      "id": 597,
+      "title": "その絵の名前は",
+      "difficulties": {
+        "easy": 118,
+        "normal": 232,
+        "hard": 377,
+        "expert": 514,
+        "master": 555
+      }
+    },
+    {
+      "id": 600,
+      "title": "征け",
+      "difficulties": {
+        "easy": 142,
+        "normal": 303,
+        "hard": 509,
+        "expert": 701,
+        "master": 825
+      }
+    },
+    {
+      "id": 601,
+      "title": "ルマ",
+      "difficulties": {
+        "easy": 206,
+        "normal": 368,
+        "hard": 577,
+        "expert": 899,
+        "master": 1143
+      }
+    },
+    {
+      "id": 603,
+      "title": "ドレミファロンド",
+      "difficulties": {
+        "easy": 189,
+        "normal": 331,
+        "hard": 543,
+        "expert": 690,
+        "master": 961
+      }
+    },
+    {
+      "id": 604,
+      "title": "Packaged",
+      "difficulties": {
+        "easy": 239,
+        "normal": 439,
+        "hard": 539,
+        "expert": 739,
+        "master": 839
+      }
+    },
+    {
+      "id": 605,
+      "title": "Sympathy",
+      "difficulties": {
+        "easy": 272,
+        "normal": 349,
+        "hard": 582,
+        "expert": 723,
+        "master": 860,
+        "append": 1043
+      }
+    },
+    {
+      "id": 606,
+      "title": "スーサイドパレヱド",
+      "difficulties": {
+        "easy": 284,
+        "normal": 336,
+        "hard": 615,
+        "expert": 918,
+        "master": 1063,
+        "append": 1493
+      }
+    },
+    {
+      "id": 607,
+      "title": "回る空うさぎ",
+      "difficulties": {
+        "easy": 181,
+        "normal": 274,
+        "hard": 402,
+        "expert": 607,
+        "master": 607
+      }
+    },
+    {
+      "id": 608,
+      "title": "星宙メランコリア",
+      "difficulties": {
+        "easy": 356,
+        "normal": 632,
+        "hard": 647,
+        "expert": 1004,
+        "master": 1166
+      }
+    },
+    {
+      "id": 610,
+      "title": "Polar Star",
+      "difficulties": {
+        "easy": 274,
+        "normal": 404,
+        "hard": 503,
+        "expert": 697,
+        "master": 1106
+      }
+    },
+    {
+      "id": 611,
+      "title": "好き！雪！本気マジック",
+      "difficulties": {
+        "easy": 290,
+        "normal": 349,
+        "hard": 640,
+        "expert": 828,
+        "master": 1060
+      }
+    },
+    {
+      "id": 612,
+      "title": "Snow Fairy Story",
+      "difficulties": {
+        "easy": 195,
+        "normal": 391,
+        "hard": 603,
+        "expert": 912,
+        "master": 902
+      }
+    },
+    {
+      "id": 613,
+      "title": "雪がとける前に",
+      "difficulties": {
+        "easy": 197,
+        "normal": 287,
+        "hard": 473,
+        "expert": 618,
+        "master": 773
+      }
+    },
+    {
+      "id": 614,
+      "title": "スターナイトスノウ",
+      "difficulties": {
+        "easy": 237,
+        "normal": 398,
+        "hard": 643,
+        "expert": 859,
+        "master": 914
+      }
+    },
+    {
+      "id": 615,
+      "title": "四角い地球を丸くする",
+      "difficulties": {
+        "easy": 271,
+        "normal": 351,
+        "hard": 655,
+        "expert": 950,
+        "master": 1097
+      }
+    },
+    {
+      "id": 616,
+      "title": "アイ",
+      "difficulties": {
+        "easy": 269,
+        "normal": 342,
+        "hard": 537,
+        "expert": 821,
+        "master": 959
+      }
+    },
+    {
+      "id": 617,
+      "title": "ぽかぽかの星",
+      "difficulties": {
+        "easy": 171,
+        "normal": 341,
+        "hard": 562,
+        "expert": 783,
+        "master": 903
+      }
+    },
+    {
+      "id": 618,
+      "title": "Fondant Step",
+      "difficulties": {
+        "easy": 253,
+        "normal": 322,
+        "hard": 532,
+        "expert": 679,
+        "master": 904
+      }
+    },
+    {
+      "id": 619,
+      "title": "Connecting",
+      "difficulties": {
+        "easy": 186,
+        "normal": 279,
+        "hard": 482,
+        "expert": 616,
+        "master": 792
+      }
+    },
+    {
+      "id": 620,
+      "title": "紗痲",
+      "difficulties": {
+        "easy": 275,
+        "normal": 360,
+        "hard": 761,
+        "expert": 1088,
+        "master": 1192
+      }
+    },
+    {
+      "id": 621,
+      "title": "東京サマーセッション",
+      "difficulties": {
+        "easy": 290,
+        "normal": 399,
+        "hard": 781,
+        "expert": 892,
+        "master": 1073
+      }
+    },
+    {
+      "id": 622,
+      "title": "超ナイト・オブ・ナイツ",
+      "difficulties": {
+        "easy": 383,
+        "normal": 446,
+        "hard": 813,
+        "expert": 1201,
+        "master": 1403,
+        "append": 1782
+      }
+    },
+    {
+      "id": 623,
+      "title": "とうほう☆ワンダーランド",
+      "difficulties": {
+        "easy": 265,
+        "normal": 345,
+        "hard": 552,
+        "expert": 806,
+        "master": 1086,
+        "append": 1488
+      }
+    },
+    {
+      "id": 624,
+      "title": "チルノのパーフェクトさんすう学園",
+      "difficulties": {
+        "easy": 199,
+        "normal": 399,
+        "hard": 699,
+        "expert": 999,
+        "master": 1199,
+        "append": 1599
+      }
+    },
+    {
+      "id": 625,
+      "title": "このふざけた素晴らしき世界は、僕の為にある",
+      "difficulties": {
+        "easy": 236,
+        "normal": 397,
+        "hard": 721,
+        "expert": 946,
+        "master": 1093
+      }
+    },
+    {
+      "id": 626,
+      "title": "フィッシュアンドTips",
+      "difficulties": {
+        "easy": 202,
+        "normal": 415,
+        "hard": 603,
+        "expert": 833,
+        "master": 1052
+      }
+    },
+    {
+      "id": 627,
+      "title": "テトリス",
+      "difficulties": {
+        "easy": 169,
+        "normal": 288,
+        "hard": 481,
+        "expert": 653,
+        "master": 814,
+        "append": 938
+      }
+    },
+    {
+      "id": 628,
+      "title": "モニタリング",
+      "difficulties": {
+        "easy": 223,
+        "normal": 342,
+        "hard": 738,
+        "expert": 901,
+        "master": 973
+      }
+    },
+    {
+      "id": 629,
+      "title": "8.32",
+      "difficulties": {
+        "easy": 188,
+        "normal": 337,
+        "hard": 476,
+        "expert": 659,
+        "master": 832
+      }
+    },
+    {
+      "id": 630,
+      "title": "幸福刑",
+      "difficulties": {
+        "easy": 202,
+        "normal": 327,
+        "hard": 533,
+        "expert": 773,
+        "master": 907
+      }
+    },
+    {
+      "id": 632,
+      "title": "Surges",
+      "difficulties": {
+        "easy": 206,
+        "normal": 289,
+        "hard": 535,
+        "expert": 950,
+        "master": 1043
+      }
+    },
+    {
+      "id": 633,
+      "title": "庭師のおはなしによると",
+      "difficulties": {
+        "easy": 435,
+        "normal": 543,
+        "hard": 827,
+        "expert": 1121,
+        "master": 1185
+      }
+    },
+    {
+      "id": 634,
+      "title": "光線歌",
+      "difficulties": {
+        "easy": 154,
+        "normal": 302,
+        "hard": 460,
+        "expert": 700,
+        "master": 889
+      }
+    },
+    {
+      "id": 635,
+      "title": "ありのままのストーリーを",
+      "difficulties": {
+        "easy": 178,
+        "normal": 295,
+        "hard": 795,
+        "expert": 892,
+        "master": 938,
+        "append": 1178
+      }
+    },
+    {
+      "id": 636,
+      "title": "エクスプロウル",
+      "difficulties": {
+        "easy": 283,
+        "normal": 367,
+        "hard": 762,
+        "expert": 1024,
+        "master": 1102
+      }
+    },
+    {
+      "id": 637,
+      "title": "笑えたらえーやん！",
+      "difficulties": {
+        "easy": 332,
+        "normal": 365,
+        "hard": 542,
+        "expert": 878,
+        "master": 1090
+      }
+    },
+    {
+      "id": 638,
+      "title": "花弁、それにまつわる音声",
+      "difficulties": {
+        "easy": 215,
+        "normal": 286,
+        "hard": 529,
+        "expert": 883,
+        "master": 952
+      }
+    },
+    {
+      "id": 639,
+      "title": "マリオネットダンサー",
+      "difficulties": {
+        "easy": 124,
+        "normal": 301,
+        "hard": 553,
+        "expert": 860,
+        "master": 1030
+      }
+    },
+    {
+      "id": 641,
+      "title": "君が飛び降りるのならば",
+      "difficulties": {
+        "easy": 366,
+        "normal": 463,
+        "hard": 663,
+        "expert": 970,
+        "master": 1224
+      }
+    },
+    {
+      "id": 642,
+      "title": "このまんまでいこう",
+      "difficulties": {
+        "easy": 209,
+        "normal": 338,
+        "hard": 527,
+        "expert": 738,
+        "master": 941
+      }
+    },
+    {
+      "id": 643,
+      "title": "About me",
+      "difficulties": {
+        "easy": 155,
+        "normal": 311,
+        "hard": 629,
+        "expert": 863,
+        "master": 1011
+      }
+    },
+    {
+      "id": 644,
+      "title": "生きる",
+      "difficulties": {
+        "easy": 181,
+        "normal": 165,
+        "hard": 379,
+        "expert": 536,
+        "master": 704,
+        "append": 1131
+      }
+    },
+    {
+      "id": 645,
+      "title": "深海シティアンダーグラウンド",
+      "difficulties": {
+        "easy": 312,
+        "normal": 365,
+        "hard": 556,
+        "expert": 872,
+        "master": 1162
+      }
+    },
+    {
+      "id": 646,
+      "title": "透明なパレット",
+      "difficulties": {
+        "easy": 280,
+        "normal": 467,
+        "hard": 703,
+        "expert": 852,
+        "master": 1027
+      }
+    },
+    {
+      "id": 647,
+      "title": "SAN値直葬",
+      "difficulties": {
+        "easy": 393,
+        "normal": 536,
+        "hard": 857,
+        "expert": 1365,
+        "master": 1821,
+        "append": 2060
+      }
+    },
+    {
+      "id": 648,
+      "title": "Life Will Change",
+      "difficulties": {
+        "easy": 292,
+        "normal": 364,
+        "hard": 636,
+        "expert": 973,
+        "master": 1118
+      }
+    },
+    {
+      "id": 649,
+      "title": "サヨナラ天国また来て地獄",
+      "difficulties": {
+        "easy": 137,
+        "normal": 267,
+        "hard": 430,
+        "expert": 723,
+        "master": 864
+      }
+    },
+    {
+      "id": 650,
+      "title": "あの夏が飽和する。",
+      "difficulties": {
+        "easy": 204,
+        "normal": 249,
+        "hard": 497,
+        "expert": 626,
+        "master": 789
+      }
+    },
+    {
+      "id": 651,
+      "title": "ホワイトハッピー",
+      "difficulties": {
+        "easy": 235,
+        "normal": 371,
+        "hard": 617,
+        "expert": 939,
+        "master": 1044
+      }
+    },
+    {
+      "id": 652,
+      "title": "カレシのジュード",
+      "difficulties": {
+        "easy": 260,
+        "normal": 411,
+        "hard": 659,
+        "expert": 1184,
+        "master": 1271
+      }
+    },
+    {
+      "id": 653,
+      "title": "パメラ",
+      "difficulties": {
+        "easy": 246,
+        "normal": 320,
+        "hard": 571,
+        "expert": 877,
+        "master": 1039
+      }
+    },
+    {
+      "id": 654,
+      "title": "ラストラス",
+      "difficulties": {
+        "easy": 306,
+        "normal": 443,
+        "hard": 628,
+        "expert": 769,
+        "master": 1331
+      }
+    },
+    {
+      "id": 655,
+      "title": "リリィララ",
+      "difficulties": {
+        "easy": 272,
+        "normal": 335,
+        "hard": 607,
+        "expert": 810,
+        "master": 903
+      }
+    },
+    {
+      "id": 656,
+      "title": "ブラッドドール",
+      "difficulties": {
+        "easy": 265,
+        "normal": 370,
+        "hard": 581,
+        "expert": 795,
+        "master": 1058
+      }
+    },
+    {
+      "id": 658,
+      "title": "上弦の月",
+      "difficulties": {
+        "easy": 118,
+        "normal": 230,
+        "hard": 467,
+        "expert": 599,
+        "master": 791
+      }
+    },
+    {
+      "id": 659,
+      "title": "あなたの空が泣くのなら",
+      "difficulties": {
+        "easy": 190,
+        "normal": 275,
+        "hard": 355,
+        "expert": 478,
+        "master": 682
+      }
+    },
+    {
+      "id": 660,
+      "title": "とびだせ！わんだぴょい",
+      "difficulties": {
+        "easy": 234,
+        "normal": 380,
+        "hard": 552,
+        "expert": 788,
+        "master": 1064
+      }
+    },
+    {
+      "id": 663,
+      "title": "ヴィーナス",
+      "difficulties": {
+        "easy": 377,
+        "normal": 478,
+        "hard": 779,
+        "expert": 1124,
+        "master": 1266
+      }
+    },
+    {
+      "id": 664,
+      "title": "人マニア",
+      "difficulties": {
+        "easy": 272,
+        "normal": 427,
+        "hard": 686,
+        "expert": 1000,
+        "master": 1049
+      }
+    },
+    {
+      "id": 665,
+      "title": "ロケットサイダー",
+      "difficulties": {
+        "easy": 258,
+        "normal": 499,
+        "hard": 698,
+        "expert": 1110,
+        "master": 1350
+      }
+    },
+    {
+      "id": 666,
+      "title": "少女A",
+      "difficulties": {
+        "easy": 558,
+        "normal": 656,
+        "hard": 951,
+        "expert": 1265,
+        "master": 1312
+      }
+    },
+    {
+      "id": 667,
+      "title": "㋰責任集合体",
+      "difficulties": {
+        "easy": 145,
+        "normal": 313,
+        "hard": 552,
+        "expert": 762,
+        "master": 937
+      }
+    },
+    {
+      "id": 668,
+      "title": "ネクラチューンサーカス",
+      "difficulties": {
+        "easy": 385,
+        "normal": 644,
+        "hard": 1032,
+        "expert": 1380,
+        "master": 1913,
+        "append": 2173
+      }
+    },
+    {
+      "id": 669,
+      "title": "げんてん",
+      "difficulties": {
+        "easy": 237,
+        "normal": 327,
+        "hard": 752,
+        "expert": 1021,
+        "master": 1138
+      }
+    },
+    {
+      "id": 670,
+      "title": "い〜やい〜やい〜や",
+      "difficulties": {
+        "easy": 170,
+        "normal": 369,
+        "hard": 568,
+        "expert": 792,
+        "master": 809
+      }
+    },
+    {
+      "id": 671,
+      "title": "怪獣になりたい",
+      "difficulties": {
+        "easy": 500,
+        "normal": 700,
+        "hard": 1200,
+        "expert": 1600,
+        "master": 1900,
+        "append": 2800
+      }
+    },
+    {
+      "id": 672,
+      "title": "ハウトゥー世界征服",
+      "difficulties": {
+        "easy": 327,
+        "normal": 354,
+        "hard": 704,
+        "expert": 803,
+        "master": 935
+      }
+    },
+    {
+      "id": 674,
+      "title": "MASTER高難易度楽曲メドレー",
+      "difficulties": {
+        "master": 3638
+      }
+    },
+    {
+      "id": 675,
+      "title": "プロセカULTIMATE楽曲メドレー",
+      "difficulties": {
+        "append": 5197
+      }
+    },
+    {
+      "id": 676,
+      "title": "周年記念高難易度書き下ろし楽曲メドレー",
+      "difficulties": {
+        "append": 4181
+      }
+    },
+    {
+      "id": 677,
+      "title": "アベリア",
+      "difficulties": {
+        "easy": 310,
+        "normal": 488,
+        "hard": 710,
+        "expert": 865,
+        "master": 1238
+      }
+    },
+    {
+      "id": 678,
+      "title": "金時計",
+      "difficulties": {
+        "easy": 186,
+        "normal": 289,
+        "hard": 566,
+        "expert": 747,
+        "master": 830
+      }
+    },
+    {
+      "id": 683,
+      "title": "カラフルファンデーション",
+      "difficulties": {
+        "easy": 306,
+        "normal": 371,
+        "hard": 677,
+        "expert": 815,
+        "master": 1091
+      }
+    },
+    {
+      "id": 684,
+      "title": "ファイター",
+      "difficulties": {
+        "easy": 133,
+        "normal": 225,
+        "hard": 464,
+        "expert": 641,
+        "master": 826
+      }
+    },
+    {
+      "id": 685,
+      "title": "電光刹歌",
+      "difficulties": {
+        "easy": 406,
+        "normal": 427,
+        "hard": 769,
+        "expert": 1086,
+        "master": 1472
+      }
+    },
+    {
+      "id": 686,
+      "title": "トレジャーガーデン",
+      "difficulties": {
+        "easy": 448,
+        "normal": 563,
+        "hard": 977,
+        "expert": 1381,
+        "master": 1468
+      }
+    },
+    {
+      "id": 687,
+      "title": "ジェットブラック",
+      "difficulties": {
+        "easy": 332,
+        "normal": 515,
+        "hard": 772,
+        "expert": 1052,
+        "master": 1337
+      }
+    },
+    {
+      "id": 688,
+      "title": "ウィーアーピコピコハンマーズ!!!!",
+      "difficulties": {
+        "easy": 246,
+        "normal": 501,
+        "hard": 746,
+        "expert": 1125,
+        "master": 1416
+      }
+    },
+    {
+      "id": 689,
+      "title": "最愛人生ランナー",
+      "difficulties": {
+        "easy": 206,
+        "normal": 445,
+        "hard": 693,
+        "expert": 1039,
+        "master": 1217
+      }
+    },
+    {
+      "id": 690,
+      "title": "惑星ループ",
+      "difficulties": {
+        "easy": 290,
+        "normal": 388,
+        "hard": 813,
+        "expert": 857,
+        "master": 1018,
+        "append": 1171
+      }
+    },
+    {
+      "id": 691,
+      "title": "0.0000034",
+      "difficulties": {
+        "easy": 434,
+        "normal": 734,
+        "hard": 1234,
+        "expert": 1634,
+        "master": 1934,
+        "append": 2334
+      }
+    },
+    {
+      "id": 692,
+      "title": "ぼかろころしあむ",
+      "difficulties": {
+        "easy": 167,
+        "normal": 273,
+        "hard": 574,
+        "expert": 805,
+        "master": 870
+      }
+    },
+    {
+      "id": 693,
+      "title": "erase or zero",
+      "difficulties": {
+        "easy": 186,
+        "normal": 371,
+        "hard": 569,
+        "expert": 845,
+        "master": 991
+      }
+    },
+    {
+      "id": 695,
+      "title": "花結び",
+      "difficulties": {
+        "easy": 351,
+        "normal": 399,
+        "hard": 669,
+        "expert": 989,
+        "master": 1106
+      }
+    },
+    {
+      "id": 696,
+      "title": "ドリーム・キス",
+      "difficulties": {
+        "easy": 132,
+        "normal": 380,
+        "hard": 511,
+        "expert": 515,
+        "master": 795
+      }
+    },
+    {
+      "id": 697,
+      "title": "Internet Junk Junkie",
+      "difficulties": {
+        "easy": 287,
+        "normal": 500,
+        "hard": 890,
+        "expert": 1105,
+        "master": 1341
+      }
+    },
+    {
+      "id": 698,
+      "title": "鎖の少女-Re Alive-",
+      "difficulties": {
+        "easy": 192,
+        "normal": 379,
+        "hard": 664,
+        "expert": 920,
+        "master": 1029
+      }
+    },
+    {
+      "id": 699,
+      "title": "Catch the Wave",
+      "difficulties": {
+        "easy": 239,
+        "normal": 239,
+        "hard": 539,
+        "expert": 739,
+        "master": 739
+      }
+    },
+    {
+      "id": 700,
+      "title": "魔法少女とチョコレゐト",
+      "difficulties": {
+        "easy": 277,
+        "normal": 349,
+        "hard": 608,
+        "expert": 797,
+        "master": 930
+      }
+    },
+    {
+      "id": 702,
+      "title": "ラムネ",
+      "difficulties": {
+        "easy": 194,
+        "normal": 354,
+        "hard": 647,
+        "expert": 951,
+        "master": 1018
+      }
+    },
+    {
+      "id": 703,
+      "title": "バイオレンストリガー",
+      "difficulties": {
+        "easy": 388,
+        "normal": 559,
+        "hard": 907,
+        "expert": 1277,
+        "master": 1421
+      }
+    },
+    {
+      "id": 704,
+      "title": "黒塗り世界宛て書簡",
+      "difficulties": {
+        "easy": 221,
+        "normal": 358,
+        "hard": 708,
+        "expert": 930,
+        "master": 1201
+      }
+    },
+    {
+      "id": 707,
+      "title": "さいたま2000",
+      "difficulties": {
+        "easy": 171,
+        "normal": 285,
+        "hard": 568,
+        "expert": 659,
+        "master": 1021,
+        "append": 1448
+      }
+    },
+    {
+      "id": 708,
+      "title": "幽玄ノ乱",
+      "difficulties": {
+        "easy": 492,
+        "normal": 848,
+        "hard": 1012,
+        "expert": 1354,
+        "master": 1410,
+        "append": 2206
+      }
+    },
+    {
+      "id": 709,
+      "title": "初音ミクの消失−劇場版−",
+      "difficulties": {
+        "easy": 215,
+        "normal": 360,
+        "hard": 685,
+        "expert": 918,
+        "master": 1221,
+        "append": 1666
+      }
+    },
+    {
+      "id": 716,
+      "title": "透過する温度",
+      "difficulties": {
+        "easy": 155,
+        "normal": 260,
+        "hard": 365,
+        "expert": 608,
+        "master": 754
+      }
+    },
+    {
+      "id": 717,
+      "title": "Ribbon",
+      "difficulties": {
+        "easy": 179,
+        "normal": 268,
+        "hard": 413,
+        "expert": 598,
+        "master": 641
+      }
+    },
+    {
+      "id": 718,
+      "title": "幕を下ろそう、パレードへ",
+      "difficulties": {
+        "easy": 247,
+        "normal": 349,
+        "hard": 587,
+        "expert": 861,
+        "master": 875
+      }
+    },
+    {
+      "id": 719,
+      "title": "SHIAWASE FOR YOU!",
+      "difficulties": {
+        "easy": 195,
+        "normal": 385,
+        "hard": 577,
+        "expert": 789,
+        "master": 961
+      }
+    },
+    {
+      "id": 720,
+      "title": "アリア",
+      "difficulties": {
+        "easy": 139,
+        "normal": 147,
+        "hard": 419,
+        "expert": 544,
+        "master": 627
+      }
+    },
+    {
+      "id": 723,
+      "title": "ラヴィ",
+      "difficulties": {
+        "easy": 385,
+        "normal": 533,
+        "hard": 798,
+        "expert": 1080,
+        "master": 1281
+      }
+    },
+    {
+      "id": 724,
+      "title": "ハオ",
+      "difficulties": {
+        "easy": 227,
+        "normal": 372,
+        "hard": 615,
+        "expert": 964,
+        "master": 1202
+      }
+    },
+    {
+      "id": 726,
+      "title": "アルカリレットウセイ",
+      "difficulties": {
+        "easy": 256,
+        "normal": 270,
+        "hard": 452,
+        "expert": 854,
+        "master": 1211
+      }
+    }
+  ]
+}
