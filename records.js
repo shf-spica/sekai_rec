@@ -23,7 +23,11 @@ function jacketUrl(songId) {
   const id = String(Number(songId)).padStart(3, '0');
   return `${JACKET_BASE}${id}/jacket_s_${id}.webp`;
 }
-
+/** 画像表示用: サーバー経由プロキシ（ブロック対策） */
+function jacketProxyUrl(songId) {
+  const id = String(Number(songId));
+  return `/api/jacket/${encodeURIComponent(id)}`;
+}
 function getPlayLevel(song, difficulty) {
   if (!song?.difficulties) return 0;
   const d = song.difficulties[difficulty] ?? song.difficulties[difficulty?.toLowerCase()];
@@ -55,24 +59,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-/** 記録を playLevel → difficulty でグループ化 */
-function groupRecords(records) {
-  const withMeta = records
-    .map((r) => {
-      const song = getSongById(r.song_id);
-      const playLevel = getPlayLevel(song, r.difficulty);
-      return { ...r, song, playLevel };
-    })
-    .filter((r) => r.song != null);
+/** 全曲×難易度のスロットを生成し、ユーザー記録をマージして playLevel → difficulty でグループ化 */
+function buildSlotsByLevel() {
+  const recordByKey = new Map();
+  for (const r of state.records) {
+    const key = `${r.song_id}-${(r.difficulty || '').toLowerCase()}`;
+    recordByKey.set(key, r);
+  }
 
   const byLevel = new Map();
-  for (const r of withMeta) {
-    const level = r.playLevel || 0;
-    if (!byLevel.has(level)) byLevel.set(level, new Map());
-    const byDiff = byLevel.get(level);
-    const diff = (r.difficulty || '').toLowerCase() || 'master';
-    if (!byDiff.has(diff)) byDiff.set(diff, []);
-    byDiff.get(diff).push(r);
+  const songs = state.songDatabase?.songs ?? [];
+  for (const song of songs) {
+    if (!song.difficulties || typeof song.difficulties !== 'object') continue;
+    for (const diff of Object.keys(song.difficulties)) {
+      const playLevel = getPlayLevel(song, diff);
+      const key = `${song.id}-${diff}`;
+      const record = recordByKey.get(key) || null;
+      const slot = { songId: song.id, difficulty: diff, song, playLevel, record };
+      const level = playLevel || 0;
+      if (!byLevel.has(level)) byLevel.set(level, new Map());
+      const byDiff = byLevel.get(level);
+      if (!byDiff.has(diff)) byDiff.set(diff, []);
+      byDiff.get(diff).push(slot);
+    }
   }
 
   const levels = Array.from(byLevel.keys()).sort((a, b) => a - b);
@@ -82,7 +91,7 @@ function groupRecords(records) {
     const diffs = Array.from(byDiff.keys()).sort(diffOrder);
     result.push({
       playLevel: level,
-      difficulties: diffs.map((d) => ({ difficulty: d, records: byDiff.get(d) })),
+      difficulties: diffs.map((d) => ({ difficulty: d, slots: byDiff.get(d) })),
     });
   }
   return result;
@@ -98,8 +107,17 @@ function diffOrder(a, b) {
   return String(a).localeCompare(String(b));
 }
 
+function isAllPerfect(record) {
+  if (!record) return false;
+  return (record.miss || 0) + (record.bad || 0) + (record.good || 0) + (record.great || 0) === 0;
+}
+function isFullCombo(record) {
+  if (!record) return false;
+  return (record.miss || 0) + (record.bad || 0) + (record.good || 0) === 0;
+}
+
 function renderGroups() {
-  const groups = groupRecords(state.records);
+  const groups = buildSlotsByLevel();
   if (groups.length === 0) {
     contentEl.style.display = 'none';
     emptyEl.style.display = 'block';
@@ -119,15 +137,27 @@ function renderGroups() {
         <div class="records-diff-block">
           <h3 class="records-diff-title">${escapeHtml(df.difficulty.toUpperCase())}</h3>
           <div class="records-grid">
-            ${df.records
-              .map(
-                (r) => `
-              <button type="button" class="record-card record-card-has-record" data-song-id="${r.song_id}" data-difficulty="${escapeHtml(r.difficulty)}" data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}">
-                <img class="record-card-jacket" src="${jacketUrl(r.song_id)}" alt="" loading="lazy" onerror="this.src=''; this.style.background='var(--bg-card)'">
-                <span class="record-card-title">${escapeHtml(r.song?.title || `ID:${r.song_id}`)}</span>
+            ${df.slots
+              .map((slot) => {
+                const r = slot.record;
+                const hasRecord = !!r;
+                const ap = hasRecord && isAllPerfect(r);
+                const fc = hasRecord && !ap && isFullCombo(r);
+                const cardClasses = ['record-card'];
+                if (!hasRecord) cardClasses.push('record-card-no-record');
+                if (ap) cardClasses.push('record-card-ap');
+                if (fc) cardClasses.push('record-card-fc');
+                const dataAttrs = hasRecord
+                  ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}"`
+                  : '';
+                const imgUrl = jacketProxyUrl(slot.songId);
+                return `
+              <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
+                <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">
+                <span class="record-card-title">${escapeHtml(slot.song?.title || `ID:${slot.songId}`)}</span>
               </button>
-            `
-              )
+            `;
+              })
               .join('')}
           </div>
         </div>
@@ -147,14 +177,17 @@ function renderGroups() {
 function openDetail(btn) {
   const songId = btn.dataset.songId;
   const difficulty = btn.dataset.difficulty;
-  const recordData = {
-    perfect: parseInt(btn.dataset.perfect, 10) || 0,
-    great: parseInt(btn.dataset.great, 10) || 0,
-    good: parseInt(btn.dataset.good, 10) || 0,
-    bad: parseInt(btn.dataset.bad, 10) || 0,
-    miss: parseInt(btn.dataset.miss, 10) || 0,
-    point: parseInt(btn.dataset.point, 10) || 0,
-  };
+  const hasRecord = btn.dataset.hasRecord === 'true';
+  const recordData = hasRecord
+    ? {
+        perfect: parseInt(btn.dataset.perfect, 10) || 0,
+        great: parseInt(btn.dataset.great, 10) || 0,
+        good: parseInt(btn.dataset.good, 10) || 0,
+        bad: parseInt(btn.dataset.bad, 10) || 0,
+        miss: parseInt(btn.dataset.miss, 10) || 0,
+        point: parseInt(btn.dataset.point, 10) || 0,
+      }
+    : null;
   const song = getSongById(songId);
   const title = song?.title || `ID:${songId}`;
 
@@ -165,21 +198,29 @@ function openDetail(btn) {
   const pointEl = $('#record-detail-point');
   const judgmentsEl = $('#record-detail-judgments');
 
-  jacketEl.src = jacketUrl(songId);
+  jacketEl.src = jacketProxyUrl(songId);
   jacketEl.alt = title;
   titleEl.textContent = title;
   metaEl.textContent = `Lv.${getPlayLevel(song, difficulty)} · ${(difficulty || '').toUpperCase()}`;
-  pointEl.textContent = `Point: ${recordData.point.toLocaleString()}`;
-  judgmentsEl.innerHTML = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS']
-    .map(
-      (j) => `
+
+  if (!hasRecord || !recordData) {
+    pointEl.textContent = '';
+    pointEl.parentElement.classList.add('record-detail-no-record');
+    judgmentsEl.innerHTML = '<p class="record-detail-empty">記録がありません</p>';
+  } else {
+    pointEl.parentElement.classList.remove('record-detail-no-record');
+    pointEl.textContent = `Point: ${recordData.point.toLocaleString()}`;
+    judgmentsEl.innerHTML = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS']
+      .map(
+        (j) => `
       <div class="judgment-item">
         <span class="judgment-label ${j.toLowerCase()}">${j}</span>
         <span class="judgment-value">${recordData[j.toLowerCase()] ?? 0}</span>
       </div>
     `
-    )
-    .join('');
+      )
+      .join('');
+  }
 
   modal.style.display = 'flex';
   modal.setAttribute('aria-hidden', 'false');

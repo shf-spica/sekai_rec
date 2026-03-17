@@ -91,9 +91,35 @@
   transform: translateY(-2px);
 }
 
-.record-card-has-record {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 1px var(--accent-glow);
+/* 記録なし: 薄く表示 */
+.record-card-no-record {
+  opacity: 0.5;
+}
+.record-card-no-record:hover {
+  opacity: 0.75;
+}
+
+/* ALL PERFECT: 虹枠 */
+.record-card-ap {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+    linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b) border-box;
+  box-shadow: 0 0 12px rgba(255, 159, 243, 0.35);
+}
+.record-card-ap:hover {
+  background: linear-gradient(var(--bg-card-hover), var(--bg-card-hover)) padding-box,
+    linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b) border-box;
+  box-shadow: 0 0 16px rgba(255, 159, 243, 0.45);
+}
+
+/* FULL COMBO: ピンク枠 */
+.record-card-fc {
+  border-color: #f368e0;
+  box-shadow: 0 0 10px rgba(243, 104, 224, 0.4);
+}
+.record-card-fc:hover {
+  border-color: #ff9ff3;
+  box-shadow: 0 0 14px rgba(255, 159, 243, 0.5);
 }
 
 .record-card-jacket {
@@ -212,4 +238,10 @@
 
 .record-detail-close:hover {
   background: var(--bg-card-hover);
+}
+
+.record-detail-empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
 }

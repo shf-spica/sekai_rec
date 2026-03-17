@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -238,6 +238,27 @@ async def api_list_records(user=Depends(get_current_user)):
             (user["id"],),
         ).fetchall()
     return {"records": [dict(r) for r in rows]}
+
+
+JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"
+
+
+@app.get("/api/jacket/{song_id}")
+async def api_jacket(song_id: str):
+    """ジャケット画像をプロキシして返す（外部ブロック対策）"""
+    try:
+        sid = str(int(song_id)).zfill(3)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid song_id")
+    url = JACKET_BASE_URL.format(id=sid)
+    try:
+        import urllib.request
+        req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+            return Response(content=data, media_type="image/webp")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 
 
 app.add_middleware(
