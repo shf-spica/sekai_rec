@@ -187,6 +187,7 @@ function handleFiles(fileList) {
       if (state.uploadPending <= 0) {
         state.uploadComplete = true;
         renderPreview();
+        ocrBtn.disabled = false;
       }
     };
     reader.onerror = () => renderPreview();
@@ -252,9 +253,6 @@ function renderPreview() {
   previewSection.style.display = hasFiles ? '' : 'none';
   if (langSection) langSection.style.display = hasFiles ? '' : 'none';
 
-  const uploadLabel = document.getElementById('upload-complete-label');
-  if (uploadLabel) uploadLabel.style.display = (hasFiles && state.uploadComplete) ? '' : 'none';
-
   previewGrid.innerHTML = state.files.map(entry => `
     <div class="preview-card" data-id="${entry.id}">
       <img src="${entry.dataUrl}" alt="${entry.file.name}">
@@ -314,6 +312,7 @@ async function ocrViaServer(file) {
 
 async function processImages() {
   if (state.files.length === 0 || state.isProcessing) return;
+  if (!state.uploadComplete) return; // 画像の読み込み完了前は実行させない
 
   state.isProcessing = true;
   ocrBtn.disabled = true;
@@ -747,7 +746,7 @@ async function init() {
   if (manualSubmit) manualSubmit.addEventListener('click', submitManualEntry);
 
   updateModelStatus();
-  ocrBtn.disabled = false;
+  ocrBtn.disabled = true; // アップロード完了までは押せない
   ocrBtn.textContent = 'OCR実行';
 }
 

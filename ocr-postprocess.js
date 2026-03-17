@@ -87,6 +87,8 @@ function normalizeOcrText(text) {
     t = t.replace(/－/g, 'ー');
     t = t.replace(/-/g, 'ー');
     t = t.replace(/作/g, 'バ');
+    // 「バグ」が「バク」と誤認識されがちなのでここだけ例外的に補正
+    t = t.replace(/バク/g, 'バグ');
     t = t.replace(/S/g, 'ー');
     t = t.replace(/0/g, 'O');
     return t;
@@ -114,7 +116,7 @@ function toMatchForm(s) {
 
 /**
  * 難易度キーワードの手前までを曲名ブロックとして抽出（1行目が「Ｒ」などノイズの場合はスキップ）
- * 数字のみ・小数・指数表記（0.0000034 など）は曲名ではないのでスキップ
+ * 数字のみ・小数・指数表記（例: 1.23e-4）は曲名ではないのでスキップ
  */
 function getTitleBlockLines(lines) {
     const result = [];
@@ -124,7 +126,9 @@ function getTitleBlockLines(lines) {
             break;
         }
         if (/^[0-9]+$/.test(line.text.trim())) continue; // 数字のみはスキップ
-        if (/^[0-9.\s,eE\-+]+$/.test(line.text.trim())) continue; // 小数・指数表記ノイズ（例: 0.0000034）
+        const raw = line.text.trim();
+        // 「0.0000034」は正式な曲名なのでここではスキップしない
+        if (/^[0-9.\s,eE\-+]+$/.test(raw) && raw !== '0.0000034') continue; // 小数・指数表記ノイズ
         if (/^[Ａ-ＺA-Z]$/.test(t) || t === 'Ｒ' || t === 'R') continue; // 1文字ノイズ
         result.push(line);
     }
@@ -178,7 +182,8 @@ function findBestSongMatch(lines, songDatabase) {
         const lineClean = clean.toLowerCase();
         const lineMatch = toMatchForm(lineClean);
         if (lineMatch.length < 2) continue;
-        if (/^[0-9.]+$/.test(lineMatch)) continue; // 数字・小数のみの候補は曲名ではない
+        // 「0.0000034」だけは正式な曲名なので許可し、それ以外の数字・小数だけは曲名候補から除外
+        if (/^[0-9.]+$/.test(lineMatch) && lineMatch !== '0.0000034' && lineMatch !== '00000034') continue;
 
         for (const { id, title: songTitle } of songList) {
             if (!songTitle) continue;
@@ -341,6 +346,13 @@ function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
         let five = mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount);
         if (five) {
             const judgments = assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions);
+            // PERFECT が最大でないケースはほぼあり得ないのでエラー扱い
+            const vals = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(k => judgments[k]);
+            const max = Math.max(...vals);
+            if (judgments.PERFECT !== max) {
+                const err = Object.fromEntries(['PERFECT','GREAT','GOOD','BAD','MISS'].map(k => [k, '不明']));
+                return { judgments: err, sumError: true };
+            }
             return { judgments, sumError: false };
         }
         // 先頭桁欠け（1484→484）: 合計が total-1000 等のとき、いずれか1つに 1000 を足して試す
@@ -363,6 +375,12 @@ function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
                                     arr[pos] += add;
                                     if (arr[0] + arr[1] + arr[2] + arr[3] + arr[4] === totalNoteCount) {
                                         const judgments = assignByPosition(numberLines, [...arr], s1, s2, s3, s4, labelPositions);
+                                        const vals = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(k => judgments[k]);
+                                        const max = Math.max(...vals);
+                                        if (judgments.PERFECT !== max) {
+                                            const err = Object.fromEntries(['PERFECT','GREAT','GOOD','BAD','MISS'].map(k => [k, '不明']));
+                                            return { judgments: err, sumError: true };
+                                        }
                                         return { judgments, sumError: false };
                                     }
                                     arr[pos] -= add;

@@ -231,12 +231,17 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
     created = datetime.utcnow().isoformat() + "Z"
     with get_db() as conn:
         existing = conn.execute(
-            "SELECT id, point FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
+            "SELECT id, perfect, great, good, bad, miss, point FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
             (user_id, body.song_id, difficulty),
         ).fetchone()
-        if existing and existing["point"] >= body.point:
-            return {"saved": False, "message": "Existing record has higher or equal point"}
         if existing:
+            # FULL COMBO（MISS/BAD/GOOD が 0）の有無を比較し、FC を point より優先する
+            existing_fc = existing["miss"] == 0 and existing["bad"] == 0 and existing["good"] == 0
+            new_fc = body.miss == 0 and body.bad == 0 and body.good == 0
+            if existing_fc and not new_fc:
+                return {"saved": False, "message": "Existing record (FULL COMBO) is preferred over non-FC"}
+            if (existing_fc == new_fc) and existing["point"] >= body.point:
+                return {"saved": False, "message": "Existing record has higher or equal point"}
             conn.execute(
                 """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, created_at=?
                    WHERE id = ?""",

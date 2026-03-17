@@ -102,7 +102,7 @@
 /* ALL PERFECT: 虹枠（色が流れるアニメーション） */
 .record-card-ap {
   position: relative;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background: var(--bg-secondary) padding-box;
   box-shadow: 0 0 12px rgba(255, 159, 243, 0.35);
 }
@@ -127,8 +127,9 @@
 
 /* FULL COMBO: ピンク枠 */
 .record-card-fc {
+  border-width: 3px;
   border-color: #f368e0;
-  box-shadow: 0 0 10px rgba(243, 104, 224, 0.4);
+  box-shadow: 0 0 12px rgba(243, 104, 224, 0.4);
 }
 .record-card-fc:hover {
   border-color: #ff9ff3;
@@ -242,6 +243,7 @@
 }
 
 .record-detail-close {
+  position: relative;
   display: block;
   width: 100%;
   padding: var(--space-sm) var(--space-md);
@@ -260,12 +262,12 @@
 }
 
 .record-detail-delete {
-  display: block;
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  margin-bottom: var(--space-sm);
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  padding: 4px 8px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--error);
   background: transparent;
   border: 1px solid rgba(255, 107, 107, 0.7);
