@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>記録一覧 - 画像OCRツール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="records.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1 class="app-title">
+        <a href="index.html" class="title-link">
+          <span class="title-icon">📄</span>
+          画像OCRツール
+        </a>
+      </h1>
+      <div class="header-actions">
+        <span class="auth-user" id="auth-user"></span>
+        <a href="index.html" class="btn btn-ghost btn-sm">OCRする</a>
+        <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+      </div>
+    </header>
+
+    <main class="main-content records-main">
+      <div id="records-login-required" class="records-message" style="display: none;">
+        <p>記録を見るにはログインしてください。</p>
+        <a href="index.html" class="btn btn-primary">トップへ</a>
+      </div>
+      <div id="records-loading" class="records-message">
+        <p>読み込み中...</p>
+      </div>
+      <div id="records-content" class="records-content" style="display: none;">
+        <div id="records-groups"></div>
+      </div>
+      <div id="records-empty" class="records-message" style="display: none;">
+        <p>記録がまだありません。OCRでリザルトを読み取って保存しましょう。</p>
+        <a href="index.html" class="btn btn-primary">OCRする</a>
+      </div>
+    </main>
+
+    <!-- 内訳モーダル -->
+    <div class="record-detail-modal" id="record-detail-modal" style="display: none;" aria-hidden="true">
+      <div class="record-detail-backdrop" id="record-detail-backdrop"></div>
+      <div class="record-detail-content">
+        <div class="record-detail-header">
+          <img class="record-detail-jacket" id="record-detail-jacket" src="" alt="">
+          <div>
+            <h3 class="record-detail-title" id="record-detail-title"></h3>
+            <p class="record-detail-meta" id="record-detail-meta"></p>
+          </div>
+        </div>
+        <div class="record-detail-body">
+          <div class="record-detail-point" id="record-detail-point"></div>
+          <div class="record-detail-judgments" id="record-detail-judgments"></div>
+        </div>
+        <button type="button" class="record-detail-close" id="record-detail-close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="records.js"></script>
+</body>
+
+</html>

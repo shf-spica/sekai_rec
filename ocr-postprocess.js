@@ -532,12 +532,15 @@ export function calcPoint(judgments) {
     return p('PERFECT') * 3 + p('GREAT') * 2 + p('GOOD') * 1;
 }
 
-/** songDatabase から songId と difficulty で totalNoteCount を取得 */
+/** songDatabase から songId と difficulty で totalNoteCount を取得（difficulties が number または { totalNoteCount, playLevel } の両対応） */
 function getTotalNoteCount(songDatabase, songId, difficulty) {
     if (!songDatabase?.songs || songId == null || !difficulty) return null;
     const song = songDatabase.songs.find(s => s.id === songId);
     if (!song?.difficulties) return null;
-    return song.difficulties[difficulty] ?? song.difficulties[difficulty.toLowerCase()] ?? null;
+    const raw = song.difficulties[difficulty] ?? song.difficulties[difficulty.toLowerCase()] ?? null;
+    if (raw == null) return null;
+    if (typeof raw === 'number') return raw;
+    return raw.totalNoteCount ?? null;
 }
 
 /**

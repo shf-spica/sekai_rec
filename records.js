@@ -1,0 +1,247 @@
+/**
+ * 記録一覧ページ: ログイン済みユーザーの記録を Lv. / 難易度でグループ表示
+ */
+
+const state = {
+  token: localStorage.getItem('prsk_ocr_token') || null,
+  user: null,
+  songDatabase: null,
+  records: [],
+};
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+const loginRequiredEl = $('#records-login-required');
+const loadingEl = $('#records-loading');
+const contentEl = $('#records-content');
+const groupsEl = $('#records-groups');
+const emptyEl = $('#records-empty');
+
+const JACKET_BASE = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_';
+function jacketUrl(songId) {
+  const id = String(Number(songId)).padStart(3, '0');
+  return `${JACKET_BASE}${id}/jacket_s_${id}.webp`;
+}
+
+function getPlayLevel(song, difficulty) {
+  if (!song?.difficulties) return 0;
+  const d = song.difficulties[difficulty] ?? song.difficulties[difficulty?.toLowerCase()];
+  if (d == null) return 0;
+  return typeof d === 'object' && d.playLevel != null ? d.playLevel : 0;
+}
+
+function getSongById(songId) {
+  return state.songDatabase?.songs?.find((s) => s.id === songId) ?? null;
+}
+
+async function apiCall(path, options = {}) {
+  const headers = { ...options.headers, 'Content-Type': 'application/json' };
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+  const res = await fetch(path, { ...options, headers });
+  const data = res.ok ? await res.json().catch(() => ({})) : null;
+  if (!res.ok) {
+    const err = new Error(data?.detail || res.statusText || 'Request failed');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
+
+/** 記録を playLevel → difficulty でグループ化 */
+function groupRecords(records) {
+  const withMeta = records
+    .map((r) => {
+      const song = getSongById(r.song_id);
+      const playLevel = getPlayLevel(song, r.difficulty);
+      return { ...r, song, playLevel };
+    })
+    .filter((r) => r.song != null);
+
+  const byLevel = new Map();
+  for (const r of withMeta) {
+    const level = r.playLevel || 0;
+    if (!byLevel.has(level)) byLevel.set(level, new Map());
+    const byDiff = byLevel.get(level);
+    const diff = (r.difficulty || '').toLowerCase() || 'master';
+    if (!byDiff.has(diff)) byDiff.set(diff, []);
+    byDiff.get(diff).push(r);
+  }
+
+  const levels = Array.from(byLevel.keys()).sort((a, b) => a - b);
+  const result = [];
+  for (const level of levels) {
+    const byDiff = byLevel.get(level);
+    const diffs = Array.from(byDiff.keys()).sort(diffOrder);
+    result.push({
+      playLevel: level,
+      difficulties: diffs.map((d) => ({ difficulty: d, records: byDiff.get(d) })),
+    });
+  }
+  return result;
+}
+
+const DIFF_ORDER = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
+function diffOrder(a, b) {
+  const i = DIFF_ORDER.indexOf(a);
+  const j = DIFF_ORDER.indexOf(b);
+  if (i !== -1 && j !== -1) return i - j;
+  if (i !== -1) return -1;
+  if (j !== -1) return 1;
+  return String(a).localeCompare(String(b));
+}
+
+function renderGroups() {
+  const groups = groupRecords(state.records);
+  if (groups.length === 0) {
+    contentEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  groupsEl.innerHTML = groups
+    .map(
+      (g) => `
+    <section class="records-level-section" data-level="${g.playLevel}">
+      <h2 class="records-level-title">Lv.${g.playLevel}</h2>
+      ${g.difficulties
+        .map(
+          (df) => `
+        <div class="records-diff-block">
+          <h3 class="records-diff-title">${escapeHtml(df.difficulty.toUpperCase())}</h3>
+          <div class="records-grid">
+            ${df.records
+              .map(
+                (r) => `
+              <button type="button" class="record-card record-card-has-record" data-song-id="${r.song_id}" data-difficulty="${escapeHtml(r.difficulty)}" data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}">
+                <img class="record-card-jacket" src="${jacketUrl(r.song_id)}" alt="" loading="lazy" onerror="this.src=''; this.style.background='var(--bg-card)'">
+                <span class="record-card-title">${escapeHtml(r.song?.title || `ID:${r.song_id}`)}</span>
+              </button>
+            `
+              )
+              .join('')}
+          </div>
+        </div>
+      `
+        )
+        .join('')}
+    </section>
+  `
+    )
+    .join('');
+
+  groupsEl.querySelectorAll('.record-card').forEach((btn) => {
+    btn.addEventListener('click', () => openDetail(btn));
+  });
+}
+
+function openDetail(btn) {
+  const songId = btn.dataset.songId;
+  const difficulty = btn.dataset.difficulty;
+  const recordData = {
+    perfect: parseInt(btn.dataset.perfect, 10) || 0,
+    great: parseInt(btn.dataset.great, 10) || 0,
+    good: parseInt(btn.dataset.good, 10) || 0,
+    bad: parseInt(btn.dataset.bad, 10) || 0,
+    miss: parseInt(btn.dataset.miss, 10) || 0,
+    point: parseInt(btn.dataset.point, 10) || 0,
+  };
+  const song = getSongById(songId);
+  const title = song?.title || `ID:${songId}`;
+
+  const modal = $('#record-detail-modal');
+  const jacketEl = $('#record-detail-jacket');
+  const titleEl = $('#record-detail-title');
+  const metaEl = $('#record-detail-meta');
+  const pointEl = $('#record-detail-point');
+  const judgmentsEl = $('#record-detail-judgments');
+
+  jacketEl.src = jacketUrl(songId);
+  jacketEl.alt = title;
+  titleEl.textContent = title;
+  metaEl.textContent = `Lv.${getPlayLevel(song, difficulty)} · ${(difficulty || '').toUpperCase()}`;
+  pointEl.textContent = `Point: ${recordData.point.toLocaleString()}`;
+  judgmentsEl.innerHTML = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS']
+    .map(
+      (j) => `
+      <div class="judgment-item">
+        <span class="judgment-label ${j.toLowerCase()}">${j}</span>
+        <span class="judgment-value">${recordData[j.toLowerCase()] ?? 0}</span>
+      </div>
+    `
+    )
+    .join('');
+
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeDetail() {
+  const modal = $('#record-detail-modal');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+async function init() {
+  if (!state.token) {
+    loadingEl.style.display = 'none';
+    loginRequiredEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const [meRes, dbRes] = await Promise.all([
+      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${state.token}` } }),
+      fetch('songDatabase.json'),
+    ]);
+
+    const meData = meRes.ok ? await meRes.json().catch(() => ({})) : null;
+    if (!meData?.user) {
+      state.token = null;
+      localStorage.removeItem('prsk_ocr_token');
+      loadingEl.style.display = 'none';
+      loginRequiredEl.style.display = 'block';
+      return;
+    }
+    state.user = meData.user;
+
+    if (dbRes.ok) state.songDatabase = await dbRes.json();
+
+    const authUser = $('#auth-user');
+    if (authUser) authUser.textContent = state.user.username;
+    const logoutBtn = $('#auth-logout-btn');
+    if (logoutBtn) {
+      logoutBtn.style.display = '';
+      logoutBtn.addEventListener('click', () => {
+        state.token = null;
+        state.user = null;
+        localStorage.removeItem('prsk_ocr_token');
+        window.location.href = 'index.html';
+      });
+    }
+
+    const data = await apiCall('/api/records');
+    state.records = data.records || [];
+  } catch (e) {
+    console.error(e);
+    loadingEl.innerHTML = '<p>読み込みに失敗しました。</p>';
+    return;
+  }
+
+  loadingEl.style.display = 'none';
+  renderGroups();
+
+  $('#record-detail-backdrop')?.addEventListener('click', closeDetail);
+  $('#record-detail-close')?.addEventListener('click', closeDetail);
+}
+
+init();

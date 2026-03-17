@@ -38,11 +38,15 @@ def main() -> None:
         music_id = d.get("musicId")
         diff = d.get("musicDifficulty")
         total = d.get("totalNoteCount")
+        play_level = d.get("playLevel")
         if music_id is None or not diff or total is None:
             continue
         if music_id not in by_music_id:
             continue
-        by_music_id[music_id]["difficulties"][diff] = total
+        by_music_id[music_id]["difficulties"][diff] = {
+            "totalNoteCount": total,
+            "playLevel": play_level if play_level is not None else 0,
+        }
 
     songs = [v for v in by_music_id.values() if v["title"]]
     songs.sort(key=lambda s: (s["id"],))
