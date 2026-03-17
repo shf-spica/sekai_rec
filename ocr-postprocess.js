@@ -173,6 +173,14 @@ function findBestSongMatch(lines, songDatabase) {
     const candidates = buildTitleCandidates(titleBlockLines);
 
     for (const { text: rawCandidate, combined } of candidates) {
+        // 「0.0000034」は完全一致で即マッチさせる（前処理で形が崩れないようにここで処理）
+        const rawTrim = rawCandidate.trim();
+        if (rawTrim === '0.0000034') {
+            const special = songList.find(s => s.title === '0.0000034');
+            if (special) {
+                return { title: special.title, id: special.id, score: 1.0, matchedText: rawTrim };
+            }
+        }
         let clean = rawCandidate;
         NOISE_WORDS.forEach(w => {
             clean = clean.replace(new RegExp(w, 'gi'), '');

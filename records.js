@@ -95,7 +95,25 @@ function buildSlotsByLevel() {
     const diffs = Array.from(byDiff.keys()).sort(diffOrder);
     result.push({
       playLevel: level,
-      difficulties: diffs.map((d) => ({ difficulty: d, slots: byDiff.get(d) })),
+      difficulties: diffs.map((d) => {
+        const slots = [...byDiff.get(d)];
+        slots.sort((a, b) => {
+          const ra = a.record;
+          const rb = b.record;
+          const apA = ra && isAllPerfect(ra);
+          const apB = rb && isAllPerfect(rb);
+          if (apA && !apB) return -1;
+          if (!apA && apB) return 1;
+          const fcA = ra && isFullCombo(ra);
+          const fcB = rb && isFullCombo(rb);
+          if (fcA && !fcB) return -1;
+          if (!fcA && fcB) return 1;
+          const pmA = calcPointMinus(ra);
+          const pmB = calcPointMinus(rb);
+          return pmB - pmA; // 大きい順
+        });
+        return { difficulty: d, slots };
+      }),
     });
   }
   return result;
@@ -118,6 +136,15 @@ function isAllPerfect(record) {
 function isFullCombo(record) {
   if (!record) return false;
   return (record.miss || 0) + (record.bad || 0) + (record.good || 0) === 0;
+}
+
+function calcPointMinus(record) {
+  if (!record) return 0;
+  const g = record.great || 0;
+  const good = record.good || 0;
+  const b = record.bad || 0;
+  const m = record.miss || 0;
+  return -1 * (g + good * 2 + b * 3 + m * 3);
 }
 
 function renderGroups() {
@@ -155,9 +182,11 @@ function renderGroups() {
                   ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}" data-taken-at="${r.taken_at || ''}"`
                   : '';
                 const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
+                const pm = hasRecord ? calcPointMinus(r) : 0;
                 return `
               <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
                 <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">
+                ${hasRecord ? `<span class="record-card-point-minus-badge">${pm}</span>` : ''}
                 <span class="record-card-title">${escapeHtml(slot.song?.title || `ID:${slot.songId}`)}</span>
               </button>
             `;

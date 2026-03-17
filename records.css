@@ -83,6 +83,7 @@
   text-align: center;
   font-family: inherit;
   color: var(--text-primary);
+  position: relative;
 }
 
 .record-card:hover {
@@ -142,6 +143,24 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
+}
+
+.record-card-point-minus-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffeaa7;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
 }
 
 .record-card-title {
