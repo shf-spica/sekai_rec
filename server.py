@@ -380,21 +380,7 @@ async def api_save_dataset(body: DatasetBody):
     return {"saved": True, "path": image_path_rel}
 
 
-# ログイン済みユーザー用: 自分の API キーを1つ発行
-@app.post("/api/external/api-key")
-async def api_create_api_key(user=Depends(get_current_user)):
-    if user is None:
-        raise HTTPException(status_code=401, detail="Login required")
-    import secrets
-    api_key = secrets.token_urlsafe(32)
-    created = datetime.utcnow().isoformat() + "Z"
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO api_keys (username, api_key, created_at) VALUES (?, ?, ?)",
-            (user["username"], api_key, created),
-        )
-    return {"username": user["username"], "api_key": api_key}
-
+# APIキーは create_api_key.py で生成して api_key.txt に書いておく運用
 
 JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"
 _jacket_cache_dir = Path(__file__).resolve().parent / "jacket_cache"
