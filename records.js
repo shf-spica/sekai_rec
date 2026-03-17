@@ -98,19 +98,24 @@ function buildSlotsByLevel() {
       difficulties: diffs.map((d) => {
         const slots = [...byDiff.get(d)];
         slots.sort((a, b) => {
+          const hasA = !!a.record;
+          const hasB = !!b.record;
+          if (hasA && !hasB) return -1;
+          if (!hasA && hasB) return 1;
+          if (!hasA && !hasB) return 0;
           const ra = a.record;
           const rb = b.record;
-          const apA = ra && isAllPerfect(ra);
-          const apB = rb && isAllPerfect(rb);
+          const apA = isAllPerfect(ra);
+          const apB = isAllPerfect(rb);
           if (apA && !apB) return -1;
           if (!apA && apB) return 1;
-          const fcA = ra && isFullCombo(ra);
-          const fcB = rb && isFullCombo(rb);
+          const fcA = isFullCombo(ra);
+          const fcB = isFullCombo(rb);
           if (fcA && !fcB) return -1;
           if (!fcA && fcB) return 1;
           const pmA = calcPointMinus(ra);
           const pmB = calcPointMinus(rb);
-          return pmB - pmA; // 大きい順
+          return pmB - pmA;
         });
         return { difficulty: d, slots };
       }),
