@@ -40,6 +40,15 @@ JWT_EXPIRE_HOURS = 24 * 7  # 7 days
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto") if CryptContext else None
 security = HTTPBearer(auto_error=False)
 
+# bcrypt accepts at most 72 bytes; truncate to avoid ValueError
+def _password_for_bcrypt(password: str) -> str:
+    if not password:
+        return ""
+    b = password.encode("utf-8")
+    if len(b) > 72:
+        return b[:72].decode("utf-8", errors="ignore") or password[:72]
+    return password
+
 # SQLite
 _db_path = Path(__file__).resolve().parent / "prsk_ocr.db"
 
@@ -159,6 +168,10 @@ async def api_register(body: RegisterBody):
         raise HTTPException(status_code=400, detail="Username too short")
     if len(password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    password = _password_for_bcrypt(password)
+    # #region agent log
+    _debug_log({"sessionId": "af88d6", "runId": "post-fix", "hypothesisId": "H1", "location": "server.py:api_register:after_trunc", "message": "password len after trunc", "data": {"len_bytes": len(password.encode("utf-8"))}})
+    # #endregion
     password_hash = pwd_ctx.hash(password)
     created = datetime.utcnow().isoformat() + "Z"
     try:
@@ -182,7 +195,7 @@ async def api_register(body: RegisterBody):
 async def api_login(body: LoginBody):
     _require_auth()
     username = (body.username or "").strip()
-    password = body.password or ""
+    password = _password_for_bcrypt(body.password or "")
     with get_db() as conn:
         row = conn.execute(
             "SELECT id, username, password_hash FROM users WHERE username = ?", (username,)
