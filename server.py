@@ -255,6 +255,20 @@ async def api_list_records(user=Depends(get_current_user)):
     return {"records": [dict(r) for r in rows]}
 
 
+@app.delete("/api/records")
+async def api_delete_record(song_id: int, difficulty: str, user=Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    difficulty_norm = (difficulty or "").strip().lower()
+    with get_db() as conn:
+        cur = conn.execute(
+            "DELETE FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
+            (user["id"], song_id, difficulty_norm),
+        )
+        deleted = cur.rowcount > 0
+    return {"deleted": deleted}
+
+
 # ML用データセット: 入力画像 + 生OCR + 補正後データを保存
 _ml_dataset_dir = Path(__file__).resolve().parent / "ml_dataset"
 _ml_dataset_images_dir = _ml_dataset_dir / "images"

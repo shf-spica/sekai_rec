@@ -82,7 +82,6 @@
             </select>
           </label>
           <div class="manual-judgments">
-            <label class="manual-judgment"><span>PERFECT</span><input type="number" id="manual-perfect" min="0" value="0"></label>
             <label class="manual-judgment"><span>GREAT</span><input type="number" id="manual-great" min="0" value="0"></label>
             <label class="manual-judgment"><span>GOOD</span><input type="number" id="manual-good" min="0" value="0"></label>
             <label class="manual-judgment"><span>BAD</span><input type="number" id="manual-bad" min="0" value="0"></label>
@@ -121,7 +120,7 @@
       <!-- Preview Section -->
       <section class="preview-section" id="preview-section" style="display: none;">
         <div class="section-header">
-          <h2 class="section-title">アップロード画像</h2>
+          <h2 class="section-title">アップロード画像 <span class="upload-complete" id="upload-complete-label" style="display: none;">アップロード完了</span></h2>
           <div class="section-actions">
             <button class="btn btn-ghost" id="clear-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -142,23 +141,6 @@
           </div>
         </div>
         <div class="preview-grid" id="preview-grid"></div>
-      </section>
-
-      <!-- Language Selection (kept for compatibility) -->
-      <section class="lang-section" id="lang-section">
-        <div class="section-header">
-          <h2 class="section-title">OCR設定</h2>
-        </div>
-        <div class="lang-options">
-          <label class="lang-option">
-            <input type="checkbox" id="lang-jpn" value="jpn" checked>
-            <span class="lang-label">日本語</span>
-          </label>
-          <label class="lang-option">
-            <input type="checkbox" id="lang-eng" value="eng" checked>
-            <span class="lang-label">English</span>
-          </label>
-        </div>
       </section>
 
       <!-- Results Section -->

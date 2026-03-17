@@ -201,6 +201,7 @@ function openDetail(btn) {
   const metaEl = $('#record-detail-meta');
   const pointEl = $('#record-detail-point');
   const judgmentsEl = $('#record-detail-judgments');
+  const deleteBtn = $('#record-detail-delete');
 
   jacketEl.src = jacketProxyUrl(songId);
   jacketEl.alt = title;
@@ -211,6 +212,7 @@ function openDetail(btn) {
     pointEl.textContent = '';
     pointEl.parentElement.classList.add('record-detail-no-record');
     judgmentsEl.innerHTML = '<p class="record-detail-empty">記録がありません</p>';
+    if (deleteBtn) deleteBtn.style.display = 'none';
   } else {
     pointEl.parentElement.classList.remove('record-detail-no-record');
     pointEl.textContent = `Point: ${recordData.point.toLocaleString()}`;
@@ -224,6 +226,25 @@ function openDetail(btn) {
     `
       )
       .join('');
+    if (deleteBtn) {
+      deleteBtn.style.display = '';
+      deleteBtn.onclick = async () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        try {
+          await apiCall(`/api/records?song_id=${encodeURIComponent(songId)}&difficulty=${encodeURIComponent(difficulty)}`, {
+            method: 'DELETE',
+          });
+          state.records = state.records.filter(
+            (r) => !(String(r.song_id) === String(songId) && (r.difficulty || '').toLowerCase() === (difficulty || '').toLowerCase()),
+          );
+          renderGroups();
+          closeDetail();
+        } catch (e) {
+          console.error(e);
+          alert('削除に失敗しました: ' + (e.message || e));
+        }
+      };
+    }
   }
 
   modal.style.display = 'flex';

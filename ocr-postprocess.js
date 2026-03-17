@@ -655,6 +655,7 @@ export function parseGameResult(ocrResult, songDatabase) {
     const totalNoteCount = getTotalNoteCount(songDatabase, matchedSong.id, difficulty);
     const { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
     const point = calcPoint(judgments);
+    const songError = !matchedSong.id;
 
     return {
         rawText: parsed.text,
@@ -664,6 +665,7 @@ export function parseGameResult(ocrResult, songDatabase) {
         difficulty: difficulty ? difficulty.toLowerCase() : null,
         judgments,
         judgmentsSumError: judgmentsSumError || false,
+        songError,
         point,
     };
 }

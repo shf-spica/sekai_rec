@@ -56,7 +56,6 @@ const manualSearchResults = $('#manual-search-results');
 const manualSelected = $('#manual-selected');
 const manualSelectedTitle = $('#manual-selected-title');
 const manualDifficulty = $('#manual-difficulty');
-const manualPerfect = $('#manual-perfect');
 const manualGreat = $('#manual-great');
 const manualGood = $('#manual-good');
 const manualBad = $('#manual-bad');
@@ -241,7 +240,10 @@ dropZone.addEventListener('drop', (e) => {
 function renderPreview() {
   const hasFiles = state.files.length > 0;
   previewSection.style.display = hasFiles ? '' : 'none';
-  langSection.style.display = hasFiles ? '' : 'none';
+  if (langSection) langSection.style.display = hasFiles ? '' : 'none';
+
+  const uploadLabel = document.getElementById('upload-complete-label');
+  if (uploadLabel) uploadLabel.style.display = hasFiles ? '' : 'none';
 
   previewGrid.innerHTML = state.files.map(entry => `
     <div class="preview-card" data-id="${entry.id}">
@@ -306,6 +308,8 @@ async function processImages() {
   state.isProcessing = true;
   ocrBtn.disabled = true;
 
+  if (previewSection) previewSection.style.display = 'none';
+
   // Show progress UI
   resultsSection.style.display = '';
   resultsList.innerHTML = renderProgressUI(state.files);
@@ -338,6 +342,30 @@ async function processImages() {
         } catch (_) {}
       }
 
+      // デフォルトで ML 用データセットに追加
+      if (parsed && parsed.songId != null && !parsed.judgmentsSumError && !parsed.songError && parsed.judgments) {
+        const j = parsed.judgments;
+        if (typeof j.PERFECT === 'number' && typeof j.GREAT === 'number' && typeof j.GOOD === 'number' &&
+            typeof j.BAD === 'number' && typeof j.MISS === 'number') {
+          const point = (j.PERFECT * 3) + (j.GREAT * 2) + (j.GOOD * 1);
+          const payload = {
+            source: 'ocr',
+            image_base64: entry.dataUrl || null,
+            raw_text: ocrResult.fullText || '',
+            song_id: parsed.songId,
+            song_title: parsed.songTitle || '',
+            difficulty: (parsed.difficulty || '').toLowerCase(),
+            perfect: j.PERFECT,
+            great: j.GREAT,
+            good: j.GOOD,
+            bad: j.BAD,
+            miss: j.MISS,
+            point,
+          };
+          saveDataset(payload).catch((e) => console.warn('Failed to save dataset', e));
+        }
+      }
+
       state.results.push({
         entry,
         rawText: ocrResult.fullText || '',
@@ -354,10 +382,10 @@ async function processImages() {
     }
   }
 
-  // エラー・総和エラーが出たものを結果の一番上に表示
+  // エラー・総和エラー・曲名エラーが出たものを結果の一番上に表示
   const sorted = [...state.results].sort((a, b) => {
-    const aErr = !!(a.error || a.parsed?.judgmentsSumError);
-    const bErr = !!(b.error || b.parsed?.judgmentsSumError);
+    const aErr = !!(a.error || a.parsed?.judgmentsSumError || a.parsed?.songError);
+    const bErr = !!(b.error || b.parsed?.judgmentsSumError || b.parsed?.songError);
     if (aErr && !bErr) return -1;
     if (!aErr && bErr) return 1;
     return 0;
@@ -422,7 +450,7 @@ function renderResults(results) {
     let copyText = rawText;
 
     if (r.parsed) {
-      const { songTitle, matchConfidence, difficulty, judgments, judgmentsSumError, point, rawText: rt } = r.parsed;
+      const { songTitle, matchConfidence, difficulty, judgments, judgmentsSumError, songError, point, rawText: rt } = r.parsed;
       rawText = rt;
 
       const confClass = matchConfidence >= 0.8 ? 'conf-high' : (matchConfidence >= 0.4 ? 'conf-med' : 'conf-low');
@@ -456,6 +484,7 @@ function renderResults(results) {
           </div>
           ${difficultyLabel ? `<div class="result-difficulty">${escapeHtml(difficultyLabel)}</div>` : ''}
           ${judgmentsSumError ? '<div class="result-sum-error">数字の総和が総ノーツ数と一致しません（数字または難易度の認識エラー）</div>' : ''}
+          ${songError ? '<div class="result-sum-error">曲名を特定できませんでした</div>' : ''}
           ${point != null && !judgmentsSumError ? `<div class="result-point">Point: <strong>${point.toLocaleString()}</strong></div>` : ''}
           ${r.recordSaved ? '<div class="result-record-saved">記録を保存しました</div>' : ''}
           ${badgeHtml}
@@ -490,12 +519,6 @@ function renderResults(results) {
         </div>
         <div class="result-actions">
           <span class="copy-feedback" id="copy-feedback-${i}">コピーしました</span>
-          <span class="dataset-feedback" id="dataset-feedback-${i}">データセットに追加しました</span>
-          ${r.parsed && r.parsed.songId != null && !r.parsed.judgmentsSumError && typeof r.parsed.judgments?.PERFECT === 'number' ? `
-          <button class="btn btn-ghost btn-sm" onclick="window.__addToDataset(${i})" title="ML用データセットに保存">
-            データセットに追加
-          </button>
-          ` : ''}
           <button class="btn btn-ghost" onclick="window.__copyResult(${i})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -730,7 +753,7 @@ function openManualModal() {
   if (manualSelected) manualSelected.style.display = 'none';
   if (manualSearchResults) manualSearchResults.innerHTML = '';
   if (manualDifficulty) manualDifficulty.value = 'master';
-  [manualPerfect, manualGreat, manualGood, manualBad, manualMiss].forEach((el) => { if (el) el.value = '0'; });
+  [manualGreat, manualGood, manualBad, manualMiss].forEach((el) => { if (el) el.value = '0'; });
   if (manualError) manualError.textContent = '';
   manualModal.style.display = 'flex';
   manualModal.setAttribute('aria-hidden', 'false');
@@ -773,13 +796,31 @@ async function submitManualEntry() {
     manualError.textContent = '曲を選択してください';
     return;
   }
-  const p = parseInt(manualPerfect?.value || '0', 10) || 0;
   const g = parseInt(manualGreat?.value || '0', 10) || 0;
   const o = parseInt(manualGood?.value || '0', 10) || 0;
   const b = parseInt(manualBad?.value || '0', 10) || 0;
   const m = parseInt(manualMiss?.value || '0', 10) || 0;
-  const point = p * 3 + g * 2 + o * 1;
   const difficulty = (manualDifficulty?.value || 'master').toLowerCase();
+
+  // PERFECT はデータベースの総ノーツ数から自動計算
+  let totalNoteCount = null;
+  if (state.songDatabase?.songs?.length) {
+    const song = state.songDatabase.songs.find((s) => s.id === state.manualSelectedSong.id);
+    const diffInfo = song?.difficulties?.[difficulty] ?? song?.difficulties?.[difficulty.toLowerCase()];
+    if (typeof diffInfo === 'number') totalNoteCount = diffInfo;
+    else if (diffInfo && typeof diffInfo.totalNoteCount === 'number') totalNoteCount = diffInfo.totalNoteCount;
+  }
+  if (totalNoteCount == null) {
+    manualError.textContent = 'この曲・難易度の総ノーツ数が不明です（songDatabase.json を確認してください）';
+    return;
+  }
+  const sumOthers = g + o + b + m;
+  const p = totalNoteCount - sumOthers;
+  if (p < 0) {
+    manualError.textContent = 'PERFECT が負になってしまいます（GREAT/GOOD/BAD/MISS を確認してください）';
+    return;
+  }
+  const point = p * 3 + g * 2 + o * 1;
 
   if (state.token) {
     try {
