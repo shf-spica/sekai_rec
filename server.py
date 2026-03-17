@@ -124,6 +124,21 @@ class RecordBody(BaseModel):
     point: int
 
 
+class DatasetBody(BaseModel):
+    source: str  # "ocr" | "manual"
+    image_base64: str | None = None
+    raw_text: str | None = None
+    song_id: int
+    song_title: str
+    difficulty: str
+    perfect: int
+    great: int
+    good: int
+    bad: int
+    miss: int
+    point: int
+
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     _require_auth()
     if not credentials:
@@ -238,6 +253,55 @@ async def api_list_records(user=Depends(get_current_user)):
             (user["id"],),
         ).fetchall()
     return {"records": [dict(r) for r in rows]}
+
+
+# ML用データセット: 入力画像 + 生OCR + 補正後データを保存
+_ml_dataset_dir = Path(__file__).resolve().parent / "ml_dataset"
+_ml_dataset_images_dir = _ml_dataset_dir / "images"
+
+
+@app.post("/api/dataset")
+async def api_save_dataset(body: DatasetBody):
+    """機械学習用に 入力画像・生データ・補正後データ を1件追加"""
+    _ml_dataset_dir.mkdir(exist_ok=True)
+    _ml_dataset_images_dir.mkdir(exist_ok=True)
+
+    image_path_rel: str | None = None
+    if body.image_base64:
+        try:
+            import base64
+            import uuid
+            raw = body.image_base64
+            if "," in raw:
+                raw = raw.split(",", 1)[1]
+            data = base64.b64decode(raw)
+            ext = "webp" if data[:4] == b"RIFF" else "jpg"
+            name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.{ext}"
+            path = _ml_dataset_images_dir / name
+            path.write_bytes(data)
+            image_path_rel = f"images/{name}"
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid image_base64: {e}")
+
+    entry = {
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "source": body.source,
+        "image": image_path_rel,
+        "raw_text": body.raw_text or "",
+        "song_id": body.song_id,
+        "song_title": body.song_title,
+        "difficulty": (body.difficulty or "").strip().lower(),
+        "perfect": body.perfect,
+        "great": body.great,
+        "good": body.good,
+        "bad": body.bad,
+        "miss": body.miss,
+        "point": body.point,
+    }
+    jsonl_path = _ml_dataset_dir / "data.jsonl"
+    with open(jsonl_path, "a", encoding="utf-8") as f:
+        f.write(__import__("json").dumps(entry, ensure_ascii=False) + "\n")
+    return {"saved": True, "path": image_path_rel}
 
 
 JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"

@@ -48,6 +48,22 @@ const authPassword = $('#auth-password');
 const authError = $('#auth-error');
 const authModalCancel = $('#auth-modal-cancel');
 const authSubmit = $('#auth-submit');
+const manualEntryBtn = $('#manual-entry-btn');
+const manualModal = $('#manual-modal');
+const manualModalBackdrop = $('#manual-modal-backdrop');
+const manualSearch = $('#manual-search');
+const manualSearchResults = $('#manual-search-results');
+const manualSelected = $('#manual-selected');
+const manualSelectedTitle = $('#manual-selected-title');
+const manualDifficulty = $('#manual-difficulty');
+const manualPerfect = $('#manual-perfect');
+const manualGreat = $('#manual-great');
+const manualGood = $('#manual-good');
+const manualBad = $('#manual-bad');
+const manualMiss = $('#manual-miss');
+const manualError = $('#manual-error');
+const manualModalCancel = $('#manual-modal-cancel');
+const manualSubmit = $('#manual-submit');
 
 // ========================================
 // API (認証付き)
@@ -91,6 +107,54 @@ async function saveRecord(parsed) {
     return null;
   }
 }
+
+/** ML用データセットに1件追加（OCR結果 or 手動入力） */
+async function saveDataset(payload) {
+  const res = await fetch('/api/dataset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.detail || res.statusText);
+  }
+  return res.json();
+}
+
+window.__addToDataset = async function (displayIndex) {
+  const results = state.sortedResults || state.results;
+  const r = results[displayIndex];
+  if (!r?.parsed?.songId || r.parsed.judgmentsSumError) return;
+  const j = r.parsed.judgments;
+  if (typeof j?.PERFECT !== 'number') return;
+  const point = (j.PERFECT * 3) + (j.GREAT * 2) + (j.GOOD * 1);
+  const payload = {
+    source: 'ocr',
+    image_base64: r.entry?.dataUrl || null,
+    raw_text: r.rawText || '',
+    song_id: r.parsed.songId,
+    song_title: r.parsed.songTitle || '',
+    difficulty: (r.parsed.difficulty || '').toLowerCase(),
+    perfect: j.PERFECT,
+    great: j.GREAT,
+    good: j.GOOD,
+    bad: j.BAD,
+    miss: j.MISS,
+    point,
+  };
+  try {
+    await saveDataset(payload);
+    const feedback = $(`#dataset-feedback-${displayIndex}`);
+    if (feedback) {
+      feedback.classList.add('show');
+      setTimeout(() => feedback.classList.remove('show'), 2000);
+    }
+  } catch (e) {
+    console.error(e);
+    alert('データセットの保存に失敗しました: ' + e.message);
+  }
+};
 
 // ========================================
 // File Handling
@@ -351,6 +415,7 @@ function updateProgressItem(index, status, progress) {
 // ========================================
 
 function renderResults(results) {
+  state.sortedResults = results;
   resultsList.innerHTML = results.map((r, i) => {
     let parsedHtml = '';
     let rawText = r.rawText || '';
@@ -425,6 +490,12 @@ function renderResults(results) {
         </div>
         <div class="result-actions">
           <span class="copy-feedback" id="copy-feedback-${i}">コピーしました</span>
+          <span class="dataset-feedback" id="dataset-feedback-${i}">データセットに追加しました</span>
+          ${r.parsed && r.parsed.songId != null && !r.parsed.judgmentsSumError && typeof r.parsed.judgments?.PERFECT === 'number' ? `
+          <button class="btn btn-ghost btn-sm" onclick="window.__addToDataset(${i})" title="ML用データセットに保存">
+            データセットに追加
+          </button>
+          ` : ''}
           <button class="btn btn-ghost" onclick="window.__copyResult(${i})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -636,9 +707,123 @@ async function init() {
   if (authModalCancel) authModalCancel.addEventListener('click', closeAuthModal);
   if (authForm) authForm.addEventListener('submit', submitAuth);
 
+  if (manualEntryBtn) manualEntryBtn.addEventListener('click', openManualModal);
+  if (manualModalBackdrop) manualModalBackdrop.addEventListener('click', closeManualModal);
+  if (manualModalCancel) manualModalCancel.addEventListener('click', closeManualModal);
+  if (manualSearch) manualSearch.addEventListener('input', renderManualSearchResults);
+  if (manualSubmit) manualSubmit.addEventListener('click', submitManualEntry);
+
   updateModelStatus();
   ocrBtn.disabled = false;
   ocrBtn.textContent = 'OCR実行';
+}
+
+// ========================================
+// 手動入力モーダル
+// ========================================
+state.manualSelectedSong = null;
+
+function openManualModal() {
+  if (!manualModal) return;
+  state.manualSelectedSong = null;
+  if (manualSearch) manualSearch.value = '';
+  if (manualSelected) manualSelected.style.display = 'none';
+  if (manualSearchResults) manualSearchResults.innerHTML = '';
+  if (manualDifficulty) manualDifficulty.value = 'master';
+  [manualPerfect, manualGreat, manualGood, manualBad, manualMiss].forEach((el) => { if (el) el.value = '0'; });
+  if (manualError) manualError.textContent = '';
+  manualModal.style.display = 'flex';
+  manualModal.setAttribute('aria-hidden', 'false');
+  if (manualSearch) manualSearch.focus();
+}
+
+function closeManualModal() {
+  if (!manualModal) return;
+  manualModal.style.display = 'none';
+  manualModal.setAttribute('aria-hidden', 'true');
+}
+
+function renderManualSearchResults() {
+  const q = (manualSearch?.value || '').trim().toLowerCase();
+  const list = state.songDatabase?.songs ?? [];
+  const EXCLUDED = [674, 675, 676, 707, 708, 709];
+  const filtered = list.filter((s) => !EXCLUDED.includes(s.id) && s.title && s.title.toLowerCase().includes(q)).slice(0, 50);
+  if (!manualSearchResults) return;
+  if (q.length < 1) {
+    manualSearchResults.innerHTML = '<p class="manual-search-hint">曲名を入力して検索</p>';
+    return;
+  }
+  manualSearchResults.innerHTML = filtered.length
+    ? filtered.map((s) => `<button type="button" class="manual-song-option" data-id="${s.id}" data-title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</button>`).join('')
+    : '<p class="manual-search-hint">該当なし</p>';
+  manualSearchResults.querySelectorAll('.manual-song-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.manualSelectedSong = { id: parseInt(btn.dataset.id, 10), title: (btn.textContent || btn.dataset.title || '').trim() };
+      if (manualSelectedTitle) manualSelectedTitle.textContent = state.manualSelectedSong.title;
+      if (manualSelected) manualSelected.style.display = 'block';
+      manualSearchResults.innerHTML = '';
+    });
+  });
+}
+
+async function submitManualEntry() {
+  if (!manualError) return;
+  manualError.textContent = '';
+  if (!state.manualSelectedSong) {
+    manualError.textContent = '曲を選択してください';
+    return;
+  }
+  const p = parseInt(manualPerfect?.value || '0', 10) || 0;
+  const g = parseInt(manualGreat?.value || '0', 10) || 0;
+  const o = parseInt(manualGood?.value || '0', 10) || 0;
+  const b = parseInt(manualBad?.value || '0', 10) || 0;
+  const m = parseInt(manualMiss?.value || '0', 10) || 0;
+  const point = p * 3 + g * 2 + o * 1;
+  const difficulty = (manualDifficulty?.value || 'master').toLowerCase();
+
+  if (state.token) {
+    try {
+      await apiCall('/api/records', {
+        method: 'POST',
+        body: JSON.stringify({
+          song_id: state.manualSelectedSong.id,
+          difficulty,
+          perfect: p,
+          great: g,
+          good: o,
+          bad: b,
+          miss: m,
+          point,
+        }),
+      });
+    } catch (e) {
+      manualError.textContent = '記録の保存に失敗: ' + (e.message || e);
+      return;
+    }
+  }
+
+  try {
+    await saveDataset({
+      source: 'manual',
+      image_base64: null,
+      raw_text: '',
+      song_id: state.manualSelectedSong.id,
+      song_title: state.manualSelectedSong.title,
+      difficulty,
+      perfect: p,
+      great: g,
+      good: o,
+      bad: b,
+      miss: m,
+      point,
+    });
+    manualError.textContent = '';
+    closeManualModal();
+    if (state.token) alert('記録を保存し、データセットに追加しました。');
+    else alert('データセットに追加しました。');
+  } catch (e) {
+    manualError.textContent = 'データセットの保存に失敗: ' + (e.message || e);
+  }
 }
 
 init();

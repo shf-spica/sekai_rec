@@ -29,6 +29,7 @@
         </div>
         <div class="auth-area" id="auth-area">
           <span class="auth-user" id="auth-user" style="display: none;"></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="manual-entry-btn">手動入力</button>
           <a href="records.html" class="btn btn-ghost btn-sm" id="records-link">記録を見る</a>
           <button type="button" class="btn btn-ghost btn-sm" id="auth-login-btn">ログイン</button>
           <button type="button" class="btn btn-ghost btn-sm" id="auth-register-btn">新規登録</button>
@@ -54,6 +55,44 @@
               <button type="submit" class="btn btn-primary" id="auth-submit">ログイン</button>
             </div>
           </form>
+        </div>
+      </div>
+      <div class="manual-modal" id="manual-modal" style="display: none;" aria-hidden="true">
+        <div class="manual-modal-backdrop" id="manual-modal-backdrop"></div>
+        <div class="manual-modal-content">
+          <h3 class="manual-modal-title">手動入力</h3>
+          <label class="manual-field">
+            <span>曲名で検索</span>
+            <input type="text" id="manual-search" placeholder="曲名を入力" autocomplete="off">
+          </label>
+          <div class="manual-search-results" id="manual-search-results"></div>
+          <div class="manual-selected" id="manual-selected" style="display: none;">
+            <span class="manual-selected-label">選択中:</span>
+            <span id="manual-selected-title"></span>
+          </div>
+          <label class="manual-field">
+            <span>難易度</span>
+            <select id="manual-difficulty">
+              <option value="easy">EASY</option>
+              <option value="normal">NORMAL</option>
+              <option value="hard">HARD</option>
+              <option value="expert">EXPERT</option>
+              <option value="master" selected>MASTER</option>
+              <option value="append">APPEND</option>
+            </select>
+          </label>
+          <div class="manual-judgments">
+            <label class="manual-judgment"><span>PERFECT</span><input type="number" id="manual-perfect" min="0" value="0"></label>
+            <label class="manual-judgment"><span>GREAT</span><input type="number" id="manual-great" min="0" value="0"></label>
+            <label class="manual-judgment"><span>GOOD</span><input type="number" id="manual-good" min="0" value="0"></label>
+            <label class="manual-judgment"><span>BAD</span><input type="number" id="manual-bad" min="0" value="0"></label>
+            <label class="manual-judgment"><span>MISS</span><input type="number" id="manual-miss" min="0" value="0"></label>
+          </div>
+          <p class="manual-error" id="manual-error"></p>
+          <div class="manual-modal-actions">
+            <button type="button" class="btn btn-ghost" id="manual-modal-cancel">キャンセル</button>
+            <button type="button" class="btn btn-primary" id="manual-submit">記録を保存してデータセットに追加</button>
+          </div>
         </div>
       </div>
     </header>
