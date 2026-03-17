@@ -134,11 +134,27 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return None
 
 
+# #region agent log
+def _debug_log(data):
+    import json
+    p = Path(__file__).resolve().parent / ".cursor" / "debug-af88d6.log"
+    try:
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps({**data, "timestamp": __import__("time").time()}, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+# #endregion
+
+
 @app.post("/api/auth/register")
 async def api_register(body: RegisterBody):
     _require_auth()
     username = (body.username or "").strip()
     password = body.password or ""
+    # #region agent log
+    _pw_bytes = password.encode("utf-8") if isinstance(password, str) else str(password).encode("utf-8")
+    _debug_log({"sessionId": "af88d6", "hypothesisId": "H1", "location": "server.py:api_register", "message": "register password len", "data": {"type_password": type(body.password).__name__, "len_chars": len(password), "len_bytes": len(_pw_bytes), "over_72": len(_pw_bytes) > 72}})
+    # #endregion
     if len(username) < 2:
         raise HTTPException(status_code=400, detail="Username too short")
     if len(password) < 6:
