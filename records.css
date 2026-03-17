@@ -99,16 +99,33 @@
   opacity: 0.75;
 }
 
-/* ALL PERFECT: 虹枠 */
+/* ALL PERFECT: 虹枠（色が流れるアニメーション） */
 .record-card-ap {
+  position: relative;
   border: 2px solid transparent;
-  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
-    linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b) border-box;
+  background: var(--bg-secondary) padding-box;
   box-shadow: 0 0 12px rgba(255, 159, 243, 0.35);
 }
+.record-card-ap::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--radius-md) + 2px);
+  padding: 2px;
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b, #feca57, #48dbfb);
+  background-size: 200% 100%;
+  animation: record-rainbow-border 2.5s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes record-rainbow-border {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
 .record-card-ap:hover {
-  background: linear-gradient(var(--bg-card-hover), var(--bg-card-hover)) padding-box,
-    linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b) border-box;
   box-shadow: 0 0 16px rgba(255, 159, 243, 0.45);
 }
 

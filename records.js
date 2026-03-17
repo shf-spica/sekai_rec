@@ -84,7 +84,7 @@ function buildSlotsByLevel() {
     }
   }
 
-  const levels = Array.from(byLevel.keys()).sort((a, b) => a - b);
+  const levels = Array.from(byLevel.keys()).sort((a, b) => b - a);
   const result = [];
   for (const level of levels) {
     const byDiff = byLevel.get(level);

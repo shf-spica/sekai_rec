@@ -291,12 +291,36 @@ function mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount) {
 }
 
 /**
- * 数字行から、総和が totalNoteCount と一致する5数（PERFECT,GREAT,GOOD,BAD,MISS）の組み合わせを探す
- * @param {Array<{text}>} numberLines - 読み順ソート済みの数字行
- * @param {number} totalNoteCount - 楽曲の総ノーツ数
- * @returns {{ judgments: Object, sumError: boolean }} 見つかれば sumError: false、なければ sumError: true でベストエフォート
+ * 判定ラベル（PERFECT, GREAT 等）は画面上で連続せず一定の順で並ぶため、
+ * ラベルのY位置と数字グループのY位置から対応づける
+ * @param {Object} labelPositions - 各判定キーワードの行Y（未指定時は上から PERFECT, GREAT, GOOD, BAD, MISS の順を仮定）
  */
-function findJudgmentsBySum(numberLines, totalNoteCount) {
+function assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions) {
+    const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
+    const ranges = [[0, s1], [s1, s2], [s2, s3], [s3, s4], [s4, numberLines.length]];
+    const groupPositions = ranges.map(([start, end]) => {
+        let sum = 0;
+        let n = 0;
+        for (let i = start; i < end; i++) {
+            const y = numberLines[i].y ?? numberLines[i].readingOrder ?? i;
+            sum += y;
+            n++;
+        }
+        return n > 0 ? sum / n : 0;
+    });
+    const groupIndicesByY = [0, 1, 2, 3, 4].sort((a, b) => groupPositions[a] - groupPositions[b]);
+    const keysByY = labelPositions && typeof labelPositions === 'object'
+        ? [...keys].sort((a, b) => (labelPositions[a] ?? 9999) - (labelPositions[b] ?? 9999))
+        : keys;
+    return Object.fromEntries(keysByY.map((k, i) => [k, five[groupIndicesByY[i]]]));
+}
+
+/**
+ * 数字行から、総和が totalNoteCount と一致する5数を探し、
+ * ラベル行のY位置と数字グループのY位置から PERFECT/GREAT/GOOD/BAD/MISS に割り当てる
+ * @param {Object} labelPositions - 各判定キーワードが含まれる行のY（extractJudgments で取得）
+ */
+function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
     const texts = numberLines.map(l => l.text.trim());
     const K = texts.length;
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
@@ -307,14 +331,43 @@ function findJudgmentsBySum(numberLines, totalNoteCount) {
     }
 
     for (const [s1, s2, s3, s4] of partitionIntoFive(K)) {
-        const five = mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount);
+        let five = mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount);
         if (five) {
-            const judgments = Object.fromEntries(keys.map((k, i) => [k, five[i]]));
+            const judgments = assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions);
             return { judgments, sumError: false };
+        }
+        // 先頭桁欠け（1484→484）: 合計が total-1000 等のとき、いずれか1つに 1000 を足して試す
+        const g0 = groupToNumberCandidates(texts.slice(0, s1));
+        const g1 = groupToNumberCandidates(texts.slice(s1, s2));
+        const g2 = groupToNumberCandidates(texts.slice(s2, s3));
+        const g3 = groupToNumberCandidates(texts.slice(s3, s4));
+        const g4 = groupToNumberCandidates(texts.slice(s4));
+        for (const add of [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]) {
+            const need = totalNoteCount - add;
+            for (const n0 of g0) {
+                for (const n1 of g1) {
+                    for (const n2 of g2) {
+                        for (const n3 of g3) {
+                            for (const n4 of g4) {
+                                if (n0 + n1 + n2 + n3 + n4 !== need) continue;
+                                const arr = [n0, n1, n2, n3, n4];
+                                for (let pos = 0; pos < 5; pos++) {
+                                    if (arr[pos] + add > 9999 || arr[pos] + add < 0) continue;
+                                    arr[pos] += add;
+                                    if (arr[0] + arr[1] + arr[2] + arr[3] + arr[4] === totalNoteCount) {
+                                        const judgments = assignByPosition(numberLines, [...arr], s1, s2, s3, s4, labelPositions);
+                                        return { judgments, sumError: false };
+                                    }
+                                    arr[pos] -= add;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    // 一致する分割がなければエラー（数字または難易度の認識ミス）。ベストエフォートは出さず不明扱い
     const judgments = Object.fromEntries(keys.map(k => [k, '不明']));
     return { judgments, sumError: true };
 }
@@ -366,14 +419,53 @@ function mergeNumberLinesFallback(numberLines) {
  * totalNoteCount がない場合：キーワード＋Y位置で割り当て（従来ロジック）。
  * @returns {{ judgments: Object, sumError: boolean }}
  */
+/** 数字として解釈しうる字形の正規化（先頭の1が l/I/| で認識される対策） */
+function normalizeNumberLineText(t) {
+    const s = t.trim().replace(/[lI|]/g, '1');
+    return s;
+}
+
+/** 全行から判定キーワード（PERFECT, GREAT 等）が含まれる行のY位置を取得。表示順の補正に使う */
+function getLabelPositions(lines) {
+    const judgmentKeywords = {
+        'PERFECT': ['PERFECT', 'PEREFCT', 'PERFT'],
+        'GREAT': ['GREAT', 'GRET', 'GREA'],
+        'GOOD': ['GOOD', 'GO0D', 'COON', 'GOO'],
+        'BAD': ['BAD', '8AD', 'BA0'],
+        'MISS': ['MISS', 'M1SS']
+    };
+    const positions = {};
+    for (const line of lines) {
+        const text = line.text.toUpperCase();
+        const y = line.y ?? line.readingOrder ?? 0;
+        for (const [key, aliases] of Object.entries(judgmentKeywords)) {
+            if (positions[key] != null) continue;
+            if (aliases.some(a => text.includes(a))) {
+                positions[key] = y;
+                break;
+            }
+            const words = text.split(/[^A-Z0-9]/).filter(w => w.length >= 3);
+            for (const word of words) {
+                if (similarity(word, key) > 0.6) {
+                    positions[key] = y;
+                    break;
+                }
+            }
+        }
+    }
+    return positions;
+}
+
 function extractJudgments(lines, totalNoteCount) {
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
     const numberLines = lines
-        .filter(l => /^[0-9]{1,4}$/.test(l.text.trim()))
+        .map(l => ({ ...l, text: normalizeNumberLineText(l.text) }))
+        .filter(l => /^[0-9]{1,4}$/.test(l.text))
         .sort((a, b) => (a.readingOrder != null ? a.readingOrder - b.readingOrder : (a.y || 0) - (b.y || 0)));
 
     if (totalNoteCount != null && numberLines.length >= 5) {
-        return findJudgmentsBySum(numberLines, totalNoteCount);
+        const labelPositions = getLabelPositions(lines);
+        return findJudgmentsBySum(numberLines, totalNoteCount, labelPositions);
     }
 
     const judgments = { PERFECT: null, GREAT: null, GOOD: null, BAD: null, MISS: null };

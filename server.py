@@ -241,22 +241,34 @@ async def api_list_records(user=Depends(get_current_user)):
 
 
 JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"
+_jacket_cache_dir = Path(__file__).resolve().parent / "jacket_cache"
+
+
+def _jacket_cache_path(sid: str) -> Path:
+    _jacket_cache_dir.mkdir(exist_ok=True)
+    return _jacket_cache_dir / f"{sid}.webp"
 
 
 @app.get("/api/jacket/{song_id}")
 async def api_jacket(song_id: str):
-    """ジャケット画像をプロキシして返す（外部ブロック対策）"""
+    """ジャケット画像をプロキシして返す（サーバー側でキャッシュ）"""
     try:
         sid = str(int(song_id)).zfill(3)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid song_id")
+
+    cache_path = _jacket_cache_path(sid)
+    if cache_path.exists():
+        return Response(content=cache_path.read_bytes(), media_type="image/webp")
+
     url = JACKET_BASE_URL.format(id=sid)
     try:
         import urllib.request
         req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = resp.read()
-            return Response(content=data, media_type="image/webp")
+        cache_path.write_bytes(data)
+        return Response(content=data, media_type="image/webp")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 
