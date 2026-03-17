@@ -40,7 +40,7 @@ JWT_EXPIRE_HOURS = 24 * 7  # 7 days
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto") if CryptContext else None
 security = HTTPBearer(auto_error=False)
 
-# bcrypt accepts at most 72 bytes; truncate to avoid ValueError
+# bcrypt は 72 バイトまでしか受け付けない。長い値が渡ると ValueError になるため切り詰める（パスワードマネージャ等の誤入力対策）
 def _password_for_bcrypt(password: str) -> str:
     if not password:
         return ""
@@ -143,35 +143,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return None
 
 
-# #region agent log
-def _debug_log(data):
-    import json
-    p = Path(__file__).resolve().parent / ".cursor" / "debug-af88d6.log"
-    try:
-        with open(p, "a", encoding="utf-8") as f:
-            f.write(json.dumps({**data, "timestamp": __import__("time").time()}, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
-# #endregion
-
-
 @app.post("/api/auth/register")
 async def api_register(body: RegisterBody):
     _require_auth()
     username = (body.username or "").strip()
     password = body.password or ""
-    # #region agent log
-    _pw_bytes = password.encode("utf-8") if isinstance(password, str) else str(password).encode("utf-8")
-    _debug_log({"sessionId": "af88d6", "hypothesisId": "H1", "location": "server.py:api_register", "message": "register password len", "data": {"type_password": type(body.password).__name__, "len_chars": len(password), "len_bytes": len(_pw_bytes), "over_72": len(_pw_bytes) > 72}})
-    # #endregion
     if len(username) < 2:
         raise HTTPException(status_code=400, detail="Username too short")
     if len(password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     password = _password_for_bcrypt(password)
-    # #region agent log
-    _debug_log({"sessionId": "af88d6", "runId": "post-fix", "hypothesisId": "H1", "location": "server.py:api_register:after_trunc", "message": "password len after trunc", "data": {"len_bytes": len(password.encode("utf-8"))}})
-    # #endregion
     password_hash = pwd_ctx.hash(password)
     created = datetime.utcnow().isoformat() + "Z"
     try:
