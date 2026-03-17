@@ -244,31 +244,56 @@ JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacke
 _jacket_cache_dir = Path(__file__).resolve().parent / "jacket_cache"
 
 
-def _jacket_cache_path(sid: str) -> Path:
+def _jacket_cache_path(sid: str, gray: bool = False) -> Path:
     _jacket_cache_dir.mkdir(exist_ok=True)
-    return _jacket_cache_dir / f"{sid}.webp"
+    return _jacket_cache_dir / f"{sid}_gray.webp" if gray else _jacket_cache_dir / f"{sid}.webp"
+
+
+def _ensure_color_jacket(sid: str) -> Path:
+    """カラー画像を取得してキャッシュし、パスを返す"""
+    path = _jacket_cache_path(sid, gray=False)
+    if path.exists():
+        return path
+    url = JACKET_BASE_URL.format(id=sid)
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        path.write_bytes(resp.read())
+    return path
+
+
+def _jacket_to_grayscale_bytes(color_path: Path) -> bytes:
+    """カラー画像をモノクロ化して WebP バイト列で返す"""
+    img = Image.open(color_path).convert("RGB")
+    gray = img.convert("L")
+    buf = io.BytesIO()
+    gray.save(buf, format="WEBP", quality=85)
+    return buf.getvalue()
 
 
 @app.get("/api/jacket/{song_id}")
-async def api_jacket(song_id: str):
-    """ジャケット画像をプロキシして返す（サーバー側でキャッシュ）"""
+async def api_jacket(song_id: str, gray: int = 0):
+    """ジャケット画像をプロキシして返す（サーバー側でキャッシュ）。gray=1 でモノクロ（記録なし用）"""
     try:
         sid = str(int(song_id)).zfill(3)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid song_id")
 
-    cache_path = _jacket_cache_path(sid)
+    use_gray = gray == 1
+    cache_path = _jacket_cache_path(sid, gray=use_gray)
+
     if cache_path.exists():
         return Response(content=cache_path.read_bytes(), media_type="image/webp")
 
-    url = JACKET_BASE_URL.format(id=sid)
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = resp.read()
+    if use_gray:
+        color_path = _ensure_color_jacket(sid)
+        data = _jacket_to_grayscale_bytes(color_path)
         cache_path.write_bytes(data)
         return Response(content=data, media_type="image/webp")
+
+    try:
+        color_path = _ensure_color_jacket(sid)
+        return Response(content=color_path.read_bytes(), media_type="image/webp")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 

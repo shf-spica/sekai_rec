@@ -114,6 +114,7 @@ function toMatchForm(s) {
 
 /**
  * 難易度キーワードの手前までを曲名ブロックとして抽出（1行目が「Ｒ」などノイズの場合はスキップ）
+ * 数字のみ・小数・指数表記（0.0000034 など）は曲名ではないのでスキップ
  */
 function getTitleBlockLines(lines) {
     const result = [];
@@ -123,6 +124,7 @@ function getTitleBlockLines(lines) {
             break;
         }
         if (/^[0-9]+$/.test(line.text.trim())) continue; // 数字のみはスキップ
+        if (/^[0-9.\s,eE\-+]+$/.test(line.text.trim())) continue; // 小数・指数表記ノイズ（例: 0.0000034）
         if (/^[Ａ-ＺA-Z]$/.test(t) || t === 'Ｒ' || t === 'R') continue; // 1文字ノイズ
         result.push(line);
     }
@@ -154,9 +156,13 @@ function buildTitleCandidates(titleBlockLines) {
  * songDatabase: { songs: Array<{ id, title, difficulties }> } または 従来の string[]。
  * 返却: { title, id, score, matchedText }（id は DB にない場合は null）
  */
+/** 期間限定などマッチ対象から除外する楽曲ID */
+const EXCLUDED_SONG_IDS = [674, 675, 676, 707, 708, 709];
+
 function findBestSongMatch(lines, songDatabase) {
-    const songList = Array.isArray(songDatabase) ? songDatabase.map(t => (typeof t === 'string' ? { id: null, title: t } : { id: t.id, title: t.title }))
+    let songList = Array.isArray(songDatabase) ? songDatabase.map(t => (typeof t === 'string' ? { id: null, title: t } : { id: t.id, title: t.title }))
         : (songDatabase.songs || []).map(s => ({ id: s.id, title: s.title }));
+    songList = songList.filter(s => s.id == null || !EXCLUDED_SONG_IDS.includes(s.id));
     let bestMatch = { title: "不明", id: null, score: 0, matchedText: "" };
 
     const titleBlockLines = getTitleBlockLines(lines);
@@ -172,6 +178,7 @@ function findBestSongMatch(lines, songDatabase) {
         const lineClean = clean.toLowerCase();
         const lineMatch = toMatchForm(lineClean);
         if (lineMatch.length < 2) continue;
+        if (/^[0-9.]+$/.test(lineMatch)) continue; // 数字・小数のみの候補は曲名ではない
 
         for (const { id, title: songTitle } of songList) {
             if (!songTitle) continue;

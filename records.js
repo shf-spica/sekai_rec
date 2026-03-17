@@ -23,10 +23,11 @@ function jacketUrl(songId) {
   const id = String(Number(songId)).padStart(3, '0');
   return `${JACKET_BASE}${id}/jacket_s_${id}.webp`;
 }
-/** 画像表示用: サーバー経由プロキシ（ブロック対策） */
-function jacketProxyUrl(songId) {
+/** 画像表示用: サーバー経由プロキシ（ブロック対策）。grayscale=true でモノクロ（記録なし用） */
+function jacketProxyUrl(songId, grayscale = false) {
   const id = String(Number(songId));
-  return `/api/jacket/${encodeURIComponent(id)}`;
+  const base = `/api/jacket/${encodeURIComponent(id)}`;
+  return grayscale ? `${base}?gray=1` : base;
 }
 function getPlayLevel(song, difficulty) {
   if (!song?.difficulties) return 0;
@@ -59,6 +60,9 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+/** 期間限定など一覧に表示しない楽曲ID（ocr-postprocess.js の EXCLUDED_SONG_IDS と一致させる） */
+const EXCLUDED_SONG_IDS = [674, 675, 676, 707, 708, 709];
+
 /** 全曲×難易度のスロットを生成し、ユーザー記録をマージして playLevel → difficulty でグループ化 */
 function buildSlotsByLevel() {
   const recordByKey = new Map();
@@ -68,7 +72,7 @@ function buildSlotsByLevel() {
   }
 
   const byLevel = new Map();
-  const songs = state.songDatabase?.songs ?? [];
+  const songs = (state.songDatabase?.songs ?? []).filter((s) => !EXCLUDED_SONG_IDS.includes(s.id));
   for (const song of songs) {
     if (!song.difficulties || typeof song.difficulties !== 'object') continue;
     for (const diff of Object.keys(song.difficulties)) {
@@ -150,7 +154,7 @@ function renderGroups() {
                 const dataAttrs = hasRecord
                   ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}"`
                   : '';
-                const imgUrl = jacketProxyUrl(slot.songId);
+                const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
                 return `
               <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
                 <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">

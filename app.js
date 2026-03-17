@@ -290,7 +290,15 @@ async function processImages() {
     }
   }
 
-  renderResults(state.results);
+  // エラー・総和エラーが出たものを結果の一番上に表示
+  const sorted = [...state.results].sort((a, b) => {
+    const aErr = !!(a.error || a.parsed?.judgmentsSumError);
+    const bErr = !!(b.error || b.parsed?.judgmentsSumError);
+    if (aErr && !bErr) return -1;
+    if (!aErr && bErr) return 1;
+    return 0;
+  });
+  renderResults(sorted);
 
   state.isProcessing = false;
   ocrBtn.disabled = false;
