@@ -194,6 +194,19 @@ body::before {
   overflow: hidden;
 }
 
+/* モバイルでタップが確実に反応するよう、input でドロップゾーン全体を覆う */
+.file-input-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  font-size: 0;
+  touch-action: manipulation;
+}
+
 .drop-zone::before {
   content: '';
   position: absolute;

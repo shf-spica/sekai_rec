@@ -97,8 +97,13 @@ async function saveRecord(parsed) {
 // ========================================
 
 function handleFiles(fileList) {
-  const imageFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if (!fileList || fileList.length === 0) return;
+  const imageFiles = Array.from(fileList).filter(f => f && f.type && f.type.startsWith('image/'));
   if (imageFiles.length === 0) return;
+
+  // モバイル: 同じファイルを再選択できるよう、処理後に input をリセットする
+  const input = document.getElementById('file-input');
+  if (input) input.value = '';
 
   imageFiles.forEach(file => {
     const reader = new FileReader();
@@ -111,6 +116,7 @@ function handleFiles(fileList) {
       state.files.push(entry);
       renderPreview();
     };
+    reader.onerror = () => renderPreview();
     reader.readAsDataURL(file);
   });
 }
@@ -129,11 +135,25 @@ function clearFiles() {
 }
 
 // ========================================
-// Drag & Drop
+// Drag & Drop / File Select
 // ========================================
 
-dropZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+let _fileInputPending = null;
+function onFileInputChange(e) {
+  const files = e.target && e.target.files;
+  if (!files || files.length === 0) return;
+  const list = Array.from(files);
+  if (_fileInputPending) clearTimeout(_fileInputPending);
+  _fileInputPending = setTimeout(() => {
+    _fileInputPending = null;
+    handleFiles(list);
+  }, 10);
+}
+
+if (fileInput) {
+  fileInput.addEventListener('change', onFileInputChange);
+  fileInput.addEventListener('input', onFileInputChange);
+}
 
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
