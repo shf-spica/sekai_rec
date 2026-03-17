@@ -112,18 +112,14 @@
   inset: -2px;
   border-radius: calc(var(--radius-md) + 2px);
   padding: 2px;
-  background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b, #feca57, #48dbfb);
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
   background-size: 200% 100%;
-  animation: record-rainbow-border 2.5s linear infinite;
+  animation: rainbow-shift 2.5s ease infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-}
-@keyframes record-rainbow-border {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
 }
 .record-card-ap:hover {
   box-shadow: 0 0 16px rgba(255, 159, 243, 0.45);
@@ -221,6 +217,12 @@
   font-weight: 600;
   margin-bottom: var(--space-md);
   color: var(--accent-secondary);
+}
+
+.record-detail-time {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
 }
 
 .record-detail-judgments {

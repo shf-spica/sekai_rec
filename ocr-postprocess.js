@@ -465,12 +465,15 @@ function getLabelPositions(lines) {
 
 function extractJudgments(lines, totalNoteCount) {
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
-    const numberLines = lines
+    const rawNumberLines = lines
         .map(l => ({ ...l, text: normalizeNumberLineText(l.text) }))
         .filter(l => /^[0-9]{1,4}$/.test(l.text))
         .sort((a, b) => (a.readingOrder != null ? a.readingOrder - b.readingOrder : (a.y || 0) - (b.y || 0)));
 
-    if (totalNoteCount != null && numberLines.length >= 5) {
+    if (totalNoteCount != null && rawNumberLines.length >= 5) {
+        // 改行で分かれた桁（例: 1 / 446）を事前にマージしてから総和マッチングを行う
+        const merged = mergeNumberLinesFallback(rawNumberLines);
+        const numberLines = merged.map(l => ({ ...l, text: String(l.mergedValue != null ? l.mergedValue : parseInt(l.text, 10) || 0) }));
         const labelPositions = getLabelPositions(lines);
         return findJudgmentsBySum(numberLines, totalNoteCount, labelPositions);
     }

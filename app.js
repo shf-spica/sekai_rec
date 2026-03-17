@@ -15,6 +15,8 @@ const state = {
   songDatabase: null,
   user: null,
   token: localStorage.getItem('prsk_ocr_token') || null,
+  uploadPending: 0,
+  uploadComplete: false,
 };
 
 let fileIdCounter = 0;
@@ -168,6 +170,9 @@ function handleFiles(fileList) {
   const input = document.getElementById('file-input');
   if (input) input.value = '';
 
+  state.uploadPending += imageFiles.length;
+  state.uploadComplete = false;
+
   imageFiles.forEach(file => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -178,6 +183,11 @@ function handleFiles(fileList) {
       };
       state.files.push(entry);
       renderPreview();
+      state.uploadPending -= 1;
+      if (state.uploadPending <= 0) {
+        state.uploadComplete = true;
+        renderPreview();
+      }
     };
     reader.onerror = () => renderPreview();
     reader.readAsDataURL(file);
@@ -243,7 +253,7 @@ function renderPreview() {
   if (langSection) langSection.style.display = hasFiles ? '' : 'none';
 
   const uploadLabel = document.getElementById('upload-complete-label');
-  if (uploadLabel) uploadLabel.style.display = hasFiles ? '' : 'none';
+  if (uploadLabel) uploadLabel.style.display = (hasFiles && state.uploadComplete) ? '' : 'none';
 
   previewGrid.innerHTML = state.files.map(entry => `
     <div class="preview-card" data-id="${entry.id}">
@@ -843,27 +853,11 @@ async function submitManualEntry() {
     }
   }
 
-  try {
-    await saveDataset({
-      source: 'manual',
-      image_base64: null,
-      raw_text: '',
-      song_id: state.manualSelectedSong.id,
-      song_title: state.manualSelectedSong.title,
-      difficulty,
-      perfect: p,
-      great: g,
-      good: o,
-      bad: b,
-      miss: m,
-      point,
-    });
-    manualError.textContent = '';
-    closeManualModal();
-    if (state.token) alert('記録を保存し、データセットに追加しました。');
-    else alert('データセットに追加しました。');
-  } catch (e) {
-    manualError.textContent = 'データセットの保存に失敗: ' + (e.message || e);
+  closeManualModal();
+  if (state.token) {
+    alert('記録を保存しました。');
+  } else {
+    alert('記録を保存しました（ログインしている場合のみ記録されます）。');
   }
 }
 

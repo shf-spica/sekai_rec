@@ -92,6 +92,14 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                api_key TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
 
 
 init_db()
@@ -269,6 +277,36 @@ async def api_delete_record(song_id: int, difficulty: str, user=Depends(get_curr
     return {"deleted": deleted}
 
 
+# 外部ツール向け: 任意の username のレコード一覧を、APIキー所持者だけに公開
+@app.get("/api/external/records")
+async def api_external_records(username: str, api_key: str):
+    with get_db() as conn:
+        # api_key がホワイトリストに存在するかだけを確認（username とは紐付けない）
+        key_row = conn.execute(
+            "SELECT id, username FROM api_keys WHERE api_key = ?",
+            (api_key,),
+        ).fetchone()
+        if not key_row:
+            raise HTTPException(status_code=401, detail="Invalid api_key")
+
+        user_row = conn.execute(
+            "SELECT id, username FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        rows = conn.execute(
+            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, created_at "
+            "FROM records WHERE user_id = ? ORDER BY created_at DESC",
+            (user_row["id"],),
+        ).fetchall()
+
+    return {
+        "user": {"id": user_row["id"], "username": user_row["username"]},
+        "records": [dict(r) for r in rows],
+    }
+
+
 # ML用データセット: 入力画像 + 生OCR + 補正後データを保存
 _ml_dataset_dir = Path(__file__).resolve().parent / "ml_dataset"
 _ml_dataset_images_dir = _ml_dataset_dir / "images"
@@ -281,6 +319,7 @@ async def api_save_dataset(body: DatasetBody):
     _ml_dataset_images_dir.mkdir(exist_ok=True)
 
     image_path_rel: str | None = None
+    image_datetime: str | None = None
     if body.image_base64:
         try:
             import base64
@@ -289,6 +328,17 @@ async def api_save_dataset(body: DatasetBody):
             if "," in raw:
                 raw = raw.split(",", 1)[1]
             data = base64.b64decode(raw)
+            # メタデータ（撮影日時）があれば取得（なければ None）
+            try:
+                img = Image.open(io.BytesIO(data))
+                exif = getattr(img, "_getexif", lambda: None)() or {}
+                dt = exif.get(36867) or exif.get(306)  # DateTimeOriginal / DateTime
+                if isinstance(dt, str):
+                    # "YYYY:MM:DD HH:MM:SS" 形式を ISO ライクに
+                    image_datetime = dt.replace(":", "-", 2)
+            except Exception:
+                image_datetime = None
+
             ext = "webp" if data[:4] == b"RIFF" else "jpg"
             name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.{ext}"
             path = _ml_dataset_images_dir / name
@@ -301,6 +351,7 @@ async def api_save_dataset(body: DatasetBody):
         "created_at": datetime.utcnow().isoformat() + "Z",
         "source": body.source,
         "image": image_path_rel,
+        "image_datetime": image_datetime,
         "raw_text": body.raw_text or "",
         "song_id": body.song_id,
         "song_title": body.song_title,
@@ -316,6 +367,22 @@ async def api_save_dataset(body: DatasetBody):
     with open(jsonl_path, "a", encoding="utf-8") as f:
         f.write(__import__("json").dumps(entry, ensure_ascii=False) + "\n")
     return {"saved": True, "path": image_path_rel}
+
+
+# ログイン済みユーザー用: 自分の API キーを1つ発行
+@app.post("/api/external/api-key")
+async def api_create_api_key(user=Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    import secrets
+    api_key = secrets.token_urlsafe(32)
+    created = datetime.utcnow().isoformat() + "Z"
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO api_keys (username, api_key, created_at) VALUES (?, ?, ?)",
+            (user["username"], api_key, created),
+        )
+    return {"username": user["username"], "api_key": api_key}
 
 
 JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"

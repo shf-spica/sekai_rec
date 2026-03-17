@@ -152,7 +152,7 @@ function renderGroups() {
                 if (ap) cardClasses.push('record-card-ap');
                 if (fc) cardClasses.push('record-card-fc');
                 const dataAttrs = hasRecord
-                  ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}"`
+                  ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}" data-created-at="${r.created_at || ''}"`
                   : '';
                 const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
                 return `
@@ -202,11 +202,15 @@ function openDetail(btn) {
   const pointEl = $('#record-detail-point');
   const judgmentsEl = $('#record-detail-judgments');
   const deleteBtn = $('#record-detail-delete');
+  const timeEl = $('#record-detail-time');
 
   jacketEl.src = jacketProxyUrl(songId);
   jacketEl.alt = title;
   titleEl.textContent = title;
+  const createdAt = btn.dataset.createdAt || '';
+  const timeText = createdAt ? new Date(createdAt).toLocaleString() : '';
   metaEl.textContent = `Lv.${getPlayLevel(song, difficulty)} · ${(difficulty || '').toUpperCase()}`;
+  if (timeEl) timeEl.textContent = timeText ? `記録日時: ${timeText}` : '';
 
   if (!hasRecord || !recordData) {
     pointEl.textContent = '';
