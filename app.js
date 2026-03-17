@@ -83,7 +83,7 @@ async function apiCall(path, options = {}) {
   return data;
 }
 
-async function saveRecord(parsed) {
+async function saveRecord(parsed, takenAt) {
   if (!state.token || !parsed?.songId || !parsed?.difficulty || parsed?.judgmentsSumError) return null;
   const j = parsed.judgments;
   if (typeof j?.PERFECT !== 'number' || typeof j?.GREAT !== 'number' || typeof j?.GOOD !== 'number' ||
@@ -101,6 +101,7 @@ async function saveRecord(parsed) {
         bad: j.BAD,
         miss: j.MISS,
         point,
+        taken_at: takenAt || null,
       }),
     });
   } catch (e) {
@@ -303,6 +304,7 @@ async function ocrViaServer(file) {
     textBlocks: data.textBlocks || [],
     fullText: data.fullText || '',
     processingTime: data.processingTime ?? elapsedMs,
+    imageDateTime: data.imageDateTime || null,
   };
 }
 
@@ -347,7 +349,7 @@ async function processImages() {
       let recordSaved = null;
       if (state.token && parsed && !parsed.judgmentsSumError && parsed.songId != null && parsed.difficulty) {
         try {
-          recordSaved = await saveRecord(parsed);
+          recordSaved = await saveRecord(parsed, ocrResult.imageDateTime || null);
         } catch (_) {}
       }
 
@@ -844,6 +846,7 @@ async function submitManualEntry() {
           bad: b,
           miss: m,
           point,
+          taken_at: null,
         }),
       });
     } catch (e) {

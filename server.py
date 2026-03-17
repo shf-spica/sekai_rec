@@ -92,6 +92,11 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+        # 既存DBに taken_at カラムがない場合は追加する
+        try:
+            conn.execute("ALTER TABLE records ADD COLUMN taken_at TEXT")
+        except sqlite3.OperationalError:
+            pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS api_keys (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,6 +135,7 @@ class RecordBody(BaseModel):
     bad: int
     miss: int
     point: int
+    taken_at: str | None = None
 
 
 class DatasetBody(BaseModel):
@@ -243,15 +249,15 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
             if (existing_fc == new_fc) and existing["point"] >= body.point:
                 return {"saved": False, "message": "Existing record has higher or equal point"}
             conn.execute(
-                """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, created_at=?
+                """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, taken_at=?, created_at=?
                    WHERE id = ?""",
-                (body.perfect, body.great, body.good, body.bad, body.miss, body.point, created, existing["id"]),
+                (body.perfect, body.great, body.good, body.bad, body.miss, body.point, body.taken_at, created, existing["id"]),
             )
         else:
             conn.execute(
-                """INSERT INTO records (user_id, song_id, difficulty, perfect, great, good, bad, miss, point, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, body.song_id, difficulty, body.perfect, body.great, body.good, body.bad, body.miss, body.point, created),
+                """INSERT INTO records (user_id, song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, body.song_id, difficulty, body.perfect, body.great, body.good, body.bad, body.miss, body.point, body.taken_at, created),
             )
     return {"saved": True}
 
@@ -262,7 +268,7 @@ async def api_list_records(user=Depends(get_current_user)):
         raise HTTPException(status_code=401, detail="Login required")
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, created_at FROM records WHERE user_id = ? ORDER BY created_at DESC",
+            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at FROM records WHERE user_id = ? ORDER BY created_at DESC",
             (user["id"],),
         ).fetchall()
     return {"records": [dict(r) for r in rows]}
@@ -301,7 +307,7 @@ async def api_external_records(username: str, api_key: str):
             raise HTTPException(status_code=404, detail="User not found")
 
         rows = conn.execute(
-            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, created_at "
+            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at "
             "FROM records WHERE user_id = ? ORDER BY created_at DESC",
             (user_row["id"],),
         ).fetchall()
@@ -518,6 +524,17 @@ def _paddle_to_textblocks(result) -> dict:
 async def ocr_image(file: UploadFile = File(...)):
     start = time.time()
     data = await file.read()
+    # EXIF から撮影日時を取得（あれば）
+    image_datetime = None
+    try:
+        img0 = Image.open(io.BytesIO(data))
+        exif = getattr(img0, "_getexif", lambda: None)() or {}
+        dt = exif.get(36867) or exif.get(306)  # DateTimeOriginal / DateTime
+        if isinstance(dt, str):
+            image_datetime = dt.replace(":", "-", 2)
+    except Exception:
+        image_datetime = None
+
     img = _load_image_bgr(data)
     masked = _apply_black_mask(img)
     result = ocr.ocr(masked, cls=True)
@@ -528,6 +545,7 @@ async def ocr_image(file: UploadFile = File(...)):
             "textBlocks": converted["textBlocks"],
             "fullText": converted["fullText"],
             "processingTime": elapsed_ms,
+            "imageDateTime": image_datetime,
         }
     )
 
