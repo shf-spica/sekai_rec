@@ -25,10 +25,10 @@ except ImportError:
     ) from None
 
 try:
-    from passlib.context import CryptContext
+    import bcrypt
     from jose import jwt
 except ImportError:
-    CryptContext = None
+    bcrypt = None
     jwt = None
 
 app = FastAPI()
@@ -37,17 +37,18 @@ app = FastAPI()
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 7  # 7 days
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto") if CryptContext else None
 security = HTTPBearer(auto_error=False)
 
-# bcrypt は 72 バイトまでしか受け付けない。長い値が渡ると ValueError になるため切り詰める（パスワードマネージャ等の誤入力対策）
-def _password_for_bcrypt(password: str) -> str:
-    if not password:
-        return ""
-    b = password.encode("utf-8")
-    if len(b) > 72:
-        return b[:72].decode("utf-8", errors="ignore") or password[:72]
-    return password
+
+def _hash_password(password: str) -> str:
+    """bcrypt は 72 バイトまで。バイト列で切り詰めてからハッシュする。"""
+    p = (password or "").encode("utf-8")[:72]
+    return bcrypt.hashpw(p, bcrypt.gensalt()).decode("utf-8")
+
+
+def _verify_password(password: str, password_hash: str) -> bool:
+    p = (password or "").encode("utf-8")[:72]
+    return bcrypt.checkpw(p, password_hash.encode("utf-8"))
 
 # SQLite
 _db_path = Path(__file__).resolve().parent / "prsk_ocr.db"
@@ -97,8 +98,8 @@ init_db()
 
 
 def _require_auth():
-    if pwd_ctx is None or jwt is None:
-        raise HTTPException(status_code=503, detail="Auth not configured (install passlib and python-jose)")
+    if bcrypt is None or jwt is None:
+        raise HTTPException(status_code=503, detail="Auth not configured (install bcrypt and python-jose)")
     return True
 
 
@@ -152,8 +153,7 @@ async def api_register(body: RegisterBody):
         raise HTTPException(status_code=400, detail="Username too short")
     if len(password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-    password = _password_for_bcrypt(password)
-    password_hash = pwd_ctx.hash(password)
+    password_hash = _hash_password(password)
     created = datetime.utcnow().isoformat() + "Z"
     try:
         with get_db() as conn:
@@ -176,12 +176,12 @@ async def api_register(body: RegisterBody):
 async def api_login(body: LoginBody):
     _require_auth()
     username = (body.username or "").strip()
-    password = _password_for_bcrypt(body.password or "")
+    password = body.password or ""
     with get_db() as conn:
         row = conn.execute(
             "SELECT id, username, password_hash FROM users WHERE username = ?", (username,)
         ).fetchone()
-    if not row or not pwd_ctx.verify(password, row["password_hash"]):
+    if not row or not _verify_password(password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = jwt.encode(
         {"sub": str(row["id"]), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
