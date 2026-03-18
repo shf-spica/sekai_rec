@@ -303,6 +303,8 @@ function openDetail(btn) {
   metaEl.textContent = `Lv.${getPlayLevel(song, difficulty)} · ${(difficulty || '').toUpperCase()}`;
   if (timeEl) timeEl.textContent = timeText ? `記録日時: ${timeText}` : '';
 
+  const diffNorm = (difficulty || '').toLowerCase();
+
   if (!hasRecord || !recordData) {
     pointEl.textContent = '';
     pointEl.parentElement.classList.add('record-detail-no-record');
@@ -340,18 +342,17 @@ function openDetail(btn) {
                 (r.difficulty || '').toLowerCase() === (difficulty || '').toLowerCase()
               ),
           );
-          renderGroups();
           closeDetail();
+          // 押したカードだけ「記録なし」に更新
+          updateOneCard(songId, diffNorm, null);
         } catch (e) {
           console.error(e);
-          alert('削除に失敗しました: ' + (e.message || e));
         }
       };
     }
   }
 
   if (apBtn) {
-    const diffNorm = (difficulty || '').toLowerCase();
     const alreadyAp =
       hasRecord &&
       (recordData?.bad || 0) === 0 &&
@@ -381,7 +382,6 @@ function openDetail(btn) {
           return;
         }
         if (!confirm('この譜面を ALL PERFECT として記録しますか？')) return;
-        closeDetail();
         const perfect = totalNoteCount;
         const great = 0;
         const good = 0;
@@ -422,11 +422,11 @@ function openDetail(btn) {
           } else {
             state.records.push(newRecord);
           }
-          renderGroups();
-          alert('APとして記録しました。');
+          // モーダルを閉じ、押したカードだけAP表示に更新
+          closeDetail();
+          updateOneCard(songId, diffNorm, newRecord);
         } catch (e) {
           console.error(e);
-          alert('APの記録に失敗しました: ' + (e.message || e));
         }
       };
     }
