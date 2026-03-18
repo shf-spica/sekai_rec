@@ -187,12 +187,14 @@
 .record-detail-backdrop {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: rgba(0, 0, 0, 0.6);
   cursor: pointer;
 }
 
 .record-detail-content {
   position: relative;
+  z-index: 1;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
