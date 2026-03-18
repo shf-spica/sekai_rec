@@ -44,6 +44,24 @@
   font-weight: 600;
   margin-bottom: var(--space-md);
   color: var(--accent-secondary);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.records-level-stats {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.records-level-stat {
+  white-space: nowrap;
 }
 
 .records-diff-block {

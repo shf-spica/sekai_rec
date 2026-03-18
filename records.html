@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEKAI recorder - 記録一覧</title>
+  <title>SEKAI recorder - マイページ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -26,13 +26,14 @@
       <div class="header-actions">
         <span class="auth-user" id="auth-user"></span>
         <a href="index.html" class="btn btn-ghost btn-sm">OCRする</a>
+        <a href="index.html?manual=1" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</a>
         <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
       </div>
     </header>
 
     <main class="main-content records-main">
       <div id="records-login-required" class="records-message" style="display: none;">
-        <p>記録を見るにはログインしてください。</p>
+        <p>このページは公開されています（閲覧のみ）。編集するにはログインが必要です。</p>
         <a href="index.html" class="btn btn-primary">トップへ</a>
       </div>
       <div id="records-loading" class="records-message">

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -273,6 +273,22 @@ async def api_list_records(user=Depends(get_current_user)):
         ).fetchall()
     return {"records": [dict(r) for r in rows]}
 
+@app.get("/api/public/records")
+async def api_public_records(username: str):
+    """公開マイページ用: username のレコード一覧（認証不要）"""
+    with get_db() as conn:
+        user_row = conn.execute(
+            "SELECT id, username FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail="User not found")
+        rows = conn.execute(
+            "SELECT song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at "
+            "FROM records WHERE user_id = ? ORDER BY created_at DESC",
+            (user_row["id"],),
+        ).fetchall()
+    return {"user": {"id": user_row["id"], "username": user_row["username"]}, "records": [dict(r) for r in rows]}
+
 
 @app.delete("/api/records")
 async def api_delete_record(song_id: int, difficulty: str, user=Depends(get_current_user)):
@@ -538,5 +554,20 @@ async def ocr_image(file: UploadFile = File(...)):
 
 # フロント一式を配信（/ocr は上で定義済みのため優先される）
 _static_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+@app.get("/records/{username}")
+async def mypage(username: str):
+    """公開マイページ: /records/{username} は records.html を返す"""
+    path = Path(_static_dir) / "records.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="records.html not found")
+    return FileResponse(path)
+
+
+@app.get("/records/{username}/")
+async def mypage_slash(username: str):
+    return await mypage(username)
+
 app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
 

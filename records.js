@@ -7,6 +7,8 @@ const state = {
   user: null,
   songDatabase: null,
   records: [],
+  pageUsername: null,
+  canEdit: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -167,11 +169,39 @@ function renderGroups() {
   emptyEl.style.display = 'none';
   contentEl.style.display = 'block';
 
+  const levelStats = (g) => {
+    const stats = {
+      main: { total: 0, ap: 0, fc: 0 },
+      append: { total: 0, ap: 0, fc: 0 },
+    };
+    for (const df of g.difficulties) {
+      const isAppend = String(df.difficulty).toLowerCase() === 'append';
+      const bucket = isAppend ? stats.append : stats.main;
+      for (const slot of df.slots) {
+        bucket.total += 1;
+        if (slot.record) {
+          if (isAllPerfect(slot.record)) bucket.ap += 1;
+          if (isFullCombo(slot.record)) bucket.fc += 1;
+        }
+      }
+    }
+    return stats;
+  };
+
   groupsEl.innerHTML = groups
-    .map(
-      (g) => `
+    .map((g) => {
+      const st = levelStats(g);
+      const mainText = `AP ${st.main.ap}/${st.main.total} · FC ${st.main.fc}/${st.main.total}`;
+      const appendText = `APPEND: AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
+      return `
     <section class="records-level-section" data-level="${g.playLevel}">
-      <h2 class="records-level-title">Lv.${g.playLevel}</h2>
+      <h2 class="records-level-title">
+        <span>Lv.${g.playLevel}</span>
+        <span class="records-level-stats">
+          <span class="records-level-stat">${escapeHtml(mainText)}</span>
+          <span class="records-level-stat">${escapeHtml(appendText)}</span>
+        </span>
+      </h2>
       ${g.difficulties
         .map(
           (df) => `
@@ -193,11 +223,12 @@ function renderGroups() {
                   : '';
                 const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
+                const titleText = slot.song?.title || `ID:${slot.songId}`;
                 return `
               <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
                 <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">
                 ${hasRecord ? `<span class="record-card-point-minus-badge">${pm}</span>` : ''}
-                <span class="record-card-title">${escapeHtml(slot.song?.title || `ID:${slot.songId}`)}</span>
+                <span class="record-card-title">${escapeHtml(titleText)}</span>
               </button>
             `;
               })
@@ -208,8 +239,8 @@ function renderGroups() {
         )
         .join('')}
     </section>
-  `
-    )
+  `;
+    })
     .join('');
 
   groupsEl.querySelectorAll('.record-card').forEach((btn) => {
@@ -238,8 +269,12 @@ function updateOneCard(songId, difficulty, record) {
     card.dataset.miss = String(record.miss);
     card.dataset.point = String(record.point);
     card.dataset.takenAt = record.taken_at || '';
-    card.classList.remove('record-card-no-record', 'record-card-fc');
-    card.classList.add('record-card-ap');
+    card.classList.remove('record-card-no-record', 'record-card-ap', 'record-card-fc');
+    if (isAllPerfect(record)) {
+      card.classList.add('record-card-ap');
+    } else if (isFullCombo(record)) {
+      card.classList.add('record-card-fc');
+    }
     const img = card.querySelector('.record-card-jacket');
     if (img) img.src = jacketProxyUrl(songId, false);
     let badge = card.querySelector('.record-card-point-minus-badge');
@@ -327,8 +362,10 @@ function openDetail(btn) {
       )
       .join('');
     if (deleteBtn) {
-      deleteBtn.style.display = '';
-      deleteBtn.onclick = async () => {
+      deleteBtn.style.display = state.canEdit ? '' : 'none';
+      deleteBtn.onclick = !state.canEdit
+        ? null
+        : async () => {
         if (!confirm('この記録を削除しますか？')) return;
         try {
           await apiCall(
@@ -360,7 +397,7 @@ function openDetail(btn) {
       (recordData?.great || 0) === 0 &&
       (recordData?.miss || 0) === 0;
 
-    if (!state.token || alreadyAp) {
+    if (!state.canEdit || !state.token || alreadyAp) {
       apBtn.style.display = 'none';
       apBtn.onclick = null;
     } else {
@@ -445,45 +482,72 @@ function closeDetail() {
 }
 
 async function init() {
-  if (!state.token) {
-    loadingEl.style.display = 'none';
-    loginRequiredEl.style.display = 'block';
-    return;
-  }
-
   try {
-    const [meRes, dbRes] = await Promise.all([
-      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${state.token}` } }),
-      fetch('songDatabase.json'),
-    ]);
-
-    const meData = meRes.ok ? await meRes.json().catch(() => ({})) : null;
-    if (!meData?.user) {
-      state.token = null;
-      localStorage.removeItem('prsk_ocr_token');
-      loadingEl.style.display = 'none';
-      loginRequiredEl.style.display = 'block';
-      return;
+    // /records/{username} から username を取得
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'records' && parts[1]) {
+      state.pageUsername = decodeURIComponent(parts[1]);
     }
-    state.user = meData.user;
 
+    const dbRes = await fetch('songDatabase.json');
     if (dbRes.ok) state.songDatabase = await dbRes.json();
 
-    const authUser = $('#auth-user');
-    if (authUser) authUser.textContent = state.user.username;
-    const logoutBtn = $('#auth-logout-btn');
-    if (logoutBtn) {
-      logoutBtn.style.display = '';
-      logoutBtn.addEventListener('click', () => {
+    // ログインしていれば me を取得（編集可否の判定に使う）
+    if (state.token) {
+      const meRes = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${state.token}` } });
+      const meData = meRes.ok ? await meRes.json().catch(() => ({})) : null;
+      if (meData?.user) {
+        state.user = meData.user;
+      } else {
         state.token = null;
-        state.user = null;
         localStorage.removeItem('prsk_ocr_token');
-        window.location.href = 'index.html';
-      });
+      }
     }
 
-    const data = await apiCall('/api/records');
-    state.records = data.records || [];
+    // 公開APIからレコード取得（閲覧は誰でも）
+    if (!state.pageUsername) {
+      // username が取れない場合は自分のページへ誘導
+      if (state.user?.username) {
+        window.location.href = `/records/${encodeURIComponent(state.user.username)}`;
+        return;
+      }
+      throw new Error('username not found in path');
+    }
+    const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
+    if (!publicRes.ok) {
+      const d = await publicRes.json().catch(() => ({}));
+      throw new Error(d?.detail || publicRes.statusText || 'Request failed');
+    }
+    const publicData = await publicRes.json();
+    state.records = publicData.records || [];
+
+    state.canEdit = !!(state.user?.username && state.user.username === state.pageUsername);
+
+    const authUser = $('#auth-user');
+    if (authUser) {
+      authUser.textContent = state.pageUsername + (state.canEdit ? ' (あなた)' : '');
+    }
+    const logoutBtn = $('#auth-logout-btn');
+    if (logoutBtn) {
+      if (state.user) {
+        logoutBtn.style.display = '';
+        logoutBtn.addEventListener('click', () => {
+          state.token = null;
+          state.user = null;
+          localStorage.removeItem('prsk_ocr_token');
+          window.location.href = 'index.html';
+        });
+      } else {
+        logoutBtn.style.display = 'none';
+      }
+    }
+
+    // 編集できない場合は案内を出す
+    if (!state.canEdit) {
+      loginRequiredEl.style.display = 'block';
+    } else {
+      loginRequiredEl.style.display = 'none';
+    }
   } catch (e) {
     console.error(e);
     loadingEl.innerHTML = '<p>読み込みに失敗しました。</p>';
