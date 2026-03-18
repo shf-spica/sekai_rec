@@ -290,7 +290,7 @@ function updateModelStatus() {
  * @param {File|Blob} file
  * @returns {Promise<Blob>}
  */
-function applyBlackMask(file) {
+function applyBlackMaskAndEnhance(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -304,12 +304,22 @@ function applyBlackMask(file) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
       ctx.fillStyle = '#000000';
-      // 上1/4〜1/2 全幅
       ctx.fillRect(0, Math.floor(h / 4), w, Math.floor(h / 4));
-      // 下半分 右2/3
       ctx.fillRect(Math.floor(w / 3), Math.floor(h / 2), w - Math.floor(w / 3), Math.floor(h / 2));
-      // 上1/4 右半分
       ctx.fillRect(Math.floor(w / 2), 0, w - Math.floor(w / 2), Math.floor(h / 4));
+
+      // グレースケール化 + コントラスト強調（Tesseract 精度向上のため）
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const d = imageData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        // グレースケール
+        let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        // コントラスト強調（1.5倍、中心128）
+        gray = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
+        d[i] = d[i + 1] = d[i + 2] = gray;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
         else reject(new Error('Canvas toBlob failed'));
@@ -346,11 +356,14 @@ async function ocrViaBrowser(file, onProgress) {
     onProgress?.(mapped);
   };
 
-  // サーバー側と同じ黒塗り処理をCanvas上で適用してからOCRに渡す
-  const maskedBlob = await applyBlackMask(file);
+  // 黒塗り + グレースケール + コントラスト強調
+  const maskedBlob = await applyBlackMaskAndEnhance(file);
 
-  // Tesseract.js v5 API: 言語は createWorker の第1引数に渡す
+  // Tesseract.js v5 API
   const worker = await window.Tesseract.createWorker('jpn+eng', 1, { logger });
+  await worker.setParameters({
+    tessedit_pageseg_mode: '6',  // 均一テキストブロックとして認識
+  });
   const res = await worker.recognize(maskedBlob);
   await worker.terminate();
 
