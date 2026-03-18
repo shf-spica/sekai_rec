@@ -295,39 +295,25 @@ async function ocrViaBrowser(file, onProgress) {
 
   const start = performance.now();
 
-  const result = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const worker = await window.Tesseract.createWorker({
-          logger: (m) => {
-            if (typeof m.progress !== 'number') return;
-            // 各フェーズを 5〜95% に分散させてマッピング
-            let mapped = 5;
-            if (m.status === 'loading language traineddata') {
-              mapped = 5 + Math.round(m.progress * 20);  // 5〜25%
-            } else if (m.status === 'initializing api') {
-              mapped = 25 + Math.round(m.progress * 15); // 25〜40%
-            } else if (m.status === 'recognizing text') {
-              mapped = 40 + Math.round(m.progress * 55); // 40〜95%
-            }
-            onProgress?.(mapped);
-          },
-        });
-        // 日本語 + 英語
-        const langs = 'jpn+eng';
-        await worker.loadLanguage(langs);
-        await worker.initialize(langs);
-        const res = await worker.recognize(e.target.result);
-        await worker.terminate();
-        resolve(res);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  const logger = (m) => {
+    if (typeof m.progress !== 'number') return;
+    let mapped = 5;
+    if (m.status === 'loading language traineddata') {
+      mapped = 5 + Math.round(m.progress * 20);   // 5〜25%
+    } else if (m.status === 'initializing api') {
+      mapped = 25 + Math.round(m.progress * 15);  // 25〜40%
+    } else if (m.status === 'recognizing text') {
+      mapped = 40 + Math.round(m.progress * 55);  // 40〜95%
+    }
+    onProgress?.(mapped);
+  };
+
+  // Tesseract.js v5 API: 言語は createWorker の第1引数に渡す
+  const worker = await window.Tesseract.createWorker('jpn+eng', 1, { logger });
+  const res = await worker.recognize(file);
+  await worker.terminate();
+
+  const result = res;
 
   const elapsedMs = Math.round(performance.now() - start);
 
