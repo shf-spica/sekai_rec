@@ -270,7 +270,7 @@ function renderPreview() {
 window.__removeFile = removeFile;
 
 // ========================================
-// OCR Mode: Server (PaddleOCR) / Browser (ndlocr-lite GPU)
+// OCR Mode: Server (PaddleOCR) / Browser (Tesseract.js)
 // ========================================
 
 function updateModelStatus() {
@@ -278,81 +278,68 @@ function updateModelStatus() {
   const isBrowser = state.ocrMode === 'browser';
   modelStatus.querySelector('.status-dot').className = 'status-dot ready';
   modelStatusText.textContent = isBrowser
-    ? 'ブラウザOCR (GPU) 選択中'
+    ? 'ブラウザOCR (Tesseract.js) 選択中'
     : 'サーバーOCR 準備完了 (PaddleOCR)';
 }
 
-/** File → ImageData（ブラウザOCR用） */
-function fileToImageData(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      try {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        resolve(imageData);
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image'));
-    };
-    img.src = url;
-  });
-}
-
-let ocrWorkerInstance = null;
-let ocrWorkerNextId = 0;
-
 /**
- * ブラウザ内OCR（ndlocr-lite Worker / WebGPU）
+ * ブラウザ内OCR（Tesseract.js）
  * @param {File} file
  * @param {(percent: number) => void} onProgress
  * @returns {Promise<{ textBlocks, fullText, processingTime, imageDateTime }>}
  */
-function ocrViaBrowser(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const id = ++ocrWorkerNextId;
-    if (!ocrWorkerInstance) {
-      ocrWorkerInstance = new Worker(new URL('./ocr-worker.js', import.meta.url), { type: 'module' });
-    }
-    const handler = (e) => {
-      const msg = e.data;
-      if (msg.id !== id) return;
-      if (msg.type === 'OCR_PROGRESS' && typeof msg.progress === 'number') {
-        onProgress?.(Math.round(msg.progress * 100));
-      }
-      if (msg.type === 'OCR_COMPLETE') {
-        ocrWorkerInstance.removeEventListener('message', handler);
-        resolve({
-          textBlocks: msg.textBlocks || [],
-          fullText: msg.txt || '',
-          processingTime: msg.processingTime ?? 0,
-          imageDateTime: null,
+async function ocrViaBrowser(file, onProgress) {
+  if (!window.Tesseract) {
+    throw new Error('Tesseract.js が読み込まれていません');
+  }
+
+  const start = performance.now();
+
+  const result = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const worker = await window.Tesseract.createWorker({
+          logger: (m) => {
+            if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+              onProgress?.(Math.round(m.progress * 100));
+            }
+          },
         });
-      }
-      if (msg.type === 'OCR_ERROR') {
-        ocrWorkerInstance.removeEventListener('message', handler);
-        reject(new Error(msg.error || 'Browser OCR failed'));
+        // 日本語 + 英語
+        const langs = 'jpn+eng';
+        await worker.loadLanguage(langs);
+        await worker.initialize(langs);
+        const res = await worker.recognize(e.target.result);
+        await worker.terminate();
+        resolve(res);
+      } catch (err) {
+        reject(err);
       }
     };
-    ocrWorkerInstance.addEventListener('message', handler);
-    fileToImageData(file).then((imageData) => {
-      const startTime = Date.now();
-      ocrWorkerInstance.postMessage(
-        { type: 'OCR_PROCESS', id, imageData, startTime },
-        [imageData.data.buffer]
-      );
-    }).catch(reject);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
+
+  const elapsedMs = Math.round(performance.now() - start);
+
+  // Tesseract の結果を ndlocr-lite 互換の形に寄せる
+  const lines = (result.data?.lines || []).map((ln, idx) => ({
+    text: (ln.text || '').trim(),
+    x: ln.bbox?.x0 ?? 0,
+    y: ln.bbox?.y0 ?? idx * 30,
+    width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
+    height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
+    confidence: ln.confidence ?? 0.9,
+    readingOrder: idx + 1,
+  })).filter((l) => l.text);
+
+  return {
+    textBlocks: lines,
+    fullText: result.data?.text || '',
+    processingTime: elapsedMs,
+    imageDateTime: null,
+  };
 }
 
 /**
