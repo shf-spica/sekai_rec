@@ -61,6 +61,7 @@ export default defineConfig({
       input: {
         index: path.resolve(process.cwd(), 'index.html'),
         records: path.resolve(process.cwd(), 'records.html'),
+        admin_users: path.resolve(process.cwd(), 'admin-users.html'),
       },
     },
   },
@@ -77,6 +78,8 @@ export default defineConfig({
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       // dev時: /records/{username} は FastAPI 側で配信する
       '^/records/': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      // dev時: /admin/* も FastAPI 側で配信する
+      '^/admin/': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
 });
