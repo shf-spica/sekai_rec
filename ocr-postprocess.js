@@ -559,7 +559,7 @@ function extractJudgments(lines, totalNoteCount) {
         }
     }
 
-    const merged = mergeNumberLinesFallback(numberLines);
+    const merged = mergeNumberLinesFallback(rawNumberLines);
     merged.sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
     if (keysFound.length > 0 && merged.length >= keysFound.length) {
         for (const kf of keysFound) {
