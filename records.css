@@ -16,6 +16,32 @@
   padding-bottom: var(--space-2xl);
 }
 
+.mypage-header {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.mypage-user {
+  padding-top: 2px;
+}
+
+.mypage-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.mypage-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .records-message {
   text-align: center;
   padding: var(--space-2xl);
@@ -52,8 +78,8 @@
 
 .records-level-stats {
   display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: var(--space-sm);
   text-align: right;
   font-size: 0.8rem;
   font-weight: 500;
@@ -62,6 +88,22 @@
 
 .records-level-stat {
   white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.records-level-stat-main {
+  border-color: rgba(149, 76, 233, 0.55);
+  background: rgba(149, 76, 233, 0.12);
+  color: #d8c6ff;
+}
+
+.records-level-stat-append {
+  border-color: rgba(243, 104, 224, 0.45);
+  background: rgba(243, 104, 224, 0.10);
+  color: #ffd6fb;
 }
 
 .records-diff-block {

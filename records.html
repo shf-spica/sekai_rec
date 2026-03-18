@@ -17,24 +17,27 @@
 <body>
   <div class="app-container">
     <header class="app-header">
-      <h1 class="app-title">
-        <a href="index.html" class="title-link">
-          <span class="title-icon">📄</span>
-          SEKAI recorder
-        </a>
-      </h1>
-      <div class="header-actions">
-        <span class="auth-user" id="auth-user"></span>
-        <a href="index.html" class="btn btn-ghost btn-sm">OCRする</a>
-        <a href="index.html?manual=1" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</a>
-        <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+      <div class="mypage-header">
+        <div class="mypage-user">
+          <span class="auth-user" id="auth-user"></span>
+        </div>
+        <div class="mypage-title">
+          <h1 class="app-title">
+            <a href="/index.html" class="title-link">SEKAI recorder</a>
+          </h1>
+          <div class="mypage-actions">
+            <a href="/index.html" class="btn btn-ghost btn-sm" id="to-ocr-link">OCRする</a>
+            <a href="/index.html?manual=1" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</a>
+            <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+          </div>
+        </div>
       </div>
     </header>
 
     <main class="main-content records-main">
       <div id="records-login-required" class="records-message" style="display: none;">
         <p>このページは公開されています（閲覧のみ）。編集するにはログインが必要です。</p>
-        <a href="index.html" class="btn btn-primary">トップへ</a>
+        <a href="/index.html" class="btn btn-primary">トップへ</a>
       </div>
       <div id="records-loading" class="records-message">
         <p>読み込み中...</p>
@@ -44,7 +47,7 @@
       </div>
       <div id="records-empty" class="records-message" style="display: none;">
         <p>記録がまだありません。OCRでリザルトを読み取って保存しましょう。</p>
-        <a href="index.html" class="btn btn-primary">OCRする</a>
+        <a href="/index.html" class="btn btn-primary">OCRする</a>
       </div>
     </main>
 

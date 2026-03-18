@@ -83,15 +83,17 @@ function buildSlotsByLevel() {
   for (const song of songs) {
     if (!song.difficulties || typeof song.difficulties !== 'object') continue;
     for (const diff of Object.keys(song.difficulties)) {
+      const d = String(diff).toLowerCase();
+      if (!DIFF_ORDER.includes(d)) continue;
       const playLevel = getPlayLevel(song, diff);
-      const key = `${song.id}-${diff}`;
+      const key = `${song.id}-${d}`;
       const record = recordByKey.get(key) || null;
-      const slot = { songId: song.id, difficulty: diff, song, playLevel, record };
+      const slot = { songId: song.id, difficulty: d, song, playLevel, record };
       const level = playLevel || 0;
       if (!byLevel.has(level)) byLevel.set(level, new Map());
       const byDiff = byLevel.get(level);
-      if (!byDiff.has(diff)) byDiff.set(diff, []);
-      byDiff.get(diff).push(slot);
+      if (!byDiff.has(d)) byDiff.set(d, []);
+      byDiff.get(d).push(slot);
     }
   }
 
@@ -131,7 +133,8 @@ function buildSlotsByLevel() {
   return result;
 }
 
-const DIFF_ORDER = ['easy', 'normal', 'hard', 'expert', 'master', 'append'];
+// マイページ表示は MASTER→EXPERT→APPEND（EASY/NORMAL/HARD は除外）
+const DIFF_ORDER = ['master', 'expert', 'append'];
 function diffOrder(a, b) {
   const i = DIFF_ORDER.indexOf(a);
   const j = DIFF_ORDER.indexOf(b);
@@ -192,14 +195,14 @@ function renderGroups() {
     .map((g) => {
       const st = levelStats(g);
       const mainText = `AP ${st.main.ap}/${st.main.total} · FC ${st.main.fc}/${st.main.total}`;
-      const appendText = `APPEND: AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
+      const appendText = `APPEND AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
       return `
     <section class="records-level-section" data-level="${g.playLevel}">
       <h2 class="records-level-title">
         <span>Lv.${g.playLevel}</span>
         <span class="records-level-stats">
-          <span class="records-level-stat">${escapeHtml(mainText)}</span>
-          <span class="records-level-stat">${escapeHtml(appendText)}</span>
+          <span class="records-level-stat records-level-stat-main">${escapeHtml(mainText)}</span>
+          <span class="records-level-stat records-level-stat-append">${escapeHtml(appendText)}</span>
         </span>
       </h2>
       ${g.difficulties
@@ -486,7 +489,11 @@ async function init() {
     // /records/{username} から username を取得
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
-      state.pageUsername = decodeURIComponent(parts[1]);
+      const candidate = decodeURIComponent(parts[1]);
+      // /records/index.html のような誤ったパスを username と誤認しない
+      if (!/\.html$/i.test(candidate)) {
+        state.pageUsername = candidate;
+      }
     }
 
     const dbRes = await fetch('/songDatabase.json');
@@ -511,7 +518,12 @@ async function init() {
         window.location.href = `/records/${encodeURIComponent(state.user.username)}`;
         return;
       }
-      throw new Error('username not found in path');
+      // 未ログインで /records/{username} 以外に来た場合はここで止める
+      loadingEl.style.display = 'none';
+      loginRequiredEl.style.display = 'block';
+      contentEl.style.display = 'none';
+      emptyEl.style.display = 'none';
+      return;
     }
     const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
     if (!publicRes.ok) {
