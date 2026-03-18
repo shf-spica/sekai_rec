@@ -20,6 +20,25 @@ const contentEl = $('#records-content');
 const groupsEl = $('#records-groups');
 const emptyEl = $('#records-empty');
 
+// Manual entry (mypage)
+const manualEntryBtn = $('#manual-entry-link');
+const manualModal = $('#manual-modal');
+const manualModalBackdrop = $('#manual-modal-backdrop');
+const manualSearch = $('#manual-search');
+const manualSearchResults = $('#manual-search-results');
+const manualSelected = $('#manual-selected');
+const manualSelectedTitle = $('#manual-selected-title');
+const manualDifficulty = $('#manual-difficulty');
+const manualGreat = $('#manual-great');
+const manualGood = $('#manual-good');
+const manualBad = $('#manual-bad');
+const manualMiss = $('#manual-miss');
+const manualError = $('#manual-error');
+const manualModalCancel = $('#manual-modal-cancel');
+const manualSubmit = $('#manual-submit');
+
+state.manualSelectedSong = null;
+
 const JACKET_BASE = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_';
 function jacketUrl(songId) {
   const id = String(Number(songId)).padStart(3, '0');
@@ -65,6 +84,142 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text == null ? '' : String(text);
   return div.innerHTML;
+}
+
+function openManualModal() {
+  if (!manualModal) return;
+  state.manualSelectedSong = null;
+  if (manualSearch) manualSearch.value = '';
+  if (manualSelected) manualSelected.style.display = 'none';
+  if (manualSearchResults) manualSearchResults.innerHTML = '';
+  if (manualDifficulty) manualDifficulty.value = 'master';
+  [manualGreat, manualGood, manualBad, manualMiss].forEach((el) => {
+    if (el) el.value = '0';
+  });
+  if (manualError) manualError.textContent = '';
+  manualModal.style.display = 'flex';
+  manualModal.setAttribute('aria-hidden', 'false');
+  if (manualSearch) manualSearch.focus();
+}
+
+function closeManualModal() {
+  if (!manualModal) return;
+  manualModal.style.display = 'none';
+  manualModal.setAttribute('aria-hidden', 'true');
+}
+
+function renderManualSearchResults() {
+  const q = (manualSearch?.value || '').trim().toLowerCase();
+  const list = state.songDatabase?.songs ?? [];
+  const filtered = list
+    .filter((s) => !EXCLUDED_SONG_IDS.includes(s.id) && s.title && s.title.toLowerCase().includes(q))
+    .slice(0, 50);
+  if (!manualSearchResults) return;
+  if (q.length < 1) {
+    manualSearchResults.innerHTML = '<p class="manual-search-hint">曲名を入力して検索</p>';
+    return;
+  }
+  manualSearchResults.innerHTML = filtered.length
+    ? filtered
+        .map(
+          (s) =>
+            `<button type="button" class="manual-song-option" data-id="${s.id}" data-title="${escapeHtml(
+              s.title,
+            )}">${escapeHtml(s.title)}</button>`,
+        )
+        .join('')
+    : '<p class="manual-search-hint">該当なし</p>';
+  manualSearchResults.querySelectorAll('.manual-song-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.manualSelectedSong = {
+        id: parseInt(btn.dataset.id, 10),
+        title: (btn.textContent || btn.dataset.title || '').trim(),
+      };
+      if (manualSelectedTitle) manualSelectedTitle.textContent = state.manualSelectedSong.title;
+      if (manualSelected) manualSelected.style.display = 'block';
+      manualSearchResults.innerHTML = '';
+    });
+  });
+}
+
+async function submitManualEntry() {
+  if (!manualError) return;
+  manualError.textContent = '';
+  if (!state.canEdit) {
+    manualError.textContent = '自分のページでのみ編集できます';
+    return;
+  }
+  if (!state.manualSelectedSong) {
+    manualError.textContent = '曲を選択してください';
+    return;
+  }
+  const g = parseInt(manualGreat?.value || '0', 10) || 0;
+  const o = parseInt(manualGood?.value || '0', 10) || 0;
+  const b = parseInt(manualBad?.value || '0', 10) || 0;
+  const m = parseInt(manualMiss?.value || '0', 10) || 0;
+  const difficulty = (manualDifficulty?.value || 'master').toLowerCase();
+
+  // PERFECT は総ノーツ数から自動計算
+  let totalNoteCount = null;
+  const song = state.songDatabase?.songs?.find((s) => s.id === state.manualSelectedSong.id);
+  const diffInfo = song?.difficulties?.[difficulty] ?? song?.difficulties?.[difficulty.toLowerCase()];
+  if (typeof diffInfo === 'number') totalNoteCount = diffInfo;
+  else if (diffInfo && typeof diffInfo.totalNoteCount === 'number') totalNoteCount = diffInfo.totalNoteCount;
+
+  if (totalNoteCount == null) {
+    manualError.textContent = 'この曲・難易度の総ノーツ数が不明です（songDatabase.json を確認してください）';
+    return;
+  }
+  const sumOthers = g + o + b + m;
+  const p = totalNoteCount - sumOthers;
+  if (p < 0) {
+    manualError.textContent = 'PERFECT が負になってしまいます（GREAT/GOOD/BAD/MISS を確認してください）';
+    return;
+  }
+  const point = p * 3 + g * 2 + o * 1;
+
+  if (state.token) {
+    try {
+      await apiCall('/api/records', {
+        method: 'POST',
+        body: JSON.stringify({
+          song_id: state.manualSelectedSong.id,
+          difficulty,
+          perfect: p,
+          great: g,
+          good: o,
+          bad: b,
+          miss: m,
+          point,
+          taken_at: null,
+        }),
+      });
+    } catch (e) {
+      manualError.textContent = '記録の保存に失敗: ' + (e.message || e);
+      return;
+    }
+  }
+
+  // ローカル状態更新（該当カードだけ更新）
+  const idx = state.records.findIndex(
+    (r) => String(r.song_id) === String(state.manualSelectedSong.id) && (r.difficulty || '').toLowerCase() === difficulty,
+  );
+  const newRecord = {
+    song_id: state.manualSelectedSong.id,
+    difficulty,
+    perfect: p,
+    great: g,
+    good: o,
+    bad: b,
+    miss: m,
+    point,
+    taken_at: null,
+  };
+  if (idx >= 0) state.records[idx] = { ...state.records[idx], ...newRecord };
+  else state.records.push(newRecord);
+
+  updateOneCard(state.manualSelectedSong.id, difficulty, newRecord);
+  closeManualModal();
 }
 
 /** 期間限定など一覧に表示しない楽曲ID（ocr-postprocess.js の EXCLUDED_SONG_IDS と一致させる） */
@@ -540,14 +695,8 @@ async function init() {
       authUser.textContent = state.pageUsername || '';
     }
 
-    const manualLink = document.getElementById('manual-entry-link');
-    if (manualLink) {
-      if (state.canEdit) {
-        manualLink.style.display = '';
-        manualLink.href = `/index.html?manual=1&return=${encodeURIComponent(`/records/${state.pageUsername}`)}`;
-      } else {
-        manualLink.style.display = 'none';
-      }
+    if (manualEntryBtn) {
+      manualEntryBtn.style.display = state.canEdit ? '' : 'none';
     }
 
     const logoutBtn = $('#auth-logout-btn');
@@ -575,6 +724,12 @@ async function init() {
 
   loadingEl.style.display = 'none';
   renderGroups();
+
+  if (manualEntryBtn) manualEntryBtn.addEventListener('click', openManualModal);
+  if (manualModalBackdrop) manualModalBackdrop.addEventListener('click', closeManualModal);
+  if (manualModalCancel) manualModalCancel.addEventListener('click', closeManualModal);
+  if (manualSearch) manualSearch.addEventListener('input', renderManualSearchResults);
+  if (manualSubmit) manualSubmit.addEventListener('click', submitManualEntry);
 
   $('#record-detail-backdrop')?.addEventListener('click', closeDetail);
   $('#record-detail-close')?.addEventListener('click', closeDetail);
