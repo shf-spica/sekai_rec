@@ -261,6 +261,26 @@
   font-size: 0.85rem;
 }
 
+.record-detail-ap {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.record-detail-ap:hover {
+  background: var(--accent-secondary);
+  transform: translateY(-1px);
+}
+
 .record-detail-close {
   position: relative;
   display: block;
