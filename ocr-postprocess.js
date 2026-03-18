@@ -454,7 +454,12 @@ function mergeNumberLinesFallback(numberLines) {
  */
 /** 数字として解釈しうる字形の正規化（先頭の1が l/I/| で認識される対策） */
 function normalizeNumberLineText(t) {
-    const s = t.trim().replace(/[lI|]/g, '1');
+    let s = t.trim();
+    s = s.replace(/[lI|]/g, '1');
+    s = s.replace(/[oOＯ]/g, '0');
+    s = s.replace(/[Ss]/g, '5');
+    s = s.replace(/[Bb]/g, '8');
+    s = s.replace(/[,.\s]/g, '');
     return s;
 }
 
@@ -491,6 +496,31 @@ function getLabelPositions(lines) {
 
 function extractJudgments(lines, totalNoteCount) {
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
+
+    // Pass 0: Tesseract 等が「PERFECT 1446」のようにキーワード+数字を同一行で返すケースを先に処理
+    const inlineJudgments = { PERFECT: null, GREAT: null, GOOD: null, BAD: null, MISS: null };
+    let inlineCount = 0;
+    for (const line of lines) {
+        const upper = line.text.toUpperCase();
+        for (const key of keys) {
+            if (inlineJudgments[key] !== null) continue;
+            const re = new RegExp(key + '[\\s:：\\-]*([0-9]{1,4})', 'i');
+            const m = upper.match(re);
+            if (m) {
+                inlineJudgments[key] = parseInt(m[1], 10);
+                inlineCount++;
+            }
+        }
+    }
+    if (inlineCount >= 5) {
+        const allValid = Object.values(inlineJudgments).every(v => v !== null);
+        if (allValid) {
+            const sum = Object.values(inlineJudgments).reduce((a, b) => a + b, 0);
+            const sumError = totalNoteCount != null ? sum !== totalNoteCount : false;
+            return { judgments: inlineJudgments, sumError };
+        }
+    }
+
     const rawNumberLines = lines
         .map(l => ({ ...l, text: normalizeNumberLineText(l.text) }))
         .filter(l => /^[0-9]{1,4}$/.test(l.text))
@@ -514,7 +544,9 @@ function extractJudgments(lines, totalNoteCount) {
     }
 
     if (Object.values(judgments).every(v => v !== null)) {
-        return { judgments: filterValidJudgments(judgments), sumError: false };
+        const sum = Object.values(judgments).reduce((a, b) => a + b, 0);
+        const sumError = totalNoteCount != null ? sum !== totalNoteCount : false;
+        return { judgments: filterValidJudgments(judgments), sumError };
     }
 
     // パターン2: キーワードと数字の位置ベースマッチング
@@ -575,7 +607,11 @@ function extractJudgments(lines, totalNoteCount) {
         }
     }
 
-    return { judgments: filterValidJudgments(judgments), sumError: false };
+    const filled = filterValidJudgments(judgments);
+    const numericValues = Object.values(filled).filter(v => typeof v === 'number');
+    const sum = numericValues.reduce((a, b) => a + b, 0);
+    const sumError = (totalNoteCount != null && numericValues.length === 5) ? sum !== totalNoteCount : false;
+    return { judgments: filled, sumError };
 }
 
 function filterValidJudgments(judgments) {
