@@ -2,23 +2,22 @@
  * ONNX Runtime Web 設定
  * Web Worker内での統一設定
  *
- * onnxruntime-web/wasm を使用（CPU専用）
+ * WebGPU を優先し、未対応環境では WASM にフォールバック
  */
 
-import * as ort from 'onnxruntime-web/wasm';
+import * as ort from 'onnxruntime-web/webgpu';
 
 function initializeONNX() {
-  // シングルスレッドで安定動作
-  ort.env.wasm.numThreads = 1;
   ort.env.logLevel = 'warning';
-
-  // Web Worker内ではプロキシワーカー不要
-  ort.env.wasm.proxy = false;
+  if (ort.env.wasm) {
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.proxy = false;
+  }
 }
 
 export async function createSession(modelData, options = {}) {
   const defaultOptions = {
-    executionProviders: ['wasm'],
+    executionProviders: ['webgpu', 'wasm'],
     logSeverityLevel: 4,
     graphOptimizationLevel: 'basic',
     enableCpuMemArena: false,

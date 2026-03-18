@@ -23,9 +23,16 @@
       </h1>
       <p class="app-subtitle">プロセカのリザルトを記録・閲覧するツール</p>
       <div class="header-actions">
+        <label class="ocr-mode-wrap">
+          <span class="ocr-mode-label">OCR:</span>
+          <select id="ocr-mode" class="ocr-mode-select" title="サーバー負荷が高い時はブラウザ(GPU)を選べます">
+            <option value="server">サーバー (PaddleOCR)</option>
+            <option value="browser">ブラウザ (GPU)</option>
+          </select>
+        </label>
         <div class="model-status" id="model-status">
-          <span class="status-dot loading"></span>
-          <span>モデル初期化中...</span>
+          <span class="status-dot ready"></span>
+          <span id="model-status-text">サーバーOCR 準備完了</span>
         </div>
         <div class="auth-area" id="auth-area">
           <span class="auth-user" id="auth-user" style="display: none;"></span>
@@ -162,8 +169,8 @@
 
     <footer class="app-footer">
       <p>Powered by <a href="https://github.com/ndl-lab/ndlocr-lite" target="_blank"
-          rel="noopener">ndlocr-lite (WASM)</a> &
-        <a href="https://onnxruntime.ai/" target="_blank" rel="noopener">ONNX Runtime Web</a></p>
+          rel="noopener">ndlocr-lite</a> &
+        <a href="https://onnxruntime.ai/" target="_blank" rel="noopener">ONNX Runtime Web</a> (WebGPU/WASM)</p>
     </footer>
 
     <script type="module" src="app.js"></script>

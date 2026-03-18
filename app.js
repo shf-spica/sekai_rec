@@ -1,6 +1,6 @@
 /**
- * 画像OCRツール - app.js
- * サーバー (PaddleOCR) でOCR処理を実行する
+ * SEKAI recorder - app.js
+ * OCR: サーバー (PaddleOCR) または ブラウザ (ndlocr-lite / GPU)
  */
 
 import { parseGameResult } from './ocr-postprocess.js';
@@ -17,6 +17,7 @@ const state = {
   token: localStorage.getItem('prsk_ocr_token') || null,
   uploadPending: 0,
   uploadComplete: false,
+  ocrMode: localStorage.getItem('prsk_ocr_mode') || 'server',
 };
 
 let fileIdCounter = 0;
@@ -35,7 +36,9 @@ const resultsList = $('#results-list');
 const ocrBtn = $('#ocr-btn');
 const clearBtn = $('#clear-btn');
 const copyAllBtn = $('#copy-all-btn');
+const ocrModeSelect = $('#ocr-mode');
 const modelStatus = $('#model-status');
+const modelStatusText = $('#model-status-text');
 const authArea = $('#auth-area');
 const authUser = $('#auth-user');
 const authLoginBtn = $('#auth-login-btn');
@@ -267,15 +270,89 @@ function renderPreview() {
 window.__removeFile = removeFile;
 
 // ========================================
-// OCR Server (PaddleOCR)
+// OCR Mode: Server (PaddleOCR) / Browser (ndlocr-lite GPU)
 // ========================================
 
 function updateModelStatus() {
-  if (!modelStatus) return;
-  modelStatus.innerHTML = `
-    <span class="status-dot ready"></span>
-    <span>サーバーOCR 準備完了 (PaddleOCR)</span>
-  `;
+  if (!modelStatus || !modelStatusText) return;
+  const isBrowser = state.ocrMode === 'browser';
+  modelStatus.querySelector('.status-dot').className = 'status-dot ready';
+  modelStatusText.textContent = isBrowser
+    ? 'ブラウザOCR (GPU) 選択中'
+    : 'サーバーOCR 準備完了 (PaddleOCR)';
+}
+
+/** File → ImageData（ブラウザOCR用） */
+function fileToImageData(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        resolve(imageData);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+    img.src = url;
+  });
+}
+
+let ocrWorkerInstance = null;
+let ocrWorkerNextId = 0;
+
+/**
+ * ブラウザ内OCR（ndlocr-lite Worker / WebGPU）
+ * @param {File} file
+ * @param {(percent: number) => void} onProgress
+ * @returns {Promise<{ textBlocks, fullText, processingTime, imageDateTime }>}
+ */
+function ocrViaBrowser(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const id = ++ocrWorkerNextId;
+    if (!ocrWorkerInstance) {
+      ocrWorkerInstance = new Worker(new URL('./ocr-worker.js', import.meta.url), { type: 'module' });
+    }
+    const handler = (e) => {
+      const msg = e.data;
+      if (msg.id !== id) return;
+      if (msg.type === 'OCR_PROGRESS' && typeof msg.progress === 'number') {
+        onProgress?.(Math.round(msg.progress * 100));
+      }
+      if (msg.type === 'OCR_COMPLETE') {
+        ocrWorkerInstance.removeEventListener('message', handler);
+        resolve({
+          textBlocks: msg.textBlocks || [],
+          fullText: msg.txt || '',
+          processingTime: msg.processingTime ?? 0,
+          imageDateTime: null,
+        });
+      }
+      if (msg.type === 'OCR_ERROR') {
+        ocrWorkerInstance.removeEventListener('message', handler);
+        reject(new Error(msg.error || 'Browser OCR failed'));
+      }
+    };
+    ocrWorkerInstance.addEventListener('message', handler);
+    fileToImageData(file).then((imageData) => {
+      const startTime = Date.now();
+      ocrWorkerInstance.postMessage(
+        { type: 'OCR_PROCESS', id, imageData, startTime },
+        [imageData.data.buffer]
+      );
+    }).catch(reject);
+  });
 }
 
 /**
@@ -334,9 +411,10 @@ async function processImages() {
     updateProgressItem(i, 'active', 30);
 
     try {
-      const ocrResult = await ocrViaServer(entry.file);
-
-      updateProgressItem(i, 'active', 80);
+      const ocrResult = state.ocrMode === 'browser'
+        ? await ocrViaBrowser(entry.file, (p) => updateProgressItem(i, 'active', p))
+        : await ocrViaServer(entry.file);
+      if (state.ocrMode !== 'browser') updateProgressItem(i, 'active', 80);
 
       // プロセカ特化の後処理
       let parsed = null;
@@ -747,6 +825,14 @@ async function init() {
   if (manualSearch) manualSearch.addEventListener('input', renderManualSearchResults);
   if (manualSubmit) manualSubmit.addEventListener('click', submitManualEntry);
 
+  if (ocrModeSelect) {
+    ocrModeSelect.value = state.ocrMode;
+    ocrModeSelect.addEventListener('change', () => {
+      state.ocrMode = ocrModeSelect.value;
+      localStorage.setItem('prsk_ocr_mode', state.ocrMode);
+      updateModelStatus();
+    });
+  }
   updateModelStatus();
   ocrBtn.disabled = true; // アップロード完了までは押せない
   ocrBtn.textContent = 'OCR実行';

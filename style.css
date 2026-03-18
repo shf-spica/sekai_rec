@@ -874,6 +874,28 @@ body::before {
   flex-wrap: wrap;
 }
 
+.ocr-mode-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ocr-mode-label {
+  white-space: nowrap;
+}
+
+.ocr-mode-select {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
 .auth-area {
   display: flex;
   align-items: center;
