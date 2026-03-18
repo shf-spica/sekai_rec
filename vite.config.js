@@ -13,6 +13,13 @@ export default defineConfig({
 
   build: {
     target: 'esnext',
+    // records.html もビルド出力に含める（preview で必要）
+    rollupOptions: {
+      input: {
+        index: path.resolve(process.cwd(), 'index.html'),
+        records: path.resolve(process.cwd(), 'records.html'),
+      },
+    },
   },
 
   // Web WorkerをES moduleフォーマットで出力
@@ -29,9 +36,31 @@ export default defineConfig({
     configureServer(server) {
       // dev時も /records/{username} を records.html にルーティングする（ViteのSPAフォールバック回避）
       server.middlewares.use((req, res, next) => {
-        const url = req.url || '';
-        if (/^\/records\/[^/?#]+\/?$/.test(url)) {
-          const filePath = path.resolve(new URL('.', import.meta.url).pathname, 'records.html');
+        const url = (req.url || '').split('?', 1)[0];
+        if (/^\/records\/[^/]+\/?$/.test(url)) {
+          const filePath = path.resolve(process.cwd(), 'records.html');
+          try {
+            const html = fs.readFileSync(filePath, 'utf-8');
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(html);
+            return;
+          } catch (e) {
+            next(e);
+            return;
+          }
+        }
+        next();
+      });
+    },
+  },
+
+  preview: {
+    // preview時も /records/{username} を dist/records.html にルーティング
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url || '').split('?', 1)[0];
+        if (/^\/records\/[^/]+\/?$/.test(url)) {
+          const filePath = path.resolve(process.cwd(), 'dist', 'records.html');
           try {
             const html = fs.readFileSync(filePath, 'utf-8');
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
