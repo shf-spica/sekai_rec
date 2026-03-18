@@ -74,12 +74,12 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
-      '^/ocr$': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '^/ocr$': { target: 'http://192.168.0.180:8000', changeOrigin: true },
+      '/api': { target: 'http://192.168.0.180:8000', changeOrigin: true },
       // dev時: /records/{username} は FastAPI 側で配信する
-      '^/records/': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '^/records/': { target: 'http://192.168.0.180:8000', changeOrigin: true },
       // dev時: /admin/* も FastAPI 側で配信する
-      '^/admin/': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '^/admin/': { target: 'http://192.168.0.180:8000', changeOrigin: true },
     },
   },
 });
