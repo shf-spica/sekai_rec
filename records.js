@@ -315,6 +315,9 @@ function openDetail(btn) {
           return;
         }
 
+        // 先にモーダルだけ閉じて体感レスポンスを良くする
+        closeDetail();
+
         const diffInfo =
           song.difficulties?.[diffNorm] ??
           song.difficulties?.[difficulty] ??
@@ -371,7 +374,6 @@ function openDetail(btn) {
             state.records.push(newRecord);
           }
           renderGroups();
-          closeDetail();
           alert('APとして記録しました。');
         } catch (e) {
           console.error(e);
