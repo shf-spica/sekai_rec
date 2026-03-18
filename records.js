@@ -489,7 +489,7 @@ async function init() {
       state.pageUsername = decodeURIComponent(parts[1]);
     }
 
-    const dbRes = await fetch('songDatabase.json');
+    const dbRes = await fetch('/songDatabase.json');
     if (dbRes.ok) state.songDatabase = await dbRes.json();
 
     // ログインしていれば me を取得（編集可否の判定に使う）
