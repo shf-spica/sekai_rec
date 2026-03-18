@@ -301,9 +301,17 @@ async function ocrViaBrowser(file, onProgress) {
       try {
         const worker = await window.Tesseract.createWorker({
           logger: (m) => {
-            if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-              onProgress?.(Math.round(m.progress * 100));
+            if (typeof m.progress !== 'number') return;
+            // 各フェーズを 5〜95% に分散させてマッピング
+            let mapped = 5;
+            if (m.status === 'loading language traineddata') {
+              mapped = 5 + Math.round(m.progress * 20);  // 5〜25%
+            } else if (m.status === 'initializing api') {
+              mapped = 25 + Math.round(m.progress * 15); // 25〜40%
+            } else if (m.status === 'recognizing text') {
+              mapped = 40 + Math.round(m.progress * 55); // 40〜95%
             }
+            onProgress?.(mapped);
           },
         });
         // 日本語 + 英語
@@ -395,7 +403,7 @@ async function processImages() {
     const entry = state.files[i];
     const startTime = performance.now();
 
-    updateProgressItem(i, 'active', 30);
+    updateProgressItem(i, 'active', state.ocrMode === 'browser' ? 5 : 30);
 
     try {
       const ocrResult = state.ocrMode === 'browser'
