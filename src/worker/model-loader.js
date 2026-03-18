@@ -8,8 +8,9 @@ const STORE_NAME = 'models';
 
 export const MODEL_VERSION = '1.0.0';
 
-// モデル配信ベースURL（ndlocr-lite-web の R2 CDN）
-const MODEL_BASE_URL = 'https://pub-9cac8877191a4c3697edb59fd982130f.r2.dev';
+// モデル配信ベースURL（フロントと同一オリジンで配信）
+// Vite の場合は public/models/ 以下に .onnx を配置すると /models/... で配信される
+const MODEL_BASE_URL = '/models';
 
 // ONNXモデルのURL
 export const MODEL_URLS = {
