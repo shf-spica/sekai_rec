@@ -283,6 +283,44 @@ function updateModelStatus() {
 }
 
 /**
+ * server.py の _apply_black_mask と同じ黒塗りをCanvas上で適用する
+ * masked[h//4 : h//2, 0:w]    = 0   上1/4〜1/2 全幅
+ * masked[h//2 : h,   w//3:w]  = 0   下半分 右2/3
+ * masked[0   : h//4, w//2:w]  = 0   上1/4 右半分
+ * @param {File|Blob} file
+ * @returns {Promise<Blob>}
+ */
+function applyBlackMask(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = '#000000';
+      // 上1/4〜1/2 全幅
+      ctx.fillRect(0, Math.floor(h / 4), w, Math.floor(h / 4));
+      // 下半分 右2/3
+      ctx.fillRect(Math.floor(w / 3), Math.floor(h / 2), w - Math.floor(w / 3), Math.floor(h / 2));
+      // 上1/4 右半分
+      ctx.fillRect(Math.floor(w / 2), 0, w - Math.floor(w / 2), Math.floor(h / 4));
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Canvas toBlob failed'));
+      }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+    img.src = url;
+  });
+}
+
+/**
  * ブラウザ内OCR（Tesseract.js）
  * @param {File} file
  * @param {(percent: number) => void} onProgress
@@ -308,9 +346,12 @@ async function ocrViaBrowser(file, onProgress) {
     onProgress?.(mapped);
   };
 
+  // サーバー側と同じ黒塗り処理をCanvas上で適用してからOCRに渡す
+  const maskedBlob = await applyBlackMask(file);
+
   // Tesseract.js v5 API: 言語は createWorker の第1引数に渡す
   const worker = await window.Tesseract.createWorker('jpn+eng', 1, { logger });
-  const res = await worker.recognize(file);
+  const res = await worker.recognize(maskedBlob);
   await worker.terminate();
 
   const result = res;
