@@ -37,7 +37,12 @@ function getPlayLevel(song, difficulty) {
 }
 
 function getSongById(songId) {
-  return state.songDatabase?.songs?.find((s) => s.id === songId) ?? null;
+  const idNum = Number(songId);
+  return (
+    state.songDatabase?.songs?.find(
+      (s) => String(s.id) === String(songId) || (Number.isFinite(idNum) && s.id === idNum),
+    ) ?? null
+  );
 }
 
 async function apiCall(path, options = {}) {

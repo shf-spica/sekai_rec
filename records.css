@@ -262,15 +262,15 @@
 }
 
 .record-detail-ap {
-  display: block;
-  width: 100%;
-  margin-bottom: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
+  position: absolute;
+  top: 40px; /* 右上の削除ボタンのすぐ下 */
+  right: var(--space-sm);
+  padding: 4px 10px;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: #fff;
   background: var(--accent-primary);
-  border: none;
+  border: 1px solid var(--accent-primary);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background var(--transition-fast), transform var(--transition-fast);
@@ -304,7 +304,7 @@
   position: absolute;
   top: var(--space-sm);
   right: var(--space-sm);
-  padding: 4px 8px;
+  padding: 4px 10px;
   font-family: inherit;
   font-size: 0.75rem;
   color: var(--error);
@@ -316,7 +316,7 @@
 }
 
 .record-detail-delete:hover {
-  background: rgba(255, 107, 107, 0.1);
+  background: rgba(255, 107, 107, 0.08);
   border-color: rgba(255, 107, 107, 1);
 }
 
