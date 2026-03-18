@@ -44,6 +44,7 @@ const authUser = $('#auth-user');
 const authLoginBtn = $('#auth-login-btn');
 const authRegisterBtn = $('#auth-register-btn');
 const authLogoutBtn = $('#auth-logout-btn');
+const recordsLink = $('#records-link');
 const authModal = $('#auth-modal');
 const authModalBackdrop = $('#auth-modal-backdrop');
 const authModalTitle = $('#auth-modal-title');
@@ -740,11 +741,18 @@ function renderAuthArea() {
     authLoginBtn.style.display = 'none';
     authRegisterBtn.style.display = 'none';
     authLogoutBtn.style.display = '';
+    if (recordsLink) {
+      recordsLink.href = `/records/${encodeURIComponent(state.user.username)}`;
+    }
   } else {
     authUser.style.display = 'none';
     authLogoutBtn.style.display = 'none';
     authLoginBtn.style.display = '';
     authRegisterBtn.style.display = '';
+    if (recordsLink) {
+      // 未ログインの場合は records.html へ（公開URLは username が必要）
+      recordsLink.href = 'records.html';
+    }
   }
 }
 
