@@ -584,10 +584,8 @@ async def mypage(username: str):
 
 
 @app.get("/admin/users")
-async def admin_users_page(user=Depends(get_current_user)):
-    """開発者用ページ（shf_spica のみ）"""
-    _require_auth()
-    _require_admin(user)
+async def admin_users_page():
+    """開発者用ページ（認証は JS が /api/admin/users で行う）"""
     path = Path(_static_dir) / "admin-users.html"
     if not path.exists():
         raise HTTPException(status_code=404, detail="admin-users.html not found")
