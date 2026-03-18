@@ -998,10 +998,16 @@ async function submitManualEntry() {
   }
 
   closeManualModal();
-  if (state.token) {
-    alert('記録を保存しました。');
-  } else {
-    alert('記録を保存しました（ログインしている場合のみ記録されます）。');
+  // return パラメータがあればマイページへ戻す
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ret = params.get('return');
+    if (ret) {
+      window.location.href = ret;
+      return;
+    }
+  } catch (_) {
+    // ignore
   }
 }
 

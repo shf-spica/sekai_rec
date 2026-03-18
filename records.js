@@ -539,6 +539,17 @@ async function init() {
     if (authUser) {
       authUser.textContent = state.pageUsername || '';
     }
+
+    const manualLink = document.getElementById('manual-entry-link');
+    if (manualLink) {
+      if (state.canEdit) {
+        manualLink.style.display = '';
+        manualLink.href = `/index.html?manual=1&return=${encodeURIComponent(`/records/${state.pageUsername}`)}`;
+      } else {
+        manualLink.style.display = 'none';
+      }
+    }
+
     const logoutBtn = $('#auth-logout-btn');
     if (logoutBtn) {
       if (state.user) {
