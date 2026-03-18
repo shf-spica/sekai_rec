@@ -302,44 +302,32 @@ function openDetail(btn) {
     if (!state.token || !song || alreadyAp) {
       // 何もしない
     } else {
-      const diffInfo =
-        song.difficulties?.[diffNorm] ??
-        song.difficulties?.[difficulty] ??
-        song.difficulties?.[difficulty?.toLowerCase()];
-      let totalNoteCount = null;
-      if (typeof diffInfo === 'number') totalNoteCount = diffInfo;
-      else if (diffInfo && typeof diffInfo.totalNoteCount === 'number') totalNoteCount = diffInfo.totalNoteCount;
+      apBtn.style.display = '';
+      apBtn.onclick = async () => {
+        const diffInfo =
+          song.difficulties?.[diffNorm] ??
+          song.difficulties?.[difficulty] ??
+          song.difficulties?.[difficulty?.toLowerCase()];
+        let totalNoteCount = null;
+        if (typeof diffInfo === 'number') totalNoteCount = diffInfo;
+        else if (diffInfo && typeof diffInfo.totalNoteCount === 'number') totalNoteCount = diffInfo.totalNoteCount;
 
-      if (totalNoteCount != null) {
-        apBtn.style.display = '';
-        apBtn.onclick = async () => {
-          if (!confirm('この譜面を ALL PERFECT として記録しますか？')) return;
-          const perfect = totalNoteCount;
-          const great = 0;
-          const good = 0;
-          const bad = 0;
-          const miss = 0;
-          const point = perfect * 3;
-          try {
-            await apiCall('/api/records', {
-              method: 'POST',
-              body: JSON.stringify({
-                song_id: Number(songId),
-                difficulty: diffNorm,
-                perfect,
-                great,
-                good,
-                bad,
-                miss,
-                point,
-                taken_at: null,
-              }),
-            });
+        if (totalNoteCount == null) {
+          alert('この曲・難易度の総ノーツ数が不明です（songDatabase.json を確認してください）。');
+          return;
+        }
 
-            const idx = state.records.findIndex(
-              (r) => String(r.song_id) === String(songId) && (r.difficulty || '').toLowerCase() === diffNorm,
-            );
-            const newRecord = {
+        if (!confirm('この譜面を ALL PERFECT として記録しますか？')) return;
+        const perfect = totalNoteCount;
+        const great = 0;
+        const good = 0;
+        const bad = 0;
+        const miss = 0;
+        const point = perfect * 3;
+        try {
+          await apiCall('/api/records', {
+            method: 'POST',
+            body: JSON.stringify({
               song_id: Number(songId),
               difficulty: diffNorm,
               perfect,
@@ -349,21 +337,36 @@ function openDetail(btn) {
               miss,
               point,
               taken_at: null,
-            };
-            if (idx >= 0) {
-              state.records[idx] = { ...state.records[idx], ...newRecord };
-            } else {
-              state.records.push(newRecord);
-            }
-            renderGroups();
-            closeDetail();
-            alert('APとして記録しました。');
-          } catch (e) {
-            console.error(e);
-            alert('APの記録に失敗しました: ' + (e.message || e));
+            }),
+          });
+
+          const idx = state.records.findIndex(
+            (r) => String(r.song_id) === String(songId) && (r.difficulty || '').toLowerCase() === diffNorm,
+          );
+          const newRecord = {
+            song_id: Number(songId),
+            difficulty: diffNorm,
+            perfect,
+            great,
+            good,
+            bad,
+            miss,
+            point,
+            taken_at: null,
+          };
+          if (idx >= 0) {
+            state.records[idx] = { ...state.records[idx], ...newRecord };
+          } else {
+            state.records.push(newRecord);
           }
-        };
-      }
+          renderGroups();
+          closeDetail();
+          alert('APとして記録しました。');
+        } catch (e) {
+          console.error(e);
+          alert('APの記録に失敗しました: ' + (e.message || e));
+        }
+      };
     }
   }
 
