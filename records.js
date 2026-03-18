@@ -304,6 +304,12 @@ function openDetail(btn) {
     } else {
       apBtn.style.display = '';
       apBtn.onclick = async () => {
+        // 曲データが見つからない場合はここでエラーにする
+        if (!song || !song.difficulties) {
+          alert('この曲の情報が見つかりません（songDatabase.json を確認してください）。');
+          return;
+        }
+
         const diffInfo =
           song.difficulties?.[diffNorm] ??
           song.difficulties?.[difficulty] ??
