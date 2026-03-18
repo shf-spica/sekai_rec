@@ -373,7 +373,50 @@ function openDetail(btn) {
           } else {
             state.records.push(newRecord);
           }
-          renderGroups();
+
+          // 一覧全体を再描画せず、該当カードだけをAP表示に更新する
+          const card = btn;
+          if (card) {
+            card.dataset.hasRecord = 'true';
+            card.dataset.perfect = String(perfect);
+            card.dataset.great = '0';
+            card.dataset.good = '0';
+            card.dataset.bad = '0';
+            card.dataset.miss = '0';
+            card.dataset.point = String(point);
+
+            card.classList.remove('record-card-no-record', 'record-card-fc');
+            if (!card.classList.contains('record-card-ap')) {
+              card.classList.add('record-card-ap');
+            }
+
+            const img = card.querySelector('.record-card-jacket');
+            if (img) {
+              img.src = jacketProxyUrl(songId, false);
+            }
+
+            let badge = card.querySelector('.record-card-point-minus-badge');
+            const pm = calcPointMinus({
+              perfect,
+              great,
+              good,
+              bad,
+              miss,
+              point,
+            });
+            if (!badge) {
+              badge = document.createElement('span');
+              badge.className = 'record-card-point-minus-badge';
+              const titleEl = card.querySelector('.record-card-title');
+              if (titleEl && titleEl.parentElement === card) {
+                card.insertBefore(badge, titleEl);
+              } else {
+                card.appendChild(badge);
+              }
+            }
+            badge.textContent = String(pm);
+          }
+
           alert('APとして記録しました。');
         } catch (e) {
           console.error(e);
