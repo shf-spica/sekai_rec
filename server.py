@@ -290,6 +290,24 @@ async def api_public_records(username: str):
     return {"user": {"id": user_row["id"], "username": user_row["username"]}, "records": [dict(r) for r in rows]}
 
 
+def _require_admin(user):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    if (user.get("username") or "") != "shf_spica":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return True
+
+
+@app.get("/api/admin/users")
+async def api_admin_users(user=Depends(get_current_user)):
+    """開発者用: ユーザー一覧（shf_spica のみ）"""
+    _require_auth()
+    _require_admin(user)
+    with get_db() as conn:
+        rows = conn.execute("SELECT id, username, created_at FROM users ORDER BY id ASC").fetchall()
+    return {"users": [dict(r) for r in rows]}
+
+
 @app.delete("/api/records")
 async def api_delete_record(song_id: int, difficulty: str, user=Depends(get_current_user)):
     if user is None:
@@ -562,6 +580,17 @@ async def mypage(username: str):
     path = Path(_static_dir) / "records.html"
     if not path.exists():
         raise HTTPException(status_code=404, detail="records.html not found")
+    return FileResponse(path)
+
+
+@app.get("/admin/users")
+async def admin_users_page(user=Depends(get_current_user)):
+    """開発者用ページ（shf_spica のみ）"""
+    _require_auth()
+    _require_admin(user)
+    path = Path(_static_dir) / "admin-users.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="admin-users.html not found")
     return FileResponse(path)
 
 

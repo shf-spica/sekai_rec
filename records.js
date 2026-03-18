@@ -554,12 +554,8 @@ async function init() {
       }
     }
 
-    // 編集できない場合は案内を出す
-    if (!state.canEdit) {
-      loginRequiredEl.style.display = 'block';
-    } else {
-      loginRequiredEl.style.display = 'none';
-    }
+    // 他人のページ閲覧時の「公開されています」案内は表示しない
+    loginRequiredEl.style.display = 'none';
   } catch (e) {
     console.error(e);
     loadingEl.innerHTML = '<p>読み込みに失敗しました。</p>';

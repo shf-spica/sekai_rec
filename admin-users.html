@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEKAI recorder - 開発者: ユーザー一覧</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/records.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="mypage-header">
+        <div class="mypage-user">
+          <span class="auth-user" id="auth-user"></span>
+        </div>
+        <div class="mypage-title">
+          <h1 class="app-title">
+            <a href="/index.html" class="title-link">SEKAI recorder</a>
+          </h1>
+          <div class="mypage-actions">
+            <a href="/index.html" class="btn btn-ghost btn-sm">OCR</a>
+            <a href="/records/" class="btn btn-ghost btn-sm" id="to-mypage">マイページ</a>
+            <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content records-main">
+      <div class="records-message" id="admin-users-loading">
+        <p>読み込み中...</p>
+      </div>
+      <div class="records-content" id="admin-users-content" style="display:none;">
+        <section class="records-level-section">
+          <h2 class="records-level-title">
+            <span>ユーザー一覧</span>
+          </h2>
+          <div style="overflow:auto;">
+            <table style="width:100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">id</th>
+                  <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">username</th>
+                  <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">created_at</th>
+                  <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border-color);">mypage</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="records-message" id="admin-users-error" style="display:none;">
+        <p>表示できません。</p>
+        <a href="/index.html" class="btn btn-primary">トップへ</a>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/admin-users.js"></script>
+</body>
+
+</html>
+
