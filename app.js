@@ -776,6 +776,7 @@ function closeAuthModal() {
 
 async function submitAuth(e) {
   e.preventDefault();
+  if (authSubmit) authSubmit.disabled = true;
   const mode = authModal?.dataset.mode || 'login';
   const username = (authUsername?.value || '').trim();
   const password = authPassword?.value || '';
@@ -811,6 +812,8 @@ async function submitAuth(e) {
     }
   } catch (err) {
     authError.textContent = err.message || '通信エラー';
+  } finally {
+    if (authSubmit) authSubmit.disabled = false;
   }
 }
 

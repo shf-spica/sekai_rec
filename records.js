@@ -537,7 +537,7 @@ async function init() {
 
     const authUser = $('#auth-user');
     if (authUser) {
-      authUser.textContent = state.pageUsername + (state.canEdit ? ' (あなた)' : '');
+      authUser.textContent = state.pageUsername || '';
     }
     const logoutBtn = $('#auth-logout-btn');
     if (logoutBtn) {
