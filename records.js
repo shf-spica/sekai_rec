@@ -298,8 +298,8 @@ function openDetail(btn) {
       (recordData.great || 0) === 0 &&
       (recordData.miss || 0) === 0;
 
-    // ログインしていない / 曲データがない / すでにAPならボタン非表示
-    if (!state.token || !song || alreadyAp) {
+    // ログインしていない / すでにAPならボタン非表示
+    if (!state.token || alreadyAp) {
       // 何もしない
     } else {
       apBtn.style.display = '';
