@@ -681,12 +681,21 @@ function parseNdlocrOutput(ocrResult) {
 /** OCR行から難易度キーワードを検出し、musicDifficulty のキー（小文字）を返す */
 function getDifficultyFromLines(lines) {
     const full = lines.map(l => l.text.toUpperCase()).join('\n');
+    // 厳密マッチ
     if (/\bAPPEND\b/.test(full)) return 'append';
     if (/\bMASTER\b/.test(full)) return 'master';
     if (/\bEXPERT\b/.test(full)) return 'expert';
     if (/\bHARD\b/.test(full)) return 'hard';
     if (/\bNORMAL\b/.test(full)) return 'normal';
     if (/\bEASY\b/.test(full)) return 'easy';
+    // Tesseract がスペースや記号を挟む場合のフォールバック
+    const collapsed = full.replace(/[\s\-_.,:;]/g, '');
+    if (collapsed.includes('APPEND')) return 'append';
+    if (collapsed.includes('MASTER')) return 'master';
+    if (collapsed.includes('EXPERT')) return 'expert';
+    if (collapsed.includes('HARD')) return 'hard';
+    if (collapsed.includes('NORMAL')) return 'normal';
+    if (collapsed.includes('EASY')) return 'easy';
     return null;
 }
 
@@ -716,11 +725,42 @@ export function parseGameResult(ocrResult, songDatabase) {
     const parsed = parseNdlocrOutput(ocrResult);
 
     const matchedSong = findBestSongMatch(parsed.lines, songDatabase);
-    const difficulty = getDifficultyFromLines(parsed.lines);
-    const totalNoteCount = getTotalNoteCount(songDatabase, matchedSong.id, difficulty);
-    const { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
+    let difficulty = getDifficultyFromLines(parsed.lines);
+    let totalNoteCount = getTotalNoteCount(songDatabase, matchedSong.id, difficulty);
+    let { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
     const point = calcPoint(judgments);
     const songError = !matchedSong.id;
+
+    // difficulty が不明 or totalNoteCount が取れなかった場合でも、
+    // 5判定が揃っていれば曲の全難易度と照合して検証する
+    const numericValues = Object.values(judgments).filter(v => typeof v === 'number');
+    if (numericValues.length === 5 && matchedSong.id != null) {
+        const sum = numericValues.reduce((a, b) => a + b, 0);
+        const song = songDatabase?.songs?.find(s => s.id === matchedSong.id);
+        if (song?.difficulties) {
+            if (totalNoteCount != null) {
+                // difficulty 検出済みだが extractJudgments で sumError にならなかった場合も再検証
+                judgmentsSumError = sum !== totalNoteCount;
+            } else {
+                // difficulty 不明 → 全難易度の totalNoteCount と照合
+                let inferredDiff = null;
+                for (const [diff, data] of Object.entries(song.difficulties)) {
+                    const nc = typeof data === 'number' ? data : data?.totalNoteCount;
+                    if (nc != null && sum === nc) {
+                        inferredDiff = diff;
+                        totalNoteCount = nc;
+                        break;
+                    }
+                }
+                if (inferredDiff) {
+                    difficulty = inferredDiff;
+                    judgmentsSumError = false;
+                } else {
+                    judgmentsSumError = true;
+                }
+            }
+        }
+    }
 
     return {
         rawText: parsed.text,
