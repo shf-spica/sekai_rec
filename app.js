@@ -290,7 +290,10 @@ let _parseqInitPromise = null;
 
 function getParseqWorker() {
   if (!_parseqWorker) {
-    _parseqWorker = new Worker(new URL('./ndlocr-worker.js', import.meta.url), { type: 'module' });
+    const workerUrl = new URL('./ndlocr-worker.js', import.meta.url);
+    workerUrl.searchParams.set('v', '20260319b');
+    _parseqWorker = new Worker(workerUrl, { type: 'module' });
+    _parseqWorker.onerror = (e) => console.error('[PARSeq Worker] load error:', e.message, e);
   }
   return _parseqWorker;
 }
@@ -405,7 +408,7 @@ async function ocrViaBrowser(file, onProgress) {
     await initParseq();
     parseqAvailable = true;
   } catch (e) {
-    console.warn('[OCR] PARSeq 初期化失敗 (Tesseract フォールバック):', e.message);
+    console.warn('[OCR] PARSeq 初期化失敗 (Tesseract フォールバック):', e.message, e);
     _parseqInitPromise = null;
   }
 
