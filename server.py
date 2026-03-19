@@ -1,7 +1,9 @@
+import asyncio
 import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+from functools import partial
 from pathlib import Path
 
 from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
@@ -483,6 +485,9 @@ app.add_middleware(
 )
 
 ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
+_ocr_semaphore = asyncio.Semaphore(1)
+_OCR_QUEUE_MAX = 5
+_ocr_waiting = 0
 
 
 def _load_image_bgr(data: bytes) -> np.ndarray:
@@ -542,32 +547,43 @@ def _paddle_to_textblocks(result) -> dict:
 
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
-    start = time.time()
-    data = await file.read()
-    # EXIF から撮影日時を取得（あれば）
-    image_datetime = None
-    try:
-        img0 = Image.open(io.BytesIO(data))
-        exif = getattr(img0, "_getexif", lambda: None)() or {}
-        dt = exif.get(36867) or exif.get(306)  # DateTimeOriginal / DateTime
-        if isinstance(dt, str):
-            image_datetime = dt.replace(":", "-", 2)
-    except Exception:
-        image_datetime = None
+    global _ocr_waiting
+    if _ocr_waiting >= _OCR_QUEUE_MAX:
+        raise HTTPException(status_code=503, detail="OCRキューが満杯です。しばらく待ってから再試行してください。")
 
-    img = _load_image_bgr(data)
-    masked = _apply_black_mask(img)
-    result = ocr.ocr(masked, cls=True)
-    converted = _paddle_to_textblocks(result)
-    elapsed_ms = int((time.time() - start) * 1000)
-    return JSONResponse(
-        {
-            "textBlocks": converted["textBlocks"],
-            "fullText": converted["fullText"],
-            "processingTime": elapsed_ms,
-            "imageDateTime": image_datetime,
-        }
-    )
+    _ocr_waiting += 1
+    try:
+        data = await file.read()
+        image_datetime = None
+        try:
+            img0 = Image.open(io.BytesIO(data))
+            exif = getattr(img0, "_getexif", lambda: None)() or {}
+            dt = exif.get(36867) or exif.get(306)
+            if isinstance(dt, str):
+                image_datetime = dt.replace(":", "-", 2)
+        except Exception:
+            image_datetime = None
+
+        img = _load_image_bgr(data)
+        masked = _apply_black_mask(img)
+
+        async with _ocr_semaphore:
+            start = time.time()
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, partial(ocr.ocr, masked, cls=True))
+            elapsed_ms = int((time.time() - start) * 1000)
+
+        converted = _paddle_to_textblocks(result)
+        return JSONResponse(
+            {
+                "textBlocks": converted["textBlocks"],
+                "fullText": converted["fullText"],
+                "processingTime": elapsed_ms,
+                "imageDateTime": image_datetime,
+            }
+        )
+    finally:
+        _ocr_waiting -= 1
 
 
 # フロント一式を配信（/ocr は上で定義済みのため優先される）
