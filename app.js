@@ -17,7 +17,6 @@ const state = {
   token: localStorage.getItem('prsk_ocr_token') || null,
   uploadPending: 0,
   uploadComplete: false,
-  ocrMode: localStorage.getItem('prsk_ocr_mode') || 'server',
 };
 
 let fileIdCounter = 0;
@@ -36,7 +35,6 @@ const resultsList = $('#results-list');
 const ocrBtn = $('#ocr-btn');
 const clearBtn = $('#clear-btn');
 const copyAllBtn = $('#copy-all-btn');
-const ocrModeSelect = $('#ocr-mode');
 const modelStatus = $('#model-status');
 const modelStatusText = $('#model-status-text');
 const authArea = $('#auth-area');
@@ -276,11 +274,8 @@ window.__removeFile = removeFile;
 
 function updateModelStatus() {
   if (!modelStatus || !modelStatusText) return;
-  const isBrowser = state.ocrMode === 'browser';
   modelStatus.querySelector('.status-dot').className = 'status-dot ready';
-  modelStatusText.textContent = isBrowser
-    ? 'ブラウザOCR (Tesseract.js) 選択中'
-    : 'サーバーOCR 準備完了 (PaddleOCR)';
+  modelStatusText.textContent = 'ブラウザOCR 優先（失敗時のみサーバーOCRへフォールバック）';
 }
 
 // ─── PARSeq (メインスレッド ONNX Runtime) ───
@@ -635,18 +630,41 @@ async function processImages() {
     const entry = state.files[i];
     const startTime = performance.now();
 
-    updateProgressItem(i, 'active', state.ocrMode === 'browser' ? 5 : 30);
+    updateProgressItem(i, 'active', 5);
 
     try {
-      const ocrResult = state.ocrMode === 'browser'
-        ? await ocrViaBrowser(entry.file, (p) => updateProgressItem(i, 'active', p))
-        : await ocrViaServer(entry.file);
-      if (state.ocrMode !== 'browser') updateProgressItem(i, 'active', 80);
+      let ocrResult = null;
+      let ocrUsed = 'browser';
+      try {
+        ocrResult = await ocrViaBrowser(entry.file, (p) => updateProgressItem(i, 'active', p));
+      } catch (e) {
+        // Browser OCR が失敗した時だけサーバー OCR にフォールバック
+        console.warn('[OCR] Browser OCR failed, fallback to server OCR:', e?.message || e);
+        ocrUsed = 'server_fallback';
+        updateProgressItem(i, 'active', 30);
+        ocrResult = await ocrViaServer(entry.file);
+        updateProgressItem(i, 'active', 80);
+      }
 
       // プロセカ特化の後処理
       let parsed = null;
       if (state.songDatabase && (state.songDatabase.songs?.length > 0 || (Array.isArray(state.songDatabase) && state.songDatabase.length > 0))) {
         parsed = parseGameResult(ocrResult, state.songDatabase);
+      }
+      // ブラウザOCR結果で後処理エラーが出た場合はサーバーOCRにフォールバック
+      const hasPostprocessError = !!(parsed?.judgmentsSumError || parsed?.songError);
+      if (ocrUsed === 'browser' && hasPostprocessError) {
+        console.warn('[OCR] Browser OCR produced postprocess error, fallback to server OCR', {
+          judgmentsSumError: !!parsed?.judgmentsSumError,
+          songError: !!parsed?.songError,
+        });
+        updateProgressItem(i, 'active', 30);
+        ocrResult = await ocrViaServer(entry.file);
+        updateProgressItem(i, 'active', 80);
+        ocrUsed = 'server_fallback';
+        if (state.songDatabase && (state.songDatabase.songs?.length > 0 || (Array.isArray(state.songDatabase) && state.songDatabase.length > 0))) {
+          parsed = parseGameResult(ocrResult, state.songDatabase);
+        }
       }
 
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
@@ -687,6 +705,7 @@ async function processImages() {
         rawText: ocrResult.fullText || '',
         parsed: parsed,
         elapsed,
+        ocrUsed,
         error: null,
         recordSaved: recordSaved?.saved ?? false,
       });
@@ -822,6 +841,7 @@ function renderResults(results) {
             <div class="result-filename">${r.entry.file.name}</div>
             <div class="result-meta">
               <span>⏱ ${r.elapsed}秒</span>
+              ${r.ocrUsed === 'server_fallback' ? '<span class="ocr-fallback-note">※サーバーOCRで処理</span>' : ''}
             </div>
           </div>
         </div>
@@ -1072,14 +1092,6 @@ async function init() {
     // ignore
   }
 
-  if (ocrModeSelect) {
-    ocrModeSelect.value = state.ocrMode;
-    ocrModeSelect.addEventListener('change', () => {
-      state.ocrMode = ocrModeSelect.value;
-      localStorage.setItem('prsk_ocr_mode', state.ocrMode);
-      updateModelStatus();
-    });
-  }
   updateModelStatus();
   ocrBtn.disabled = true; // アップロード完了までは押せない
   ocrBtn.textContent = 'OCR実行';

@@ -21,16 +21,9 @@
       <h1 class="app-title">SEKAI recorder</h1>
       <p class="app-subtitle">プロセカのリザルトを記録・閲覧するツール</p>
       <div class="header-actions">
-        <label class="ocr-mode-wrap">
-          <span class="ocr-mode-label">OCR:</span>
-          <select id="ocr-mode" class="ocr-mode-select" title="サーバー負荷が高い時はブラウザを選べます">
-            <option value="server">サーバー (PaddleOCR)</option>
-            <option value="browser">ブラウザ (Tesseract.js)</option>
-          </select>
-        </label>
         <div class="model-status" id="model-status">
           <span class="status-dot ready"></span>
-          <span id="model-status-text">サーバーOCR 準備完了</span>
+          <span id="model-status-text">ブラウザOCR 優先（失敗時のみサーバーOCRへフォールバック）</span>
         </div>
         <div class="auth-area" id="auth-area">
           <span class="auth-user" id="auth-user" style="display: none;"></span>
@@ -170,7 +163,7 @@
         <a href="https://github.com/naptha/tesseract.js" target="_blank" rel="noopener">Tesseract.js</a></p>
     </footer>
 
-    <script type="module" src="app.js?v=20260319d"></script>
+    <script type="module" src="app.js?v=20260319e"></script>
 </body>
 
 </html>
