@@ -420,9 +420,12 @@ function splitImageRegions(file) {
       }
       scoreCtx.putImageData(scoreData, 0, 0);
 
-      scoreCanvas.toBlob((scoreBlob) => {
-        if (!scoreBlob) { reject(new Error('scoreCanvas toBlob failed')); return; }
-        resolve({ titleImageData, scoreBlob, fullWidth: w, fullHeight: h });
+      titleCanvas.toBlob((titleBlob) => {
+        if (!titleBlob) { reject(new Error('titleCanvas toBlob failed')); return; }
+        scoreCanvas.toBlob((scoreBlob) => {
+          if (!scoreBlob) { reject(new Error('scoreCanvas toBlob failed')); return; }
+          resolve({ titleImageData, titleBlob, scoreBlob, fullWidth: w, fullHeight: h });
+        }, 'image/png');
       }, 'image/png');
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
@@ -443,20 +446,31 @@ async function ocrViaBrowser(file, onProgress) {
 
   const start = performance.now();
 
-  // ndlocr-lite モデル初期化（初回のみ）
+  // ndlocr-lite 初期化を試行（失敗時は Tesseract.js フォールバック）
+  let ndlocrAvailable = false;
   onProgress?.(2);
-  await initNdlocr((p, msg) => onProgress?.(Math.round(p * 30)));
+  try {
+    await initNdlocr((p, msg) => onProgress?.(Math.round(p * 30)));
+    ndlocrAvailable = true;
+  } catch (e) {
+    console.warn('ndlocr-lite 初期化失敗 → Tesseract.js フォールバック:', e.message);
+    _ndlocrInitPromise = null;
+  }
 
   // 画像を曲名領域とスコア領域に分割
   onProgress?.(32);
-  const { titleImageData, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
+  const { titleImageData, titleBlob, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
 
-  // 並列実行: ndlocr-lite (曲名) + Tesseract.js (スコア)
-  const titlePromise = ndlocrOCR(titleImageData).then(res => {
-    onProgress?.(55);
-    return res;
-  });
+  // 曲名 OCR: ndlocr-lite が使えればそちら、使えなければ Tesseract.js (jpn)
+  const titlePromise = ndlocrAvailable
+    ? ndlocrOCR(titleImageData).then(res => { onProgress?.(55); return { type: 'ndlocr', data: res }; })
+        .catch(e => {
+          console.warn('ndlocr OCR 失敗 → Tesseract.js フォールバック:', e.message);
+          return ocrTitleWithTesseract(titleBlob, onProgress).then(r => ({ type: 'tesseract', data: r }));
+        })
+    : ocrTitleWithTesseract(titleBlob, onProgress).then(r => ({ type: 'tesseract', data: r }));
 
+  // スコア OCR: Tesseract.js (eng)
   const scorePromise = (async () => {
     const worker = await window.Tesseract.createWorker('eng', 1, {
       logger: (m) => {
@@ -472,21 +486,30 @@ async function ocrViaBrowser(file, onProgress) {
     return res;
   })();
 
-  const [titleResult, scoreResult] = await Promise.all([titlePromise, scorePromise]);
+  const [titleWrapped, scoreResult] = await Promise.all([titlePromise, scorePromise]);
   onProgress?.(95);
 
-  // 曲名テキストブロック (ndlocr-lite)
-  const titleBlocks = (titleResult.textBlocks || []).map((b, i) => ({
-    text: b.text,
-    x: b.x,
-    y: b.y,
-    width: b.width,
-    height: b.height,
-    confidence: b.confidence,
-    readingOrder: i + 1,
-  }));
+  // 曲名テキストブロック
+  let titleBlocks;
+  if (titleWrapped.type === 'ndlocr') {
+    titleBlocks = (titleWrapped.data.textBlocks || []).map((b, i) => ({
+      text: b.text, x: b.x, y: b.y, width: b.width, height: b.height,
+      confidence: b.confidence, readingOrder: i + 1,
+    }));
+    console.log('[OCR] 曲名: ndlocr-lite →', titleBlocks.map(b => b.text));
+  } else {
+    const tRes = titleWrapped.data;
+    titleBlocks = (tRes.data?.lines || []).map((ln, idx) => ({
+      text: (ln.text || '').trim(),
+      x: ln.bbox?.x0 ?? 0, y: ln.bbox?.y0 ?? idx * 30,
+      width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
+      height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
+      confidence: ln.confidence ?? 0.9, readingOrder: idx + 1,
+    })).filter(l => l.text);
+    console.log('[OCR] 曲名: Tesseract.js (fallback) →', titleBlocks.map(b => b.text));
+  }
 
-  // スコアテキストブロック (Tesseract.js) — 座標をスコア領域のオフセット分ずらす
+  // スコアテキストブロック — 座標をスコア領域のオフセット分ずらす
   const scoreOffsetY = Math.floor(fullHeight / 2);
   const scoreLines = (scoreResult.data?.lines || []).map((ln, idx) => ({
     text: (ln.text || '').trim(),
@@ -497,6 +520,7 @@ async function ocrViaBrowser(file, onProgress) {
     confidence: ln.confidence ?? 0.9,
     readingOrder: titleBlocks.length + idx + 1,
   })).filter(l => l.text);
+  console.log('[OCR] スコア: Tesseract.js →', scoreLines.map(b => b.text));
 
   const allBlocks = [...titleBlocks, ...scoreLines];
   const fullText = allBlocks.map(b => b.text).join('\n');
@@ -508,6 +532,21 @@ async function ocrViaBrowser(file, onProgress) {
     processingTime: elapsedMs,
     imageDateTime: null,
   };
+}
+
+async function ocrTitleWithTesseract(titleBlob, onProgress) {
+  const worker = await window.Tesseract.createWorker('jpn+eng', 1, {
+    logger: (m) => {
+      if (typeof m.progress !== 'number') return;
+      if (m.status === 'recognizing text') {
+        onProgress?.(32 + Math.round(m.progress * 20));
+      }
+    },
+  });
+  await worker.setParameters({ tessedit_pageseg_mode: '6' });
+  const res = await worker.recognize(titleBlob);
+  await worker.terminate();
+  return res;
 }
 
 /**

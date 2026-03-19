@@ -1,6 +1,6 @@
 /**
- * ndlocr-lite Web Worker
- * レイアウト検出 (DEIMv2) + 文字認識 (PARSeq) をブラウザ内で実行
+ * PARSeq 文字認識 Web Worker
+ * crop 済み画像を直接 PARSeq-NDL-30 で認識する（レイアウト検出不要）
  * 参考: yuta1984/ndlocrlite-web
  */
 
@@ -16,12 +16,9 @@ const DB_VERSION = 1;
 const STORE_NAME = 'models';
 const MODEL_VERSION = '1.0.0';
 
-let layoutSession = null;
 let recSession = null;
 let charList = [];
-const LAYOUT_INPUT_SIZE = 800;
-const REC_INPUT_SHAPE = [1, 3, 16, 256]; // parseq-ndl-30 (≤30 chars)
-const LINE_CLASS_IDS = new Set([1, 2, 3, 4, 5, 16]);
+const REC_INPUT_SHAPE = [1, 3, 16, 256];
 
 function post(msg) { self.postMessage(msg); }
 
@@ -106,86 +103,6 @@ async function loadCharset() {
   }
 }
 
-// ─── Layout Detection (DEIMv2) ───
-
-function preprocessLayout(imageData) {
-  const { width: ow, height: oh } = imageData;
-  const maxWH = Math.max(ow, oh);
-  const scale = LAYOUT_INPUT_SIZE / maxWH;
-  const srcCanvas = new OffscreenCanvas(ow, oh);
-  srcCanvas.getContext('2d').putImageData(imageData, 0, 0);
-  const canvas = new OffscreenCanvas(LAYOUT_INPUT_SIZE, LAYOUT_INPUT_SIZE);
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgb(0,0,0)';
-  ctx.fillRect(0, 0, LAYOUT_INPUT_SIZE, LAYOUT_INPUT_SIZE);
-  ctx.drawImage(srcCanvas, 0, 0, ow, oh, 0, 0, Math.round(ow * scale), Math.round(oh * scale));
-  const { data } = ctx.getImageData(0, 0, LAYOUT_INPUT_SIZE, LAYOUT_INPUT_SIZE);
-  const mean = [123.675, 116.28, 103.53];
-  const std = [58.395, 57.12, 57.375];
-  const tensorData = new Float32Array(3 * LAYOUT_INPUT_SIZE * LAYOUT_INPUT_SIZE);
-  for (let h = 0; h < LAYOUT_INPUT_SIZE; h++) {
-    for (let w = 0; w < LAYOUT_INPUT_SIZE; w++) {
-      const px = (h * LAYOUT_INPUT_SIZE + w) * 4;
-      for (let c = 0; c < 3; c++)
-        tensorData[c * LAYOUT_INPUT_SIZE * LAYOUT_INPUT_SIZE + h * LAYOUT_INPUT_SIZE + w] = (data[px + c] - mean[c]) / std[c];
-    }
-  }
-  return {
-    tensor: new ort.Tensor('float32', tensorData, [1, 3, LAYOUT_INPUT_SIZE, LAYOUT_INPUT_SIZE]),
-    maxWH, ow, oh,
-  };
-}
-
-async function detectLayout(imageData) {
-  const { tensor, maxWH, ow, oh } = preprocessLayout(imageData);
-  const inputs = { [layoutSession.inputNames[0]]: tensor };
-  if (layoutSession.inputNames.length > 1) {
-    inputs[layoutSession.inputNames[1]] = new ort.Tensor(
-      'int64', BigInt64Array.from([BigInt(LAYOUT_INPUT_SIZE), BigInt(LAYOUT_INPUT_SIZE)]), [1, 2]
-    );
-  }
-  const output = await layoutSession.run(inputs);
-  const names = layoutSession.outputNames;
-  const classIds = output[names[0]].data;
-  const bboxes = output[names[1]].data;
-  const scores = output[names[2]].data;
-  const charCounts = names.length > 3 ? output[names[3]].data : null;
-  const scaleX = maxWH / LAYOUT_INPUT_SIZE;
-  const scaleY = maxWH / LAYOUT_INPUT_SIZE;
-  const lines = [];
-  for (let i = 0; i < scores.length; i++) {
-    if (scores[i] < 0.3) continue;
-    const cls = Number(classIds[i]) - 1;
-    if (!LINE_CLASS_IDS.has(cls)) continue;
-    const bh = (bboxes[i * 4 + 3] - bboxes[i * 4 + 1]) * scaleY;
-    const dh = bh * 0.02;
-    const x1 = Math.max(0, Math.round(bboxes[i * 4 + 0] * scaleX));
-    const y1 = Math.max(0, Math.round(bboxes[i * 4 + 1] * scaleY - dh));
-    const x2 = Math.min(ow, Math.round(bboxes[i * 4 + 2] * scaleX));
-    const y2 = Math.min(oh, Math.round(bboxes[i * 4 + 3] * scaleY + dh));
-    const w = x2 - x1, h = y2 - y1;
-    if (w >= 10 && h >= 10)
-      lines.push({ x: x1, y: y1, width: w, height: h, confidence: scores[i], charCountCategory: charCounts ? charCounts[i] : 100 });
-  }
-  lines.sort((a, b) => b.confidence - a.confidence);
-  const keep = [];
-  for (const d of lines) {
-    if (keep.every(k => iou(k, d) < 0.5)) keep.push(d);
-  }
-  keep.sort((a, b) => a.y - b.y);
-  return keep;
-}
-
-function iou(a, b) {
-  const ax2 = a.x + a.width, ay2 = a.y + a.height;
-  const bx2 = b.x + b.width, by2 = b.y + b.height;
-  const ix = Math.max(0, Math.min(ax2, bx2) - Math.max(a.x, b.x));
-  const iy = Math.max(0, Math.min(ay2, by2) - Math.max(a.y, b.y));
-  const inter = ix * iy;
-  if (inter === 0) return 0;
-  return inter / (a.width * a.height + b.width * b.height - inter);
-}
-
 // ─── Text Recognition (PARSeq) ───
 
 function preprocessRec(croppedImageData) {
@@ -242,40 +159,22 @@ async function recognizeText(croppedImageData) {
   return chars.join('').trim();
 }
 
-function cropRegion(imageData, region) {
-  const src = new OffscreenCanvas(imageData.width, imageData.height);
-  src.getContext('2d').putImageData(imageData, 0, 0);
-  const canvas = new OffscreenCanvas(region.width, region.height);
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(src, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
-  return ctx.getImageData(0, 0, region.width, region.height);
-}
-
 // ─── Worker message handling ───
 
 let initialized = false;
 
 async function initialize() {
   if (initialized) return;
-  post({ type: 'PROGRESS', stage: 'loading', progress: 0.02, message: 'Loading charset...' });
+  post({ type: 'PROGRESS', stage: 'loading', progress: 0.05, message: 'Loading charset...' });
   await loadCharset();
 
-  const progresses = { layout: 0, rec: 0 };
-  const report = () => {
-    const avg = (progresses.layout + progresses.rec) / 2;
-    post({ type: 'PROGRESS', stage: 'loading', progress: 0.05 + avg * 0.7, message: `Loading models... ${Math.round(avg * 100)}%` });
-  };
+  post({ type: 'PROGRESS', stage: 'loading', progress: 0.10, message: 'Loading recognition model...' });
+  const recData = await loadModel('rec30', `${MODEL_BASE_URL}/parseq-ndl-30.onnx`, p => {
+    post({ type: 'PROGRESS', stage: 'loading', progress: 0.10 + p * 0.60, message: `Loading model... ${Math.round(p * 100)}%` });
+  });
 
-  const [layoutData, recData] = await Promise.all([
-    loadModel('layout', `${MODEL_BASE_URL}/deim-s-1024x1024.onnx`, p => { progresses.layout = p; report(); }),
-    loadModel('rec30', `${MODEL_BASE_URL}/parseq-ndl-30.onnx`, p => { progresses.rec = p; report(); }),
-  ]);
-
-  post({ type: 'PROGRESS', stage: 'init_session', progress: 0.78, message: 'Preparing layout model...' });
+  post({ type: 'PROGRESS', stage: 'init_session', progress: 0.75, message: 'Preparing model...' });
   const sessionOpts = { executionProviders: ['wasm'], logSeverityLevel: 4, graphOptimizationLevel: 'basic', enableCpuMemArena: false, enableMemPattern: false };
-  layoutSession = await ort.InferenceSession.create(layoutData, sessionOpts);
-
-  post({ type: 'PROGRESS', stage: 'init_session', progress: 0.90, message: 'Preparing recognition model...' });
   recSession = await ort.InferenceSession.create(recData, sessionOpts);
 
   initialized = true;
@@ -285,35 +184,18 @@ async function initialize() {
 async function processOCR(id, imageData) {
   if (!initialized) await initialize();
 
-  post({ type: 'PROGRESS', id, stage: 'layout', progress: 0.1, message: 'Detecting text regions...' });
-  const regions = await detectLayout(imageData);
+  post({ type: 'PROGRESS', id, stage: 'recognition', progress: 0.5, message: 'Recognizing...' });
+  const text = await recognizeText(imageData);
 
-  if (regions.length === 0) {
-    post({ type: 'RESULT', id, textBlocks: [], fullText: '' });
-    return;
-  }
+  const block = {
+    text,
+    x: 0, y: 0,
+    width: imageData.width, height: imageData.height,
+    confidence: 1.0,
+    readingOrder: 1,
+  };
 
-  const srcCanvas = new OffscreenCanvas(imageData.width, imageData.height);
-  srcCanvas.getContext('2d').putImageData(imageData, 0, 0);
-
-  const textBlocks = [];
-  for (let i = 0; i < regions.length; i++) {
-    post({ type: 'PROGRESS', id, stage: 'recognition', progress: 0.3 + (i / regions.length) * 0.6, message: `Recognizing ${i + 1}/${regions.length}...` });
-    const cropped = cropRegion(imageData, regions[i]);
-    const text = await recognizeText(cropped);
-    textBlocks.push({
-      text,
-      x: regions[i].x,
-      y: regions[i].y,
-      width: regions[i].width,
-      height: regions[i].height,
-      confidence: regions[i].confidence,
-      readingOrder: i + 1,
-    });
-  }
-
-  const fullText = textBlocks.filter(b => b.text).map(b => b.text).join('\n');
-  post({ type: 'RESULT', id, textBlocks, fullText });
+  post({ type: 'RESULT', id, textBlocks: text ? [block] : [], fullText: text });
 }
 
 self.onmessage = async (e) => {
