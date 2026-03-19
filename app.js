@@ -283,12 +283,58 @@ function updateModelStatus() {
     : 'サーバーOCR 準備完了 (PaddleOCR)';
 }
 
+// ─── PARSeq Worker (曲名の日本語認識用) ───
+let _parseqWorker = null;
+let _parseqReady = false;
+let _parseqInitPromise = null;
+
+function getParseqWorker() {
+  if (!_parseqWorker) {
+    _parseqWorker = new Worker(new URL('./ndlocr-worker.js', import.meta.url), { type: 'module' });
+  }
+  return _parseqWorker;
+}
+
+function initParseq() {
+  if (_parseqReady) return Promise.resolve();
+  if (_parseqInitPromise) return _parseqInitPromise;
+  _parseqInitPromise = new Promise((resolve, reject) => {
+    const w = getParseqWorker();
+    const handler = (e) => {
+      const msg = e.data;
+      if (msg.type === 'PROGRESS' && msg.stage === 'ready') {
+        _parseqReady = true; w.removeEventListener('message', handler); resolve();
+      }
+      if (msg.type === 'ERROR') {
+        w.removeEventListener('message', handler); reject(new Error(msg.error));
+      }
+    };
+    w.addEventListener('message', handler);
+    w.postMessage({ type: 'INIT' });
+  });
+  return _parseqInitPromise;
+}
+
+function parseqOCR(imageData) {
+  return new Promise((resolve, reject) => {
+    const w = getParseqWorker();
+    const id = 'ocr_' + Date.now();
+    const handler = (e) => {
+      const msg = e.data;
+      if (msg.id !== id) return;
+      if (msg.type === 'RESULT') { w.removeEventListener('message', handler); resolve(msg); }
+      if (msg.type === 'ERROR')  { w.removeEventListener('message', handler); reject(new Error(msg.error)); }
+    };
+    w.addEventListener('message', handler);
+    w.postMessage({ type: 'OCR', id, imageData });
+  });
+}
+
 /**
  * 画像を曲名領域とスコア領域に crop する。
  * server.py の _apply_black_mask と同じ座標系:
  *   曲名: [0 : h/4, 0 : w/2]   （左上 1/4）
  *   スコア: [h/2 : h, 0 : w/3] （左下 1/3）
- * @returns {Promise<{ titleBlob, scoreBlob, fullWidth, fullHeight }>}
  */
 function splitImageRegions(file) {
   return new Promise((resolve, reject) => {
@@ -306,6 +352,7 @@ function splitImageRegions(file) {
       titleCanvas.width = titleW;
       titleCanvas.height = titleH;
       titleCanvas.getContext('2d').drawImage(img, 0, 0, titleW, titleH, 0, 0, titleW, titleH);
+      const titleImageData = titleCanvas.getContext('2d').getImageData(0, 0, titleW, titleH);
 
       // スコア領域 (左下) — グレースケール + コントラスト強調
       const scoreW = Math.floor(w / 3);
@@ -331,7 +378,7 @@ function splitImageRegions(file) {
         if (!titleBlob) { reject(new Error('titleCanvas toBlob failed')); return; }
         scoreCanvas.toBlob((scoreBlob) => {
           if (!scoreBlob) { reject(new Error('scoreCanvas toBlob failed')); return; }
-          resolve({ titleBlob, scoreBlob, fullWidth: w, fullHeight: h });
+          resolve({ titleBlob, titleImageData, scoreBlob, fullWidth: w, fullHeight: h });
         }, 'image/png');
       }, 'image/png');
     };
@@ -341,7 +388,8 @@ function splitImageRegions(file) {
 }
 
 /**
- * ブラウザ内OCR（分割方式: 曲名→Tesseract jpn+eng / スコア→Tesseract eng）
+ * ブラウザ内OCR（3並列: 曲名PARSeq + 曲名Tesseract jpn+eng + スコアTesseract eng）
+ * 結果マージ: PARSeq曲名 → Tesseract曲名(難易度+フォールバック) → スコア
  */
 async function ocrViaBrowser(file, onProgress) {
   if (!window.Tesseract) {
@@ -351,15 +399,30 @@ async function ocrViaBrowser(file, onProgress) {
   const start = performance.now();
   onProgress?.(5);
 
-  const { titleBlob, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
+  // PARSeq 初期化（失敗しても続行）
+  let parseqAvailable = false;
+  try {
+    await initParseq();
+    parseqAvailable = true;
+  } catch (e) {
+    console.warn('[OCR] PARSeq 初期化失敗 (Tesseract フォールバック):', e.message);
+    _parseqInitPromise = null;
+  }
+
+  const { titleBlob, titleImageData, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
   onProgress?.(10);
 
-  // 曲名: Tesseract jpn+eng
-  const titlePromise = (async () => {
+  // ① 曲名 PARSeq（日本語特化）
+  const parseqPromise = parseqAvailable
+    ? parseqOCR(titleImageData).catch(e => { console.warn('[OCR] PARSeq 失敗:', e.message); return null; })
+    : Promise.resolve(null);
+
+  // ② 曲名 Tesseract jpn+eng（難易度 + 英数字曲名のフォールバック）
+  const titleTessPromise = (async () => {
     const w = await window.Tesseract.createWorker('jpn+eng', 1, {
       logger: (m) => {
         if (typeof m.progress !== 'number') return;
-        if (m.status === 'recognizing text') onProgress?.(10 + Math.round(m.progress * 35));
+        if (m.status === 'recognizing text') onProgress?.(10 + Math.round(m.progress * 30));
       },
     });
     await w.setParameters({ tessedit_pageseg_mode: '6' });
@@ -368,12 +431,12 @@ async function ocrViaBrowser(file, onProgress) {
     return res;
   })();
 
-  // スコア: Tesseract eng
+  // ③ スコア Tesseract eng
   const scorePromise = (async () => {
     const w = await window.Tesseract.createWorker('eng', 1, {
       logger: (m) => {
         if (typeof m.progress !== 'number') return;
-        if (m.status === 'recognizing text') onProgress?.(45 + Math.round(m.progress * 45));
+        if (m.status === 'recognizing text') onProgress?.(40 + Math.round(m.progress * 50));
       },
     });
     await w.setParameters({ tessedit_pageseg_mode: '6' });
@@ -382,38 +445,53 @@ async function ocrViaBrowser(file, onProgress) {
     return res;
   })();
 
-  const [titleResult, scoreResult] = await Promise.all([titlePromise, scorePromise]);
+  const [parseqResult, titleTessResult, scoreResult] = await Promise.all([parseqPromise, titleTessPromise, scorePromise]);
   onProgress?.(95);
 
-  // 曲名ブロック
-  const titleBlocks = (titleResult.data?.lines || []).map((ln, idx) => ({
+  // --- 結果マージ ---
+  let order = 1;
+
+  // PARSeq 曲名ブロック（先頭に配置 → findBestSongMatch で最優先マッチ）
+  const parseqBlocks = [];
+  if (parseqResult?.fullText) {
+    parseqBlocks.push({
+      text: parseqResult.fullText.trim(),
+      x: 0, y: 0,
+      width: titleImageData.width, height: titleImageData.height,
+      confidence: 1.0,
+      readingOrder: order++,
+    });
+    console.log('[OCR] 曲名 PARSeq:', parseqResult.fullText.trim());
+  } else {
+    console.log('[OCR] 曲名 PARSeq: (結果なし)');
+  }
+
+  // Tesseract 曲名ブロック（難易度検出 + 英数字曲名フォールバック）
+  const titleTessBlocks = (titleTessResult.data?.lines || []).map((ln) => ({
     text: (ln.text || '').trim(),
     x: ln.bbox?.x0 ?? 0,
-    y: ln.bbox?.y0 ?? idx * 30,
+    y: ln.bbox?.y0 ?? 0,
     width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
     height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
     confidence: ln.confidence ?? 0.9,
-    readingOrder: idx + 1,
+    readingOrder: order++,
   })).filter(l => l.text);
+  console.log('[OCR] 曲名 Tesseract:', titleTessBlocks.map(b => b.text));
 
-  // スコアブロック — Y座標をスコア領域のオフセット分ずらす
+  // スコアブロック（Y座標オフセット）
   const scoreOffsetY = Math.floor(fullHeight / 2);
-  const scoreLines = (scoreResult.data?.lines || []).map((ln, idx) => ({
+  const scoreLines = (scoreResult.data?.lines || []).map((ln) => ({
     text: (ln.text || '').trim(),
     x: ln.bbox?.x0 ?? 0,
-    y: (ln.bbox?.y0 ?? idx * 30) + scoreOffsetY,
+    y: (ln.bbox?.y0 ?? 0) + scoreOffsetY,
     width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
     height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
     confidence: ln.confidence ?? 0.9,
-    readingOrder: titleBlocks.length + idx + 1,
+    readingOrder: order++,
   })).filter(l => l.text);
+  console.log('[OCR] スコア Tesseract:', scoreLines.map(b => b.text));
 
-  console.log('[OCR] 曲名 (jpn+eng):', titleBlocks.map(b => b.text));
-  console.log('[OCR] スコア (eng):', scoreLines.map(b => b.text));
-  console.log('[OCR] 曲名raw:', titleResult.data?.text);
-  console.log('[OCR] スコアraw:', scoreResult.data?.text);
-
-  const allBlocks = [...titleBlocks, ...scoreLines];
+  const allBlocks = [...parseqBlocks, ...titleTessBlocks, ...scoreLines];
   const fullText = allBlocks.map(b => b.text).join('\n');
   const elapsedMs = Math.round(performance.now() - start);
 
