@@ -283,53 +283,103 @@ function updateModelStatus() {
     : 'サーバーOCR 準備完了 (PaddleOCR)';
 }
 
-// ─── PARSeq Worker (曲名の日本語認識用) ───
-let _parseqWorker = null;
-let _parseqReady = false;
+// ─── PARSeq (メインスレッド ONNX Runtime) ───
+let _parseqSession = null;
+let _parseqCharList = [];
 let _parseqInitPromise = null;
+const PARSEQ_INPUT = [1, 3, 16, 256];
 
-function getParseqWorker() {
-  if (!_parseqWorker) {
-    const workerUrl = new URL('./ndlocr-worker.js', import.meta.url);
-    workerUrl.searchParams.set('v', '20260319b');
-    _parseqWorker = new Worker(workerUrl, { type: 'module' });
-    _parseqWorker.onerror = (e) => console.error('[PARSeq Worker] load error:', e.message, e);
-  }
-  return _parseqWorker;
-}
-
-function initParseq() {
-  if (_parseqReady) return Promise.resolve();
+async function initParseq() {
+  if (_parseqSession) return;
   if (_parseqInitPromise) return _parseqInitPromise;
-  _parseqInitPromise = new Promise((resolve, reject) => {
-    const w = getParseqWorker();
-    const handler = (e) => {
-      const msg = e.data;
-      if (msg.type === 'PROGRESS' && msg.stage === 'ready') {
-        _parseqReady = true; w.removeEventListener('message', handler); resolve();
+  _parseqInitPromise = (async () => {
+    console.log('[PARSeq] Loading ONNX Runtime...');
+    const ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.wasm.min.mjs');
+    ort.env.wasm.numThreads = 1;
+    ort.env.logLevel = 'warning';
+    ort.env.wasm.proxy = false;
+    window._parseqOrt = ort;
+
+    console.log('[PARSeq] Loading charset...');
+    try {
+      const res = await fetch('/config/NDLmoji.yaml');
+      const text = await res.text();
+      const m = text.match(/charset_train:\s*"((?:[^"\\]|\\.)*)"/);
+      if (m) {
+        const raw = m[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        _parseqCharList = [...raw];
       }
-      if (msg.type === 'ERROR') {
-        w.removeEventListener('message', handler); reject(new Error(msg.error));
-      }
-    };
-    w.addEventListener('message', handler);
-    w.postMessage({ type: 'INIT' });
-  });
+      console.log('[PARSeq] charset loaded:', _parseqCharList.length, 'chars');
+    } catch (e) { console.warn('[PARSeq] charset load failed:', e); }
+
+    console.log('[PARSeq] Loading model...');
+    const modelRes = await fetch('/models/parseq-ndl-30.onnx');
+    if (!modelRes.ok) throw new Error(`Model fetch failed: ${modelRes.status}`);
+    const modelBuf = await modelRes.arrayBuffer();
+
+    console.log('[PARSeq] Creating session...');
+    const opts = { executionProviders: ['wasm'], logSeverityLevel: 4 };
+    _parseqSession = await ort.InferenceSession.create(modelBuf, opts);
+    console.log('[PARSeq] Ready');
+  })();
   return _parseqInitPromise;
 }
 
-function parseqOCR(imageData) {
-  return new Promise((resolve, reject) => {
-    const w = getParseqWorker();
-    const id = 'ocr_' + Date.now();
-    const handler = (e) => {
-      const msg = e.data;
-      if (msg.id !== id) return;
-      if (msg.type === 'RESULT') { w.removeEventListener('message', handler); resolve(msg); }
-      if (msg.type === 'ERROR')  { w.removeEventListener('message', handler); reject(new Error(msg.error)); }
-    };
-    w.addEventListener('message', handler);
-    w.postMessage({ type: 'OCR', id, imageData });
+function parseqRecognize(imageData) {
+  const ort = window._parseqOrt;
+  const [, ch, h, w] = PARSEQ_INPUT;
+  const iw = imageData.width, ih = imageData.height;
+
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = iw; tmpCanvas.height = ih;
+  tmpCanvas.getContext('2d').putImageData(imageData, 0, 0);
+
+  let srcCanvas = tmpCanvas;
+  if (ih > iw) {
+    srcCanvas = document.createElement('canvas');
+    srcCanvas.width = ih; srcCanvas.height = iw;
+    const ctx = srcCanvas.getContext('2d');
+    ctx.translate(ih / 2, iw / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.translate(-iw / 2, -ih / 2);
+    ctx.drawImage(tmpCanvas, 0, 0);
+  }
+
+  const resizeCanvas = document.createElement('canvas');
+  resizeCanvas.width = w; resizeCanvas.height = h;
+  resizeCanvas.getContext('2d').drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, 0, 0, w, h);
+  const { data } = resizeCanvas.getContext('2d').getImageData(0, 0, w, h);
+  const tensorData = new Float32Array(ch * h * w);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = (y * w + x) * 4;
+      for (let c = 0; c < ch; c++)
+        tensorData[c * h * w + y * w + x] = 2.0 * (data[px + c] / 255.0 - 0.5);
+    }
+  }
+  const tensor = new ort.Tensor('float32', tensorData, PARSEQ_INPUT);
+  return _parseqSession.run({ [_parseqSession.inputNames[0]]: tensor }).then(output => {
+    const outTensor = output[_parseqSession.outputNames[0]];
+    const logits = Array.from(outTensor.data).map(v => typeof v === 'bigint' ? Number(v) : v);
+    const [, seqLen, vocabSize] = outTensor.dims;
+    console.log(`[PARSeq decode] dims=[${outTensor.dims}] charset=${_parseqCharList.length}`);
+    const ids = [];
+    for (let i = 0; i < seqLen; i++) {
+      const slice = logits.slice(i * vocabSize, (i + 1) * vocabSize);
+      const maxVal = Math.max(...slice);
+      const maxIdx = slice.indexOf(maxVal);
+      if (i < 3) console.log(`[PARSeq decode] pos${i}: maxIdx=${maxIdx} maxVal=${maxVal.toFixed(3)}`);
+      if (maxIdx === 0) break;
+      if (maxIdx < 4) continue;
+      ids.push(maxIdx - 1);
+    }
+    const chars = [];
+    let prev = -1;
+    for (const id of ids) {
+      if (id !== prev && id < _parseqCharList.length) { chars.push(_parseqCharList[id]); prev = id; }
+    }
+    console.log(`[PARSeq decode] ids=${JSON.stringify(ids.slice(0,10))} chars=${JSON.stringify(chars.join(''))}`);
+    return chars.join('').trim();
   });
 }
 
@@ -406,21 +456,17 @@ async function ocrViaBrowser(file, onProgress) {
   let parseqAvailable = false;
   try {
     await initParseq();
-    parseqAvailable = true;
+    parseqAvailable = !!_parseqSession;
+    console.log('[OCR] PARSeq available:', parseqAvailable);
   } catch (e) {
-    console.warn('[OCR] PARSeq 初期化失敗 (Tesseract フォールバック):', e.message, e);
+    console.warn('[OCR] PARSeq 初期化失敗 (Tesseract フォールバック):', e.message);
     _parseqInitPromise = null;
   }
 
   const { titleBlob, titleImageData, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
   onProgress?.(10);
 
-  // ① 曲名 PARSeq（日本語特化）
-  const parseqPromise = parseqAvailable
-    ? parseqOCR(titleImageData).catch(e => { console.warn('[OCR] PARSeq 失敗:', e.message); return null; })
-    : Promise.resolve(null);
-
-  // ② 曲名 Tesseract jpn+eng（難易度 + 英数字曲名のフォールバック）
+  // ② 曲名 Tesseract jpn+eng + ③ スコア Tesseract eng（並列）
   const titleTessPromise = (async () => {
     const w = await window.Tesseract.createWorker('jpn+eng', 1, {
       logger: (m) => {
@@ -434,7 +480,6 @@ async function ocrViaBrowser(file, onProgress) {
     return res;
   })();
 
-  // ③ スコア Tesseract eng
   const scorePromise = (async () => {
     const w = await window.Tesseract.createWorker('eng', 1, {
       logger: (m) => {
@@ -448,23 +493,54 @@ async function ocrViaBrowser(file, onProgress) {
     return res;
   })();
 
-  const [parseqResult, titleTessResult, scoreResult] = await Promise.all([parseqPromise, titleTessPromise, scorePromise]);
+  const [titleTessResult, scoreResult] = await Promise.all([titleTessPromise, scorePromise]);
+  onProgress?.(92);
+
+  // ① PARSeq: Tesseract が検出した行 bbox で title crop を再 crop → 行単位で認識
+  const parseqBlocks = [];
+  if (parseqAvailable && titleTessResult.data?.lines?.length) {
+    const titleCanvas = document.createElement('canvas');
+    titleCanvas.width = titleImageData.width;
+    titleCanvas.height = titleImageData.height;
+    titleCanvas.getContext('2d').putImageData(titleImageData, 0, 0);
+
+    for (let li = 0; li < titleTessResult.data.lines.length; li++) {
+      const ln = titleTessResult.data.lines[li];
+      const b = ln.bbox;
+      console.log(`[PARSeq] 行${li} bbox:`, b, 'text:', (ln.text||'').trim());
+      if (!b || b.x1 - b.x0 < 10 || b.y1 - b.y0 < 5) { console.log(`[PARSeq] 行${li} skip (small)`); continue; }
+      const pad = 4;
+      const x = Math.max(0, b.x0 - pad);
+      const y = Math.max(0, b.y0 - pad);
+      const w = Math.min(titleImageData.width - x, b.x1 - b.x0 + pad * 2);
+      const h = Math.min(titleImageData.height - y, b.y1 - b.y0 + pad * 2);
+      const lineCanvas = document.createElement('canvas');
+      lineCanvas.width = w;
+      lineCanvas.height = h;
+      lineCanvas.getContext('2d').drawImage(titleCanvas, x, y, w, h, 0, 0, w, h);
+      const lineImageData = lineCanvas.getContext('2d').getImageData(0, 0, w, h);
+      try {
+        const text = await parseqRecognize(lineImageData);
+        console.log(`[PARSeq] 行${li} (${w}x${h}) →`, JSON.stringify(text));
+        if (text) {
+          parseqBlocks.push({ text, x, y, width: w, height: h });
+        }
+      } catch (e) {
+        console.warn(`[PARSeq] 行${li} error:`, e.message);
+      }
+    }
+  }
   onProgress?.(95);
 
   // --- 結果マージ ---
   let order = 1;
 
-  // PARSeq 曲名ブロック（先頭に配置 → findBestSongMatch で最優先マッチ）
-  const parseqBlocks = [];
-  if (parseqResult?.fullText) {
-    parseqBlocks.push({
-      text: parseqResult.fullText.trim(),
-      x: 0, y: 0,
-      width: titleImageData.width, height: titleImageData.height,
-      confidence: 1.0,
-      readingOrder: order++,
-    });
-    console.log('[OCR] 曲名 PARSeq:', parseqResult.fullText.trim());
+  // PARSeq 曲名ブロック（先頭配置 → findBestSongMatch で最優先マッチ）
+  const parseqMapped = parseqBlocks.map(b => ({
+    ...b, confidence: 1.0, readingOrder: order++,
+  }));
+  if (parseqMapped.length) {
+    console.log('[OCR] 曲名 PARSeq:', parseqMapped.map(b => b.text));
   } else {
     console.log('[OCR] 曲名 PARSeq: (結果なし)');
   }
@@ -494,7 +570,7 @@ async function ocrViaBrowser(file, onProgress) {
   })).filter(l => l.text);
   console.log('[OCR] スコア Tesseract:', scoreLines.map(b => b.text));
 
-  const allBlocks = [...parseqBlocks, ...titleTessBlocks, ...scoreLines];
+  const allBlocks = [...parseqMapped, ...titleTessBlocks, ...scoreLines];
   const fullText = allBlocks.map(b => b.text).join('\n');
   const elapsedMs = Math.round(performance.now() - start);
 

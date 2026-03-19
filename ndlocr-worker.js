@@ -4,11 +4,7 @@
  * 参考: yuta1984/ndlocrlite-web
  */
 
-import * as ort from 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.wasm.min.mjs';
-
-ort.env.wasm.numThreads = 1;
-ort.env.logLevel = 'warning';
-ort.env.wasm.proxy = false;
+let ort = null;
 
 const MODEL_BASE_URL = '/models';
 const DB_NAME = 'NDLOCRLiteDB_prsk';
@@ -165,6 +161,18 @@ let initialized = false;
 
 async function initialize() {
   if (initialized) return;
+
+  post({ type: 'PROGRESS', stage: 'loading', progress: 0.02, message: 'Loading ONNX Runtime...' });
+  try {
+    const module = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.wasm.min.mjs');
+    ort = module;
+    ort.env.wasm.numThreads = 1;
+    ort.env.logLevel = 'warning';
+    ort.env.wasm.proxy = false;
+  } catch (e) {
+    throw new Error('ONNX Runtime 読み込み失敗: ' + e.message);
+  }
+
   post({ type: 'PROGRESS', stage: 'loading', progress: 0.05, message: 'Loading charset...' });
   await loadCharset();
 
@@ -198,8 +206,11 @@ async function processOCR(id, imageData) {
   post({ type: 'RESULT', id, textBlocks: text ? [block] : [], fullText: text });
 }
 
+console.log('[PARSeq Worker] started');
+
 self.onmessage = async (e) => {
   const msg = e.data;
+  console.log('[PARSeq Worker] received:', msg.type);
   try {
     switch (msg.type) {
       case 'INIT': await initialize(); break;
