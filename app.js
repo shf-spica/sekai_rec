@@ -412,6 +412,96 @@ function parseqRecognize(imageData) {
   });
 }
 
+function otsuThresholdFromImageData(imageData) {
+  const { width, height, data } = imageData;
+  const hist = new Array(256).fill(0);
+  const totalPixels = width * height;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = data[i];
+    hist[gray] += 1;
+  }
+
+  let sum = 0;
+  for (let t = 0; t < 256; t++) sum += t * hist[t];
+
+  let sumB = 0;
+  let wB = 0;
+  let wF = 0;
+
+  let maxBetween = -1;
+  let threshold = 0;
+
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+
+    wF = totalPixels - wB;
+    if (wF === 0) break;
+
+    sumB += t * hist[t];
+
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if (between > maxBetween) {
+      maxBetween = between;
+      threshold = t;
+    }
+  }
+
+  return threshold;
+}
+
+function grayscaleContrastBinarizeCanvas(ctx, w, h, contrast = 1.5, center = 128) {
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const { data } = imageData;
+  const hist = new Array(256).fill(0);
+  const totalPixels = w * h;
+
+  // 1) グレースケール化 + コントラスト強調（hist もこの値で作る）
+  for (let i = 0; i < data.length; i += 4) {
+    let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    gray = Math.min(255, Math.max(0, (gray - center) * contrast + center));
+    gray = gray | 0;
+    data[i] = data[i + 1] = data[i + 2] = gray;
+    hist[gray] += 1;
+  }
+
+  // 2) Otsu 閾値
+  let sum = 0;
+  for (let t = 0; t < 256; t++) sum += t * hist[t];
+  let sumB = 0;
+  let wB = 0;
+  let wF = 0;
+  let maxBetween = -1;
+  let threshold = 0;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+    wF = totalPixels - wB;
+    if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if (between > maxBetween) {
+      maxBetween = between;
+      threshold = t;
+    }
+  }
+
+  // 3) 2値化（白/黒）
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = data[i];
+    const bw = gray > threshold ? 255 : 0;
+    data[i] = data[i + 1] = data[i + 2] = bw;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
 /**
  * 画像を曲名領域とスコア領域に crop する。
  * server.py の _apply_black_mask と同じ座標系:
@@ -436,6 +526,9 @@ function splitImageRegions(file) {
       titleCanvas.getContext('2d').drawImage(img, 0, 0, titleW, titleH, 0, 0, titleW, titleH);
       const titleImageData = titleCanvas.getContext('2d').getImageData(0, 0, titleW, titleH);
 
+      // Tesseract 用に 2値化（PARSeq 用の titleImageData はこの前の値を保持）
+      grayscaleContrastBinarizeCanvas(titleCanvas.getContext('2d'), titleW, titleH);
+
       // スコア領域 (左下) — グレースケール + コントラスト強調
       const scoreW = Math.floor(w / 3);
       const scoreH = h - Math.floor(h / 2);
@@ -445,14 +538,7 @@ function splitImageRegions(file) {
       scoreCanvas.height = scoreH;
       const scoreCtx = scoreCanvas.getContext('2d');
       scoreCtx.drawImage(img, 0, scoreY, scoreW, scoreH, 0, 0, scoreW, scoreH);
-      const sd = scoreCtx.getImageData(0, 0, scoreW, scoreH);
-      const d = sd.data;
-      for (let i = 0; i < d.length; i += 4) {
-        let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        gray = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
-        d[i] = d[i + 1] = d[i + 2] = gray;
-      }
-      scoreCtx.putImageData(sd, 0, 0);
+      grayscaleContrastBinarizeCanvas(scoreCtx, scoreW, scoreH);
 
       console.log(`[split] 元画像 ${w}x${h} → 曲名 ${titleW}x${titleH}, スコア ${scoreW}x${scoreH} (y=${scoreY})`);
 
