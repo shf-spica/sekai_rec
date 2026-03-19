@@ -1,10 +1,21 @@
 import asyncio
+import logging
 import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(Path(__file__).resolve().parent / "server.log", encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger("prsk_ocr")
 
 from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -485,6 +496,7 @@ app.add_middleware(
 )
 
 ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
+_ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
 _ocr_waiting = 0
@@ -548,12 +560,15 @@ def _paddle_to_textblocks(result) -> dict:
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
     global _ocr_waiting
+    logger.info("OCR request received (queue: %d/%d)", _ocr_waiting, _OCR_QUEUE_MAX)
     if _ocr_waiting >= _OCR_QUEUE_MAX:
+        logger.warning("OCR queue full, returning 503")
         raise HTTPException(status_code=503, detail="OCRキューが満杯です。しばらく待ってから再試行してください。")
 
     _ocr_waiting += 1
     try:
         data = await file.read()
+        logger.info("OCR image read: %d bytes", len(data))
         image_datetime = None
         try:
             img0 = Image.open(io.BytesIO(data))
@@ -567,11 +582,14 @@ async def ocr_image(file: UploadFile = File(...)):
         img = _load_image_bgr(data)
         masked = _apply_black_mask(img)
 
+        logger.info("OCR waiting for semaphore...")
         async with _ocr_semaphore:
             start = time.time()
+            logger.info("OCR GPU processing started")
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, partial(ocr.ocr, masked, cls=True))
+            result = await loop.run_in_executor(_ocr_executor, partial(ocr.ocr, masked, cls=True))
             elapsed_ms = int((time.time() - start) * 1000)
+            logger.info("OCR GPU done in %dms", elapsed_ms)
 
         converted = _paddle_to_textblocks(result)
         return JSONResponse(
@@ -582,6 +600,9 @@ async def ocr_image(file: UploadFile = File(...)):
                 "imageDateTime": image_datetime,
             }
         )
+    except Exception as e:
+        logger.exception("OCR error: %s", e)
+        raise
     finally:
         _ocr_waiting -= 1
 
