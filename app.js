@@ -284,104 +284,11 @@ function updateModelStatus() {
 }
 
 /**
- * server.py の _apply_black_mask と同じ黒塗りをCanvas上で適用する
- * masked[h//4 : h//2, 0:w]    = 0   上1/4〜1/2 全幅
- * masked[h//2 : h,   w//3:w]  = 0   下半分 右2/3
- * masked[0   : h//4, w//2:w]  = 0   上1/4 右半分
- * @param {File|Blob} file
- * @returns {Promise<Blob>}
- */
-function applyBlackMaskAndEnhance(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, Math.floor(h / 4), w, Math.floor(h / 4));
-      ctx.fillRect(Math.floor(w / 3), Math.floor(h / 2), w - Math.floor(w / 3), Math.floor(h / 2));
-      ctx.fillRect(Math.floor(w / 2), 0, w - Math.floor(w / 2), Math.floor(h / 4));
-
-      // グレースケール化 + コントラスト強調（Tesseract 精度向上のため）
-      const imageData = ctx.getImageData(0, 0, w, h);
-      const d = imageData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        // グレースケール
-        let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        // コントラスト強調（1.5倍、中心128）
-        gray = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
-        d[i] = d[i + 1] = d[i + 2] = gray;
-      }
-      ctx.putImageData(imageData, 0, 0);
-
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('Canvas toBlob failed'));
-      }, 'image/png');
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
-    img.src = url;
-  });
-}
-
-// ─── ndlocr-lite Worker (曲名用) ───
-let _ndlocrWorker = null;
-let _ndlocrReady = false;
-let _ndlocrInitPromise = null;
-
-function getNdlocrWorker() {
-  if (!_ndlocrWorker) {
-    _ndlocrWorker = new Worker(new URL('./ndlocr-worker.js', import.meta.url), { type: 'module' });
-  }
-  return _ndlocrWorker;
-}
-
-function initNdlocr(onProgress) {
-  if (_ndlocrReady) return Promise.resolve();
-  if (_ndlocrInitPromise) return _ndlocrInitPromise;
-  _ndlocrInitPromise = new Promise((resolve, reject) => {
-    const w = getNdlocrWorker();
-    const handler = (e) => {
-      const msg = e.data;
-      if (msg.type === 'PROGRESS') {
-        if (onProgress) onProgress(msg.progress, msg.message);
-        if (msg.stage === 'ready') { _ndlocrReady = true; w.removeEventListener('message', handler); resolve(); }
-      }
-      if (msg.type === 'ERROR') { w.removeEventListener('message', handler); reject(new Error(msg.error)); }
-    };
-    w.addEventListener('message', handler);
-    w.postMessage({ type: 'INIT' });
-  });
-  return _ndlocrInitPromise;
-}
-
-function ndlocrOCR(imageData) {
-  return new Promise((resolve, reject) => {
-    const w = getNdlocrWorker();
-    const id = 'ocr_' + Date.now();
-    const handler = (e) => {
-      const msg = e.data;
-      if (msg.id !== id) return;
-      if (msg.type === 'RESULT') { w.removeEventListener('message', handler); resolve(msg); }
-      if (msg.type === 'ERROR') { w.removeEventListener('message', handler); reject(new Error(msg.error)); }
-    };
-    w.addEventListener('message', handler);
-    w.postMessage({ type: 'OCR', id, imageData });
-  });
-}
-
-/**
- * 画像をロードして Canvas に描画し、曲名領域 / スコア領域を crop する
- * マスク定義と同じ座標系:
- *   曲名: [0:h/4, 0:w/2]
- *   スコア: [h/2:h, 0:w/3]
+ * 画像を曲名領域とスコア領域に crop する。
+ * server.py の _apply_black_mask と同じ座標系:
+ *   曲名: [0 : h/4, 0 : w/2]   （左上 1/4）
+ *   スコア: [h/2 : h, 0 : w/3] （左下 1/3）
+ * @returns {Promise<{ titleBlob, scoreBlob, fullWidth, fullHeight }>}
  */
 function splitImageRegions(file) {
   return new Promise((resolve, reject) => {
@@ -398,9 +305,7 @@ function splitImageRegions(file) {
       const titleCanvas = document.createElement('canvas');
       titleCanvas.width = titleW;
       titleCanvas.height = titleH;
-      const titleCtx = titleCanvas.getContext('2d');
-      titleCtx.drawImage(img, 0, 0, titleW, titleH, 0, 0, titleW, titleH);
-      const titleImageData = titleCtx.getImageData(0, 0, titleW, titleH);
+      titleCanvas.getContext('2d').drawImage(img, 0, 0, titleW, titleH, 0, 0, titleW, titleH);
 
       // スコア領域 (左下) — グレースケール + コントラスト強調
       const scoreW = Math.floor(w / 3);
@@ -411,20 +316,22 @@ function splitImageRegions(file) {
       scoreCanvas.height = scoreH;
       const scoreCtx = scoreCanvas.getContext('2d');
       scoreCtx.drawImage(img, 0, scoreY, scoreW, scoreH, 0, 0, scoreW, scoreH);
-      const scoreData = scoreCtx.getImageData(0, 0, scoreW, scoreH);
-      const d = scoreData.data;
+      const sd = scoreCtx.getImageData(0, 0, scoreW, scoreH);
+      const d = sd.data;
       for (let i = 0; i < d.length; i += 4) {
         let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
         gray = Math.min(255, Math.max(0, (gray - 128) * 1.5 + 128));
         d[i] = d[i + 1] = d[i + 2] = gray;
       }
-      scoreCtx.putImageData(scoreData, 0, 0);
+      scoreCtx.putImageData(sd, 0, 0);
+
+      console.log(`[split] 元画像 ${w}x${h} → 曲名 ${titleW}x${titleH}, スコア ${scoreW}x${scoreH} (y=${scoreY})`);
 
       titleCanvas.toBlob((titleBlob) => {
         if (!titleBlob) { reject(new Error('titleCanvas toBlob failed')); return; }
         scoreCanvas.toBlob((scoreBlob) => {
           if (!scoreBlob) { reject(new Error('scoreCanvas toBlob failed')); return; }
-          resolve({ titleImageData, titleBlob, scoreBlob, fullWidth: w, fullHeight: h });
+          resolve({ titleBlob, scoreBlob, fullWidth: w, fullHeight: h });
         }, 'image/png');
       }, 'image/png');
     };
@@ -434,10 +341,7 @@ function splitImageRegions(file) {
 }
 
 /**
- * ブラウザ内OCR（ndlocr-lite で曲名 + Tesseract.js でスコア）
- * @param {File} file
- * @param {(percent: number) => void} onProgress
- * @returns {Promise<{ textBlocks, fullText, processingTime, imageDateTime }>}
+ * ブラウザ内OCR（分割方式: 曲名→Tesseract jpn+eng / スコア→Tesseract eng）
  */
 async function ocrViaBrowser(file, onProgress) {
   if (!window.Tesseract) {
@@ -445,71 +349,54 @@ async function ocrViaBrowser(file, onProgress) {
   }
 
   const start = performance.now();
+  onProgress?.(5);
 
-  // ndlocr-lite 初期化を試行（失敗時は Tesseract.js フォールバック）
-  let ndlocrAvailable = false;
-  onProgress?.(2);
-  try {
-    await initNdlocr((p, msg) => onProgress?.(Math.round(p * 30)));
-    ndlocrAvailable = true;
-  } catch (e) {
-    console.warn('ndlocr-lite 初期化失敗 → Tesseract.js フォールバック:', e.message);
-    _ndlocrInitPromise = null;
-  }
+  const { titleBlob, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
+  onProgress?.(10);
 
-  // 画像を曲名領域とスコア領域に分割
-  onProgress?.(32);
-  const { titleImageData, titleBlob, scoreBlob, fullWidth, fullHeight } = await splitImageRegions(file);
-
-  // 曲名 OCR: ndlocr-lite が使えればそちら、使えなければ Tesseract.js (jpn)
-  const titlePromise = ndlocrAvailable
-    ? ndlocrOCR(titleImageData).then(res => { onProgress?.(55); return { type: 'ndlocr', data: res }; })
-        .catch(e => {
-          console.warn('ndlocr OCR 失敗 → Tesseract.js フォールバック:', e.message);
-          return ocrTitleWithTesseract(titleBlob, onProgress).then(r => ({ type: 'tesseract', data: r }));
-        })
-    : ocrTitleWithTesseract(titleBlob, onProgress).then(r => ({ type: 'tesseract', data: r }));
-
-  // スコア OCR: Tesseract.js (eng)
-  const scorePromise = (async () => {
-    const worker = await window.Tesseract.createWorker('eng', 1, {
+  // 曲名: Tesseract jpn+eng
+  const titlePromise = (async () => {
+    const w = await window.Tesseract.createWorker('jpn+eng', 1, {
       logger: (m) => {
         if (typeof m.progress !== 'number') return;
-        if (m.status === 'recognizing text') {
-          onProgress?.(55 + Math.round(m.progress * 35));
-        }
+        if (m.status === 'recognizing text') onProgress?.(10 + Math.round(m.progress * 35));
       },
     });
-    await worker.setParameters({ tessedit_pageseg_mode: '6' });
-    const res = await worker.recognize(scoreBlob);
-    await worker.terminate();
+    await w.setParameters({ tessedit_pageseg_mode: '6' });
+    const res = await w.recognize(titleBlob);
+    await w.terminate();
     return res;
   })();
 
-  const [titleWrapped, scoreResult] = await Promise.all([titlePromise, scorePromise]);
+  // スコア: Tesseract eng
+  const scorePromise = (async () => {
+    const w = await window.Tesseract.createWorker('eng', 1, {
+      logger: (m) => {
+        if (typeof m.progress !== 'number') return;
+        if (m.status === 'recognizing text') onProgress?.(45 + Math.round(m.progress * 45));
+      },
+    });
+    await w.setParameters({ tessedit_pageseg_mode: '6' });
+    const res = await w.recognize(scoreBlob);
+    await w.terminate();
+    return res;
+  })();
+
+  const [titleResult, scoreResult] = await Promise.all([titlePromise, scorePromise]);
   onProgress?.(95);
 
-  // 曲名テキストブロック
-  let titleBlocks;
-  if (titleWrapped.type === 'ndlocr') {
-    titleBlocks = (titleWrapped.data.textBlocks || []).map((b, i) => ({
-      text: b.text, x: b.x, y: b.y, width: b.width, height: b.height,
-      confidence: b.confidence, readingOrder: i + 1,
-    }));
-    console.log('[OCR] 曲名: ndlocr-lite →', titleBlocks.map(b => b.text));
-  } else {
-    const tRes = titleWrapped.data;
-    titleBlocks = (tRes.data?.lines || []).map((ln, idx) => ({
-      text: (ln.text || '').trim(),
-      x: ln.bbox?.x0 ?? 0, y: ln.bbox?.y0 ?? idx * 30,
-      width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
-      height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
-      confidence: ln.confidence ?? 0.9, readingOrder: idx + 1,
-    })).filter(l => l.text);
-    console.log('[OCR] 曲名: Tesseract.js (fallback) →', titleBlocks.map(b => b.text));
-  }
+  // 曲名ブロック
+  const titleBlocks = (titleResult.data?.lines || []).map((ln, idx) => ({
+    text: (ln.text || '').trim(),
+    x: ln.bbox?.x0 ?? 0,
+    y: ln.bbox?.y0 ?? idx * 30,
+    width: ln.bbox ? (ln.bbox.x1 - ln.bbox.x0) : 0,
+    height: ln.bbox ? (ln.bbox.y1 - ln.bbox.y0) : 30,
+    confidence: ln.confidence ?? 0.9,
+    readingOrder: idx + 1,
+  })).filter(l => l.text);
 
-  // スコアテキストブロック — 座標をスコア領域のオフセット分ずらす
+  // スコアブロック — Y座標をスコア領域のオフセット分ずらす
   const scoreOffsetY = Math.floor(fullHeight / 2);
   const scoreLines = (scoreResult.data?.lines || []).map((ln, idx) => ({
     text: (ln.text || '').trim(),
@@ -520,7 +407,11 @@ async function ocrViaBrowser(file, onProgress) {
     confidence: ln.confidence ?? 0.9,
     readingOrder: titleBlocks.length + idx + 1,
   })).filter(l => l.text);
-  console.log('[OCR] スコア: Tesseract.js →', scoreLines.map(b => b.text));
+
+  console.log('[OCR] 曲名 (jpn+eng):', titleBlocks.map(b => b.text));
+  console.log('[OCR] スコア (eng):', scoreLines.map(b => b.text));
+  console.log('[OCR] 曲名raw:', titleResult.data?.text);
+  console.log('[OCR] スコアraw:', scoreResult.data?.text);
 
   const allBlocks = [...titleBlocks, ...scoreLines];
   const fullText = allBlocks.map(b => b.text).join('\n');
@@ -532,21 +423,6 @@ async function ocrViaBrowser(file, onProgress) {
     processingTime: elapsedMs,
     imageDateTime: null,
   };
-}
-
-async function ocrTitleWithTesseract(titleBlob, onProgress) {
-  const worker = await window.Tesseract.createWorker('jpn+eng', 1, {
-    logger: (m) => {
-      if (typeof m.progress !== 'number') return;
-      if (m.status === 'recognizing text') {
-        onProgress?.(32 + Math.round(m.progress * 20));
-      }
-    },
-  });
-  await worker.setParameters({ tessedit_pageseg_mode: '6' });
-  const res = await worker.recognize(titleBlob);
-  await worker.terminate();
-  return res;
 }
 
 /**
