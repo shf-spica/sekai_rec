@@ -19,6 +19,7 @@ const loadingEl = $('#records-loading');
 const contentEl = $('#records-content');
 const groupsEl = $('#records-groups');
 const emptyEl = $('#records-empty');
+const recordsCountEl = $('#records-count');
 
 // Manual entry (mypage)
 const manualEntryBtn = $('#manual-entry-link');
@@ -225,6 +226,26 @@ async function submitManualEntry() {
 /** 期間限定など一覧に表示しない楽曲ID（ocr-postprocess.js の EXCLUDED_SONG_IDS と一致させる） */
 const EXCLUDED_SONG_IDS = [674, 675, 676, 707, 708, 709];
 
+function updateRecordsCount() {
+  if (!recordsCountEl) return;
+  const songs = (state.songDatabase?.songs ?? []).filter((s) => !EXCLUDED_SONG_IDS.includes(s.id));
+  let total = 0;
+  for (const song of songs) {
+    if (!song?.difficulties || typeof song.difficulties !== 'object') continue;
+    for (const diff of Object.keys(song.difficulties)) {
+      if (DIFF_ORDER.includes(String(diff).toLowerCase())) total += 1;
+    }
+  }
+
+  const unique = new Set();
+  for (const r of state.records) {
+    const d = String(r?.difficulty || '').toLowerCase();
+    if (!DIFF_ORDER.includes(d)) continue;
+    unique.add(`${r.song_id}-${d}`);
+  }
+  recordsCountEl.textContent = `記録数: ${unique.size}/${total}`;
+}
+
 /** 全曲×難易度のスロットを生成し、ユーザー記録をマージして playLevel → difficulty でグループ化 */
 function buildSlotsByLevel() {
   const recordByKey = new Map();
@@ -318,6 +339,7 @@ function calcPointMinus(record) {
 }
 
 function renderGroups() {
+  updateRecordsCount();
   const groups = buildSlotsByLevel();
   if (groups.length === 0) {
     contentEl.style.display = 'none';
@@ -459,6 +481,7 @@ function updateOneCard(songId, difficulty, record) {
     const badge = card.querySelector('.record-card-point-minus-badge');
     if (badge) badge.hidden = true;
   }
+  updateRecordsCount();
 }
 
 function openDetail(btn) {

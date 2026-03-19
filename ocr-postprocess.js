@@ -730,6 +730,8 @@ export function parseGameResult(ocrResult, songDatabase) {
     let { judgments, sumError: judgmentsSumError } = extractJudgments(parsed.lines, totalNoteCount ?? undefined);
     const point = calcPoint(judgments);
     const songError = !matchedSong.id;
+    const hasUnknownJudgment = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS']
+        .some((k) => typeof judgments[k] !== 'number');
 
     // difficulty が不明 or totalNoteCount が取れなかった場合でも、
     // 5判定が揃っていれば曲の全難易度と照合して検証する
@@ -769,7 +771,8 @@ export function parseGameResult(ocrResult, songDatabase) {
         matchConfidence: matchedSong.score.toFixed(2),
         difficulty: difficulty ? difficulty.toLowerCase() : null,
         judgments,
-        judgmentsSumError: judgmentsSumError || false,
+        // いずれかの判定値が「不明」の場合もエラー扱いにする
+        judgmentsSumError: judgmentsSumError || hasUnknownJudgment || false,
         songError,
         point,
     };
