@@ -16,6 +16,8 @@ const state = {
   user: null,
   token: localStorage.getItem('prsk_ocr_token') || null,
   uploadPending: 0,
+  uploadTotal: 0,
+  uploadLoaded: 0,
   uploadComplete: false,
 };
 
@@ -29,6 +31,7 @@ const dropZone = $('#drop-zone');
 const fileInput = $('#file-input');
 const previewSection = $('#preview-section');
 const previewGrid = $('#preview-grid');
+const uploadProgress = $('#upload-progress');
 const langSection = $('#lang-section');
 const resultsSection = $('#results-section');
 const resultsList = $('#results-list');
@@ -168,16 +171,32 @@ function handleFiles(fileList) {
   if (!fileList || fileList.length === 0) return;
   const imageFiles = Array.from(fileList).filter(f => f && f.type && f.type.startsWith('image/'));
   if (imageFiles.length === 0) return;
+  if (state.uploadPending <= 0) {
+    state.uploadTotal = 0;
+    state.uploadLoaded = 0;
+  }
 
   // モバイル: 同じファイルを再選択できるよう、処理後に input をリセットする
   const input = document.getElementById('file-input');
   if (input) input.value = '';
 
   state.uploadPending += imageFiles.length;
+  state.uploadTotal += imageFiles.length;
   state.uploadComplete = false;
+  ocrBtn.disabled = true;
+  renderPreview();
 
   imageFiles.forEach(file => {
     const reader = new FileReader();
+    const onFileReadSettled = () => {
+      state.uploadPending -= 1;
+      state.uploadLoaded += 1;
+      if (state.uploadPending <= 0) {
+        state.uploadComplete = true;
+        ocrBtn.disabled = false;
+      }
+      renderPreview();
+    };
     reader.onload = (e) => {
       const entry = {
         id: ++fileIdCounter,
@@ -185,15 +204,9 @@ function handleFiles(fileList) {
         dataUrl: e.target.result,
       };
       state.files.push(entry);
-      renderPreview();
-      state.uploadPending -= 1;
-      if (state.uploadPending <= 0) {
-        state.uploadComplete = true;
-        renderPreview();
-        ocrBtn.disabled = false;
-      }
+      onFileReadSettled();
     };
-    reader.onerror = () => renderPreview();
+    reader.onerror = onFileReadSettled;
     reader.readAsDataURL(file);
   });
 }
@@ -206,6 +219,10 @@ function removeFile(id) {
 function clearFiles() {
   state.files = [];
   state.results = [];
+  state.uploadPending = 0;
+  state.uploadTotal = 0;
+  state.uploadLoaded = 0;
+  state.uploadComplete = false;
   renderPreview();
   resultsSection.style.display = 'none';
   resultsList.innerHTML = '';
@@ -255,6 +272,23 @@ function renderPreview() {
   const hasFiles = state.files.length > 0;
   previewSection.style.display = hasFiles ? '' : 'none';
   if (langSection) langSection.style.display = hasFiles ? '' : 'none';
+  if (uploadProgress) {
+    const total = state.uploadTotal || 0;
+    const loaded = Math.min(state.uploadLoaded || 0, total);
+    const percent = total > 0 ? Math.round((loaded / total) * 100) : 0;
+    if (!state.uploadComplete && total > 0) {
+      uploadProgress.style.display = '';
+      uploadProgress.innerHTML = `
+        <div class="upload-progress-title">画像読み込み中... ${loaded}/${total}</div>
+        <div class="upload-progress-bar-container">
+          <div class="upload-progress-bar" style="width:${percent}%"></div>
+        </div>
+      `;
+    } else {
+      uploadProgress.style.display = 'none';
+      uploadProgress.innerHTML = '';
+    }
+  }
 
   previewGrid.innerHTML = state.files.map(entry => `
     <div class="preview-card" data-id="${entry.id}">
@@ -635,14 +669,18 @@ async function processImages() {
     try {
       let ocrResult = null;
       let ocrUsed = 'browser';
+      let browserOcrResult = null;
+      let serverOcrResult = null;
       try {
-        ocrResult = await ocrViaBrowser(entry.file, (p) => updateProgressItem(i, 'active', p));
+        browserOcrResult = await ocrViaBrowser(entry.file, (p) => updateProgressItem(i, 'active', p));
+        ocrResult = browserOcrResult;
       } catch (e) {
         // Browser OCR が失敗した時だけサーバー OCR にフォールバック
         console.warn('[OCR] Browser OCR failed, fallback to server OCR:', e?.message || e);
         ocrUsed = 'server_fallback';
         updateProgressItem(i, 'active', 30);
-        ocrResult = await ocrViaServer(entry.file);
+        serverOcrResult = await ocrViaServer(entry.file);
+        ocrResult = serverOcrResult;
         updateProgressItem(i, 'active', 80);
       }
 
@@ -659,7 +697,8 @@ async function processImages() {
           songError: !!parsed?.songError,
         });
         updateProgressItem(i, 'active', 30);
-        ocrResult = await ocrViaServer(entry.file);
+        serverOcrResult = await ocrViaServer(entry.file);
+        ocrResult = serverOcrResult;
         updateProgressItem(i, 'active', 80);
         ocrUsed = 'server_fallback';
         if (state.songDatabase && (state.songDatabase.songs?.length > 0 || (Array.isArray(state.songDatabase) && state.songDatabase.length > 0))) {
@@ -695,6 +734,9 @@ async function processImages() {
             bad: j.BAD,
             miss: j.MISS,
             point,
+            normalized_text: parsed.rawText || '',
+            browser_raw_text: browserOcrResult?.fullText || '',
+            paddle_raw_text: serverOcrResult?.fullText || '',
           };
           saveDataset(payload).catch((e) => console.warn('Failed to save dataset', e));
         }
@@ -706,6 +748,8 @@ async function processImages() {
         parsed: parsed,
         elapsed,
         ocrUsed,
+        browserRawText: browserOcrResult?.fullText || '',
+        serverRawText: serverOcrResult?.fullText || '',
         error: null,
         recordSaved: recordSaved?.saved ?? false,
       });
@@ -833,6 +877,13 @@ function renderResults(results) {
       copyText += ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(j => `${j}: ${judgments[j]}`).join('\n');
     }
 
+    const rawTextDisplay = r.ocrUsed === 'server_fallback'
+      ? [
+        r.browserRawText ? `【ブラウザOCR】\n${r.browserRawText}` : '',
+        `【採用結果（サーバーOCR）】\n${rawText || 'テキストが検出されませんでした'}`,
+      ].filter(Boolean).join('\n\n')
+      : (rawText || 'テキストが検出されませんでした');
+
     return `
       <div class="result-card" id="result-card-${i}">
         <div class="result-card-header">
@@ -851,7 +902,7 @@ function renderResults(results) {
           <div class="raw-toggle">
             <button class="btn btn-ghost btn-sm" onclick="window.__toggleRawText(${i})" id="raw-toggle-btn-${i}">生テキストを表示</button>
           </div>
-          <div class="result-text raw-text-container" id="result-text-${i}" style="display: none;" data-copy="${escapeHtml(copyText)}">${escapeHtml(rawText || 'テキストが検出されませんでした')}</div>
+          <div class="result-text raw-text-container" id="result-text-${i}" style="display: none;" data-copy="${escapeHtml(copyText)}">${escapeHtml(rawTextDisplay)}</div>
         </div>
         <div class="result-actions">
           <span class="copy-feedback" id="copy-feedback-${i}">コピーしました</span>

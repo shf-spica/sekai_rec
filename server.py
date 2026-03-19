@@ -155,6 +155,9 @@ class DatasetBody(BaseModel):
     source: str  # "ocr" | "manual"
     image_base64: str | None = None
     raw_text: str | None = None
+    browser_raw_text: str | None = None
+    paddle_raw_text: str | None = None
+    normalized_text: str | None = None
     song_id: int
     song_title: str
     difficulty: str
@@ -411,6 +414,9 @@ async def api_save_dataset(body: DatasetBody):
         "image": image_path_rel,
         "image_datetime": image_datetime,
         "raw_text": body.raw_text or "",
+        "browser_raw_text": body.browser_raw_text or "",
+        "paddle_raw_text": body.paddle_raw_text or "",
+        "normalized_text": body.normalized_text or "",
         "song_id": body.song_id,
         "song_title": body.song_title,
         "difficulty": (body.difficulty or "").strip().lower(),
