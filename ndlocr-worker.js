@@ -4,7 +4,7 @@
  * 参考: yuta1984/ndlocrlite-web
  */
 
-import * as ort from 'onnxruntime-web/wasm';
+import * as ort from 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.wasm.min.mjs';
 
 ort.env.wasm.numThreads = 1;
 ort.env.logLevel = 'warning';
