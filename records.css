@@ -341,7 +341,7 @@
   font-size: 0.85rem;
 }
 
-.record-detail-ap {
+.record-detail-add-manual {
   position: absolute;
   top: 40px; /* 右上の削除ボタンのすぐ下 */
   right: var(--space-sm);
@@ -356,7 +356,7 @@
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
-.record-detail-ap:hover {
+.record-detail-add-manual:hover {
   background: var(--accent-secondary);
   transform: translateY(-1px);
 }

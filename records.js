@@ -103,6 +103,31 @@ function openManualModal() {
   if (manualSearch) manualSearch.focus();
 }
 
+/** 詳細モーダルから: 曲・難易度をプリセットして手動入力を開く */
+function openManualModalPrefill(songId, difficulty) {
+  if (!manualModal) return;
+  const song = getSongById(songId);
+  const idNum = Number(songId);
+  state.manualSelectedSong = {
+    id: idNum,
+    title: song?.title || `ID:${songId}`,
+  };
+  if (manualSelectedTitle) manualSelectedTitle.textContent = state.manualSelectedSong.title;
+  if (manualSelected) manualSelected.style.display = 'block';
+  if (manualSearch) manualSearch.value = '';
+  if (manualSearchResults) manualSearchResults.innerHTML = '';
+  const d = (difficulty || 'master').toLowerCase();
+  const allowed = ['expert', 'master', 'append'];
+  if (manualDifficulty) manualDifficulty.value = allowed.includes(d) ? d : 'master';
+  [manualGreat, manualGood, manualBad, manualMiss].forEach((el) => {
+    if (el) el.value = '0';
+  });
+  if (manualError) manualError.textContent = '';
+  manualModal.style.display = 'flex';
+  manualModal.setAttribute('aria-hidden', 'false');
+  if (manualGreat) manualGreat.focus();
+}
+
 function closeManualModal() {
   if (!manualModal) return;
   manualModal.style.display = 'none';
@@ -508,7 +533,7 @@ function openDetail(btn) {
   const pointEl = $('#record-detail-point');
   const judgmentsEl = $('#record-detail-judgments');
   const deleteBtn = $('#record-detail-delete');
-  const apBtn = $('#record-detail-ap');
+  const addManualBtn = $('#record-detail-add-manual');
   const timeEl = $('#record-detail-time');
 
   jacketEl.src = jacketProxyUrl(songId);
@@ -570,82 +595,15 @@ function openDetail(btn) {
     }
   }
 
-  if (apBtn) {
-    const alreadyAp =
-      hasRecord &&
-      (recordData?.bad || 0) === 0 &&
-      (recordData?.good || 0) === 0 &&
-      (recordData?.great || 0) === 0 &&
-      (recordData?.miss || 0) === 0;
-
-    if (!state.canEdit || !state.token || alreadyAp) {
-      apBtn.style.display = 'none';
-      apBtn.onclick = null;
+  if (addManualBtn) {
+    if (!state.canEdit || !state.token) {
+      addManualBtn.style.display = 'none';
+      addManualBtn.onclick = null;
     } else {
-      apBtn.style.display = '';
-      apBtn.onclick = async () => {
-        if (!song || !song.difficulties) {
-          alert('この曲の情報が見つかりません（songDatabase.json を確認してください）。');
-          return;
-        }
-        const diffInfo =
-          song.difficulties?.[diffNorm] ??
-          song.difficulties?.[difficulty] ??
-          song.difficulties?.[difficulty?.toLowerCase()];
-        let totalNoteCount = null;
-        if (typeof diffInfo === 'number') totalNoteCount = diffInfo;
-        else if (diffInfo && typeof diffInfo.totalNoteCount === 'number') totalNoteCount = diffInfo.totalNoteCount;
-        if (totalNoteCount == null) {
-          alert('この曲・難易度の総ノーツ数が不明です（songDatabase.json を確認してください）。');
-          return;
-        }
-        if (!confirm('この譜面を ALL PERFECT として記録しますか？')) return;
-        const perfect = totalNoteCount;
-        const great = 0;
-        const good = 0;
-        const bad = 0;
-        const miss = 0;
-        const point = perfect * 3;
-        try {
-          await apiCall('/api/records', {
-            method: 'POST',
-            body: JSON.stringify({
-              song_id: Number(songId),
-              difficulty: diffNorm,
-              perfect,
-              great,
-              good,
-              bad,
-              miss,
-              point,
-              taken_at: null,
-            }),
-          });
-          const idx = state.records.findIndex(
-            (r) => String(r.song_id) === String(songId) && (r.difficulty || '').toLowerCase() === diffNorm,
-          );
-          const newRecord = {
-            song_id: Number(songId),
-            difficulty: diffNorm,
-            perfect,
-            great,
-            good,
-            bad,
-            miss,
-            point,
-            taken_at: null,
-          };
-          if (idx >= 0) {
-            state.records[idx] = { ...state.records[idx], ...newRecord };
-          } else {
-            state.records.push(newRecord);
-          }
-          // モーダルを閉じ、押したカードだけAP表示に更新
-          closeDetail();
-          updateOneCard(songId, diffNorm, newRecord);
-        } catch (e) {
-          console.error(e);
-        }
+      addManualBtn.style.display = '';
+      addManualBtn.onclick = () => {
+        closeDetail();
+        openManualModalPrefill(songId, diffNorm);
       };
     }
   }

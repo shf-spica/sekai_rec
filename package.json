@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "song-db": "python3 build_song_db.py",
     "build": "vite build",
     "preview": "vite preview",
     "server": "python run_server.py"
