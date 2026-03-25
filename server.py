@@ -507,7 +507,7 @@ async def api_create_ingest_token(user=Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(48)
     created = datetime.utcnow().isoformat() + "Z"
     with get_db() as conn:
         n = conn.execute(

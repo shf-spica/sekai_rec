@@ -43,7 +43,6 @@ state.manualSelectedSong = null;
 const ingestPanel = $('#ingest-panel');
 const ingestIssueBtn = $('#ingest-issue-btn');
 const ingestTokenList = $('#ingest-token-list');
-const ingestApiUrlEndpoint = $('#ingest-api-url-endpoint');
 const ingestReveal = $('#ingest-token-reveal');
 const ingestRevealBackdrop = $('#ingest-token-reveal-backdrop');
 const ingestRevealText = $('#ingest-token-reveal-text');
@@ -666,12 +665,12 @@ async function loadIngestTokens() {
           .map(
             (t) => `
         <li class="ingest-token-item">
-          <span class="ingest-token-meta">ID ${t.id} · 発行 ${escapeHtml(formatIngestCreatedAt(t.created_at))}</span>
+          <span class="ingest-token-meta">${escapeHtml(formatIngestCreatedAt(t.created_at))}</span>
           <button type="button" class="btn btn-ghost btn-sm ingest-token-revoke" data-id="${t.id}">削除</button>
         </li>`,
           )
           .join('')
-      : '<li class="ingest-token-empty">まだありません。「新しいトークンを発行」から追加できます。</li>';
+      : '<li class="ingest-token-empty">—</li>';
     ingestTokenList.querySelectorAll('.ingest-token-revoke').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
@@ -762,9 +761,6 @@ async function init() {
       manualEntryBtn.style.display = state.canEdit ? '' : 'none';
     }
 
-    if (ingestApiUrlEndpoint) {
-      ingestApiUrlEndpoint.textContent = `${window.location.origin}/api/ingest/ocr-text`;
-    }
     if (ingestPanel) {
       if (state.canEdit && state.token) {
         ingestPanel.style.display = 'block';

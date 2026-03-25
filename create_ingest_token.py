@@ -29,7 +29,7 @@ def main() -> None:
         print("INGEST_USERNAME に users テーブルと同じユーザー名を指定してください。", file=sys.stderr)
         sys.exit(1)
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(48)
     created = datetime.utcnow().isoformat() + "Z"
 
     with sqlite3.connect(_db_path) as conn:
