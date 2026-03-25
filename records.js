@@ -696,13 +696,21 @@ async function loadIngestTokens() {
 async function issueIngestToken() {
   if (!state.canEdit || !state.token) return;
   try {
-    const data = await apiCall('/api/ingest-tokens', {
+    const res = await fetch('/api/ingest-tokens', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.token}`,
+      },
       body: '{}',
     });
-    const secret = data?.ingest_secret ?? data?.token;
+    const data = res.ok ? await res.json().catch(() => ({})) : null;
+    if (!res.ok) {
+      throw new Error(data?.detail || res.statusText || 'Request failed');
+    }
+    const secret = res.headers.get('X-Ingest-Secret');
     if (!secret) {
-      alert('トークンを受け取れませんでした。サーバーまたは通信経路の設定を確認してください。');
+      alert('トークンを受け取れませんでした（応答ヘッダー X-Ingest-Secret がありません）。');
       await loadIngestTokens();
       return;
     }

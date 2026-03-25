@@ -47,6 +47,7 @@ def main() -> None:
             print(f"ユーザーが見つかりません: {username}", file=sys.stderr)
             sys.exit(1)
         user_id = int(row[0])
+        conn.execute("DELETE FROM ingest_tokens WHERE user_id = ?", (user_id,))
         conn.execute(
             "INSERT INTO ingest_tokens (user_id, token, created_at) VALUES (?, ?, ?)",
             (user_id, token, created),

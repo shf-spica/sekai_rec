@@ -484,9 +484,6 @@ async def api_ingest_ocr_text(
     return {**out, "parsed": parsed}
 
 
-_MAX_INGEST_TOKENS_PER_USER = 20
-
-
 @app.get("/api/ingest-tokens")
 async def api_list_ingest_tokens(user=Depends(get_current_user)):
     """発行済みトークンの一覧（値は再表示不可のため id・created_at のみ）。"""
@@ -503,29 +500,23 @@ async def api_list_ingest_tokens(user=Depends(get_current_user)):
 
 @app.post("/api/ingest-tokens")
 async def api_create_ingest_token(user=Depends(get_current_user)):
-    """新規トークンを発行。返却の token はこの一度だけ表示される。"""
+    """1ユーザー1トークン。再発行時は既存を削除。秘密は JSON ではなく X-Ingest-Secret ヘッダーのみ。"""
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
     token = secrets.token_urlsafe(48)
     created = datetime.utcnow().isoformat() + "Z"
     with get_db() as conn:
-        n = conn.execute(
-            "SELECT COUNT(*) FROM ingest_tokens WHERE user_id = ?",
-            (user["id"],),
-        ).fetchone()[0]
-        if n >= _MAX_INGEST_TOKENS_PER_USER:
-            raise HTTPException(
-                status_code=400,
-                detail=f"トークンは最大 {_MAX_INGEST_TOKENS_PER_USER} 件までです。不要なものを削除してください。",
-            )
+        conn.execute("DELETE FROM ingest_tokens WHERE user_id = ?", (user["id"],))
         conn.execute(
             "INSERT INTO ingest_tokens (user_id, token, created_at) VALUES (?, ?, ?)",
             (user["id"], token, created),
         )
         tid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    # キー名は "token" ではなく ingest_secret（一部プロキシが token フィールドを落とす事例への回避）
-    return {"id": tid, "ingest_secret": token, "created_at": created}
+    return JSONResponse(
+        content={"id": tid, "created_at": created},
+        headers={"X-Ingest-Secret": token},
+    )
 
 
 @app.delete("/api/ingest-tokens/{token_id}")
@@ -765,6 +756,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Ingest-Secret"],
 )
 
 ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
