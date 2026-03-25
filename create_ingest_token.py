@@ -30,6 +30,7 @@ def main() -> None:
         sys.exit(1)
 
     token = secrets.token_urlsafe(48)
+    token_hint = token[-10:] if len(token) >= 10 else token
     created = datetime.utcnow().isoformat() + "Z"
 
     with sqlite3.connect(_db_path) as conn:
@@ -42,6 +43,10 @@ def main() -> None:
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+        try:
+            conn.execute("ALTER TABLE ingest_tokens ADD COLUMN token_hint TEXT")
+        except sqlite3.OperationalError:
+            pass
         row = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if not row:
             print(f"ユーザーが見つかりません: {username}", file=sys.stderr)
@@ -49,8 +54,8 @@ def main() -> None:
         user_id = int(row[0])
         conn.execute("DELETE FROM ingest_tokens WHERE user_id = ?", (user_id,))
         conn.execute(
-            "INSERT INTO ingest_tokens (user_id, token, created_at) VALUES (?, ?, ?)",
-            (user_id, token, created),
+            "INSERT INTO ingest_tokens (user_id, token, created_at, token_hint) VALUES (?, ?, ?, ?)",
+            (user_id, token, created, token_hint),
         )
 
     _out_path.write_text(token + "\n", encoding="utf-8")

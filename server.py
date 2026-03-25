@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -136,6 +137,10 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+        try:
+            conn.execute("ALTER TABLE ingest_tokens ADD COLUMN token_hint TEXT")
+        except sqlite3.OperationalError:
+            pass
 
 
 init_db()
@@ -486,13 +491,13 @@ async def api_ingest_ocr_text(
 
 @app.get("/api/ingest-tokens")
 async def api_list_ingest_tokens(user=Depends(get_current_user)):
-    """発行済みトークンの一覧（値は再表示不可のため id・created_at のみ）。"""
+    """発行済み一覧。秘密の代わりに末尾数文字 token_hint のみ返す。"""
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, created_at FROM ingest_tokens WHERE user_id = ? ORDER BY id DESC",
+            "SELECT id, created_at, token_hint FROM ingest_tokens WHERE user_id = ? ORDER BY id DESC",
             (user["id"],),
         ).fetchall()
     return {"tokens": [dict(r) for r in rows]}
@@ -500,21 +505,23 @@ async def api_list_ingest_tokens(user=Depends(get_current_user)):
 
 @app.post("/api/ingest-tokens")
 async def api_create_ingest_token(user=Depends(get_current_user)):
-    """1ユーザー1トークン。再発行時は既存を削除。秘密は JSON ではなく X-Ingest-Secret ヘッダーのみ。"""
+    """1ユーザー1トークン。秘密は X-Ingest-Secret ヘッダーと JSON の s（base64）の両方で返す（中間がヘッダーを落とす対策）。"""
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
     token = secrets.token_urlsafe(48)
+    token_hint = token[-10:] if len(token) >= 10 else token
     created = datetime.utcnow().isoformat() + "Z"
+    b64 = base64.b64encode(token.encode("ascii")).decode("ascii")
     with get_db() as conn:
         conn.execute("DELETE FROM ingest_tokens WHERE user_id = ?", (user["id"],))
         conn.execute(
-            "INSERT INTO ingest_tokens (user_id, token, created_at) VALUES (?, ?, ?)",
-            (user["id"], token, created),
+            "INSERT INTO ingest_tokens (user_id, token, created_at, token_hint) VALUES (?, ?, ?, ?)",
+            (user["id"], token, created, token_hint),
         )
         tid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     return JSONResponse(
-        content={"id": tid, "created_at": created},
+        content={"id": tid, "created_at": created, "s": b64},
         headers={"X-Ingest-Secret": token},
     )
 

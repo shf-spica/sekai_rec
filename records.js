@@ -665,13 +665,17 @@ async function loadIngestTokens() {
     const items = data.tokens || [];
     ingestTokenList.innerHTML = items.length
       ? items
-          .map(
-            (t) => `
+          .map((t) => {
+            const hint =
+              t.token_hint && String(t.token_hint).trim()
+                ? ` …${escapeHtml(String(t.token_hint).trim())}`
+                : '';
+            return `
         <li class="ingest-token-item">
-          <span class="ingest-token-meta">${escapeHtml(formatIngestCreatedAt(t.created_at))}</span>
+          <span class="ingest-token-meta">${escapeHtml(formatIngestCreatedAt(t.created_at))}${hint}</span>
           <button type="button" class="btn btn-ghost btn-sm ingest-token-revoke" data-id="${t.id}">削除</button>
-        </li>`,
-          )
+        </li>`;
+          })
           .join('')
       : '<li class="ingest-token-empty">—</li>';
     ingestTokenList.querySelectorAll('.ingest-token-revoke').forEach((btn) => {
@@ -708,9 +712,16 @@ async function issueIngestToken() {
     if (!res.ok) {
       throw new Error(data?.detail || res.statusText || 'Request failed');
     }
-    const secret = res.headers.get('X-Ingest-Secret');
+    let secret = res.headers.get('X-Ingest-Secret');
+    if (!secret && data?.s && typeof data.s === 'string') {
+      try {
+        secret = atob(data.s.trim());
+      } catch {
+        secret = '';
+      }
+    }
     if (!secret) {
-      alert('トークンを受け取れませんでした（応答ヘッダー X-Ingest-Secret がありません）。');
+      alert('トークンを受け取れませんでした。');
       await loadIngestTokens();
       return;
     }
