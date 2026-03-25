@@ -98,6 +98,10 @@
   cursor: pointer;
 }
 
+.records-level-filter-wrap .records-refresh-btn {
+  margin-left: auto;
+}
+
 .records-level-section {
   background: var(--bg-card);
   border-radius: var(--radius-lg);

@@ -2,6 +2,27 @@
  * 記録一覧ページ: ログイン済みユーザーの記録を Lv. / 難易度でグループ表示
  */
 
+const LEVEL_FILTER_STORAGE_KEY = 'prsk_records_level_filter';
+
+function loadSavedLevelFilter() {
+  try {
+    const v = sessionStorage.getItem(LEVEL_FILTER_STORAGE_KEY);
+    if (v === 'all') return 'all';
+    if (v != null && /^\d+$/.test(v)) return v;
+  } catch (_) {
+    /* ignore */
+  }
+  return 'all';
+}
+
+function persistLevelFilter() {
+  try {
+    sessionStorage.setItem(LEVEL_FILTER_STORAGE_KEY, state.levelFilter);
+  } catch (_) {
+    /* ignore */
+  }
+}
+
 const state = {
   token: localStorage.getItem('prsk_ocr_token') || null,
   user: null,
@@ -10,7 +31,7 @@ const state = {
   pageUsername: null,
   canEdit: false,
   /** Lv. フィルタ: 'all' | レベル数値の文字列 */
-  levelFilter: 'all',
+  levelFilter: loadSavedLevelFilter(),
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -24,6 +45,7 @@ const emptyEl = $('#records-empty');
 const recordsCountEl = $('#records-count');
 const levelFilterWrap = $('#records-level-filter-wrap');
 const levelSelect = $('#records-level-select');
+const recordsRefreshBtn = $('#records-refresh-btn');
 
 // Manual entry (mypage)
 const manualEntryBtn = $('#manual-entry-link');
@@ -385,6 +407,7 @@ function populateLevelFilterOptions(groups) {
   const stillValid = prev === 'all' || levels.some((l) => String(l) === String(prev));
   state.levelFilter = stillValid ? prev : 'all';
   levelSelect.value = state.levelFilter;
+  persistLevelFilter();
   levelFilterWrap.style.display = '';
   levelFilterWrap.setAttribute('aria-hidden', 'false');
 }
@@ -404,8 +427,40 @@ function bindLevelFilterOnce() {
   levelSelect.dataset.bound = '1';
   levelSelect.addEventListener('change', () => {
     state.levelFilter = levelSelect.value;
+    persistLevelFilter();
     applyLevelFilter();
   });
+}
+
+async function refreshRecords() {
+  if (!state.pageUsername) return;
+  const btn = recordsRefreshBtn;
+  const prevText = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '更新中…';
+  }
+  try {
+    const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
+    if (!publicRes.ok) {
+      const d = await publicRes.json().catch(() => ({}));
+      throw new Error(d?.detail || publicRes.statusText || 'Request failed');
+    }
+    const publicData = await publicRes.json();
+    state.records = publicData.records || [];
+    renderGroups();
+    if (state.canEdit && state.token && ingestPanel?.style.display !== 'none') {
+      await loadIngestTokens();
+    }
+  } catch (e) {
+    console.error(e);
+    alert(e.message || '記録の更新に失敗しました');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prevText || '更新';
+    }
+  }
 }
 
 function renderGroups() {
@@ -879,6 +934,10 @@ async function init() {
 
   loadingEl.style.display = 'none';
   bindLevelFilterOnce();
+  if (recordsRefreshBtn && !recordsRefreshBtn.dataset.bound) {
+    recordsRefreshBtn.dataset.bound = '1';
+    recordsRefreshBtn.addEventListener('click', () => refreshRecords());
+  }
   renderGroups();
 
   if (manualEntryBtn) manualEntryBtn.addEventListener('click', openManualModal);
