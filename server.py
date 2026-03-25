@@ -415,6 +415,42 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
         return _upsert_user_record(conn, user["id"], body)
 
 
+@app.get("/api/ingest/ping")
+async def api_ingest_ping_get():
+    """TLS・DNS・プロキシの到達テスト（認証なし・即応答）。ショートカットで GET できるか試す用。"""
+    return {"ok": True}
+
+
+@app.post("/api/ingest/ping")
+async def api_ingest_ping_post(authorization: str | None = Header(None)):
+    """ingest トークン付き POST が届くかだけ試す（Node や JSON 本文パースは使わない）。"""
+    token = _bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization: Bearer <ingest_token> required")
+    if _resolve_user_id_for_ingest_token(token) is None:
+        raise HTTPException(status_code=401, detail="Invalid ingest token")
+    return {"ok": True}
+
+
+@app.get("/api/ingest/ocr-text")
+async def api_ingest_ocr_text_probe():
+    """到達確認用（認証なし）。GET で JSON が返ればリバースプロキシまで届いている。"""
+    return {
+        "endpoint": "/api/ingest/ocr-text",
+        "post_required": True,
+        "ping_get": "/api/ingest/ping",
+        "ping_post": "/api/ingest/ping",
+        "headers": {
+            "Authorization": "Bearer <ingest_tokens で発行したトークン（JWT ログインとは別）>",
+            "Content-Type": "application/json",
+        },
+        "body": {
+            "fullText": "マスク後OCRの全文（改行含む）",
+            "takenAt": "任意 yyyy/mm/dd hh:mm など",
+        },
+    }
+
+
 @app.post("/api/ingest/ocr-text")
 async def api_ingest_ocr_text(
     body: IngestOcrTextBody,
