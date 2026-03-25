@@ -405,3 +405,219 @@
   font-size: 0.9rem;
   margin: 0;
 }
+
+/* ショートカット連携（ingest トークン） */
+.ingest-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-xl);
+}
+
+.ingest-panel-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-sm);
+  color: var(--text-primary);
+}
+
+.ingest-panel-lead {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 var(--space-md);
+}
+
+.ingest-panel-lead code {
+  font-size: 0.8em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ingest-panel-actions {
+  margin-bottom: var(--space-lg);
+}
+
+.ingest-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-xs);
+}
+
+.ingest-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm);
+}
+
+.ingest-token-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ingest-token-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.ingest-token-item:last-child {
+  border-bottom: none;
+}
+
+.ingest-token-meta {
+  color: var(--text-secondary);
+}
+
+.ingest-token-empty {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: var(--space-sm) 0;
+}
+
+.ingest-api-doc {
+  margin-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-md);
+}
+
+.ingest-api-doc summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--accent-secondary);
+}
+
+.ingest-api-doc-body {
+  margin-top: var(--space-md);
+}
+
+.ingest-dl {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.ingest-dl dt {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: var(--space-md);
+}
+
+.ingest-dl dt:first-child {
+  margin-top: 0;
+}
+
+.ingest-dl dd {
+  margin: var(--space-xs) 0 0;
+  color: var(--text-secondary);
+}
+
+.ingest-dl code {
+  font-size: 0.88em;
+  word-break: break-all;
+}
+
+.ingest-field-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin: var(--space-sm) 0;
+}
+
+.ingest-field-table th,
+.ingest-field-table td {
+  border: 1px solid var(--border-color);
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ingest-field-table th {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ingest-example-label {
+  font-weight: 600;
+  margin: var(--space-md) 0 var(--space-xs);
+  font-size: 0.82rem;
+}
+
+.ingest-pre {
+  margin: 0;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.ingest-token-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.ingest-token-reveal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.ingest-token-reveal-content {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.ingest-token-reveal-title {
+  margin: 0 0 var(--space-sm);
+  font-size: 1.05rem;
+}
+
+.ingest-token-reveal-warn {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-md);
+  line-height: 1.5;
+}
+
+.ingest-token-reveal-text {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-primary);
+  resize: vertical;
+  margin-bottom: var(--space-md);
+}
+
+.ingest-token-reveal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}

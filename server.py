@@ -1,9 +1,13 @@
 import asyncio
+import json
 import logging
 import os
+import secrets
+import shutil
 import sqlite3
+import subprocess
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
@@ -17,12 +21,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("prsk_ocr")
 
-from fastapi import FastAPI, Depends, File, UploadFile, HTTPException
+from fastapi import FastAPI, Depends, File, Header, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 from paddleocr import PaddleOCR
 import numpy as np
 import cv2
@@ -115,7 +119,21 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
                 api_key TEXT UNIQUE NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                user_id INTEGER
+            )
+        """)
+        try:
+            conn.execute("ALTER TABLE api_keys ADD COLUMN user_id INTEGER")
+        except sqlite3.OperationalError:
+            pass
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ingest_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
 
@@ -167,6 +185,146 @@ class DatasetBody(BaseModel):
     bad: int
     miss: int
     point: int
+
+
+class IngestOcrTextBody(BaseModel):
+    """iOS 等から OCR 済みテキストを受け取り、既存の ocr-postprocess と同じ解析で記録する。"""
+
+    full_text: str = Field(..., validation_alias=AliasChoices("full_text", "fullText"))
+    taken_at: str | None = Field(None, validation_alias=AliasChoices("taken_at", "takenAt"))
+
+
+_ROOT = Path(__file__).resolve().parent
+_PARSE_OCR_CLI = _ROOT / "scripts" / "parse_ocr_cli.mjs"
+
+
+def _bearer_token(authorization: str | None) -> str | None:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    return authorization[7:].strip() or None
+
+
+def _resolve_user_id_for_ingest_token(token: str) -> int | None:
+    """記録取得用 api_keys とは別テーブル ingest_tokens のみを参照する。"""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT user_id FROM ingest_tokens WHERE token = ?",
+            (token,),
+        ).fetchone()
+    if not row:
+        return None
+    return int(row["user_id"])
+
+
+_JST = timezone(timedelta(hours=9))
+
+
+def _normalize_taken_at(raw: str | None) -> str | None:
+    """
+    iOS ショートカット等からの日時を正規化して DB に保存する文字列にする。
+    受け付ける例:
+      - yyyy/mm/dd hh:mm（ユーザー指定の主形式）
+      - yyyy/mm/dd hh:mm:ss
+      - yyyy-mm-dd hh:mm(:ss)
+      - ISO 8601（既にタイムゾーン付きならそのまま解釈）
+    スラッシュ形式でタイムゾーンが無い場合は日本標準時 (JST) として解釈する。
+    """
+    if raw is None or not str(raw).strip():
+        return None
+    s = str(raw).strip().replace("／", "/").replace("－", "-")
+
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=_JST)
+        return dt.isoformat()
+    except ValueError:
+        pass
+
+    for fmt in ("%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt.replace(tzinfo=_JST).isoformat()
+        except ValueError:
+            continue
+
+    raise HTTPException(
+        status_code=400,
+        detail='taken_at: use "yyyy/mm/dd hh:mm" or ISO 8601 (e.g. 2025-03-23T15:30:00+09:00)',
+    )
+
+
+def _upsert_user_record(conn: sqlite3.Connection, user_id: int, body: RecordBody) -> dict:
+    difficulty = (body.difficulty or "").strip().lower() or "master"
+    created = datetime.utcnow().isoformat() + "Z"
+    existing = conn.execute(
+        "SELECT id, perfect, great, good, bad, miss, point FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
+        (user_id, body.song_id, difficulty),
+    ).fetchone()
+    if existing:
+        existing_fc = existing["miss"] == 0 and existing["bad"] == 0 and existing["good"] == 0
+        new_fc = body.miss == 0 and body.bad == 0 and body.good == 0
+        if existing_fc and not new_fc:
+            return {"saved": False, "message": "Existing record (FULL COMBO) is preferred over non-FC"}
+        if (existing_fc == new_fc) and existing["point"] >= body.point:
+            return {"saved": False, "message": "Existing record has higher or equal point"}
+        conn.execute(
+            """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, taken_at=?, created_at=?
+               WHERE id = ?""",
+            (
+                body.perfect,
+                body.great,
+                body.good,
+                body.bad,
+                body.miss,
+                body.point,
+                body.taken_at,
+                created,
+                existing["id"],
+            ),
+        )
+    else:
+        conn.execute(
+            """INSERT INTO records (user_id, song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                user_id,
+                body.song_id,
+                difficulty,
+                body.perfect,
+                body.great,
+                body.good,
+                body.bad,
+                body.miss,
+                body.point,
+                body.taken_at,
+                created,
+            ),
+        )
+    return {"saved": True}
+
+
+def _run_parse_ocr_postprocess(full_text: str) -> dict:
+    if not shutil.which("node"):
+        raise HTTPException(status_code=503, detail="Node.js is required for OCR text parsing")
+    if not _PARSE_OCR_CLI.is_file():
+        raise HTTPException(status_code=500, detail="parse_ocr_cli.mjs not found")
+    proc = subprocess.run(
+        ["node", str(_PARSE_OCR_CLI)],
+        input=json.dumps({"fullText": full_text}),
+        text=True,
+        capture_output=True,
+        timeout=120,
+        cwd=str(_ROOT),
+    )
+    if proc.returncode != 0:
+        logger.error("parse_ocr_cli failed: %s", proc.stderr or proc.stdout)
+        raise HTTPException(status_code=500, detail="OCR text postprocess failed")
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        logger.error("parse_ocr_cli bad JSON: %s", proc.stdout[:500])
+        raise HTTPException(status_code=500, detail="Invalid postprocess output") from e
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -248,34 +406,141 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
-    user_id = user["id"]
-    difficulty = (body.difficulty or "").strip().lower() or "master"
+    with get_db() as conn:
+        return _upsert_user_record(conn, user["id"], body)
+
+
+@app.post("/api/ingest/ocr-text")
+async def api_ingest_ocr_text(
+    body: IngestOcrTextBody,
+    authorization: str | None = Header(None),
+):
+    """
+    モバイル取り込み専用トークン（ingest_tokens テーブル）で認証。
+    GET /api/external/records 用の api_keys とは別物。Authorization: Bearer <ingest_token>
+
+    taken_at（任意）: 主に "yyyy/mm/dd hh:mm"（iOS からその形式で来る想定）。ISO 8601 も可。
+    """
+    token = _bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization: Bearer <ingest_token> required")
+    user_id = _resolve_user_id_for_ingest_token(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid ingest token")
+
+    full_text = (body.full_text or "").strip()
+    if not full_text:
+        raise HTTPException(status_code=400, detail="full_text is empty")
+
+    taken_raw = (body.taken_at or "").strip() or None
+    taken_at = _normalize_taken_at(taken_raw) if taken_raw else None
+
+    parsed = _run_parse_ocr_postprocess(full_text)
+
+    if parsed.get("songError"):
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "song_not_identified", "parsed": parsed},
+        )
+    if parsed.get("judgmentsSumError"):
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "judgments_invalid", "parsed": parsed},
+        )
+
+    song_id = parsed.get("songId")
+    if song_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "missing_song_id", "parsed": parsed},
+        )
+
+    j = parsed.get("judgments") or {}
+    for k in ("PERFECT", "GREAT", "GOOD", "BAD", "MISS"):
+        if not isinstance(j.get(k), int):
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "incomplete_judgments", "parsed": parsed},
+            )
+
+    difficulty = parsed.get("difficulty") or "master"
+    if not isinstance(parsed.get("point"), int):
+        raise HTTPException(status_code=422, detail={"error": "invalid_point", "parsed": parsed})
+
+    rec = RecordBody(
+        song_id=int(song_id),
+        difficulty=str(difficulty),
+        perfect=int(j["PERFECT"]),
+        great=int(j["GREAT"]),
+        good=int(j["GOOD"]),
+        bad=int(j["BAD"]),
+        miss=int(j["MISS"]),
+        point=int(parsed["point"]),
+        taken_at=taken_at,
+    )
+
+    with get_db() as conn:
+        out = _upsert_user_record(conn, user_id, rec)
+    return {**out, "parsed": parsed}
+
+
+_MAX_INGEST_TOKENS_PER_USER = 20
+
+
+@app.get("/api/ingest-tokens")
+async def api_list_ingest_tokens(user=Depends(get_current_user)):
+    """発行済みトークンの一覧（値は再表示不可のため id・created_at のみ）。"""
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    _require_auth()
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, created_at FROM ingest_tokens WHERE user_id = ? ORDER BY id DESC",
+            (user["id"],),
+        ).fetchall()
+    return {"tokens": [dict(r) for r in rows]}
+
+
+@app.post("/api/ingest-tokens")
+async def api_create_ingest_token(user=Depends(get_current_user)):
+    """新規トークンを発行。返却の token はこの一度だけ表示される。"""
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    _require_auth()
+    token = secrets.token_urlsafe(32)
     created = datetime.utcnow().isoformat() + "Z"
     with get_db() as conn:
-        existing = conn.execute(
-            "SELECT id, perfect, great, good, bad, miss, point FROM records WHERE user_id = ? AND song_id = ? AND difficulty = ?",
-            (user_id, body.song_id, difficulty),
-        ).fetchone()
-        if existing:
-            # FULL COMBO（MISS/BAD/GOOD が 0）の有無を比較し、FC を point より優先する
-            existing_fc = existing["miss"] == 0 and existing["bad"] == 0 and existing["good"] == 0
-            new_fc = body.miss == 0 and body.bad == 0 and body.good == 0
-            if existing_fc and not new_fc:
-                return {"saved": False, "message": "Existing record (FULL COMBO) is preferred over non-FC"}
-            if (existing_fc == new_fc) and existing["point"] >= body.point:
-                return {"saved": False, "message": "Existing record has higher or equal point"}
-            conn.execute(
-                """UPDATE records SET perfect=?, great=?, good=?, bad=?, miss=?, point=?, taken_at=?, created_at=?
-                   WHERE id = ?""",
-                (body.perfect, body.great, body.good, body.bad, body.miss, body.point, body.taken_at, created, existing["id"]),
+        n = conn.execute(
+            "SELECT COUNT(*) FROM ingest_tokens WHERE user_id = ?",
+            (user["id"],),
+        ).fetchone()[0]
+        if n >= _MAX_INGEST_TOKENS_PER_USER:
+            raise HTTPException(
+                status_code=400,
+                detail=f"トークンは最大 {_MAX_INGEST_TOKENS_PER_USER} 件までです。不要なものを削除してください。",
             )
-        else:
-            conn.execute(
-                """INSERT INTO records (user_id, song_id, difficulty, perfect, great, good, bad, miss, point, taken_at, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, body.song_id, difficulty, body.perfect, body.great, body.good, body.bad, body.miss, body.point, body.taken_at, created),
-            )
-    return {"saved": True}
+        conn.execute(
+            "INSERT INTO ingest_tokens (user_id, token, created_at) VALUES (?, ?, ?)",
+            (user["id"], token, created),
+        )
+        tid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    return {"id": tid, "token": token, "created_at": created}
+
+
+@app.delete("/api/ingest-tokens/{token_id}")
+async def api_delete_ingest_token(token_id: int, user=Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    _require_auth()
+    with get_db() as conn:
+        cur = conn.execute(
+            "DELETE FROM ingest_tokens WHERE id = ? AND user_id = ?",
+            (token_id, user["id"]),
+        )
+        deleted = cur.rowcount > 0
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Token not found")
+    return {"deleted": True}
 
 
 @app.get("/api/records")

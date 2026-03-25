@@ -43,6 +43,78 @@
         <p>読み込み中...</p>
       </div>
       <div id="records-content" class="records-content" style="display: none;">
+        <section class="ingest-panel" id="ingest-panel" style="display: none;" aria-labelledby="ingest-panel-title">
+          <h2 class="ingest-panel-title" id="ingest-panel-title">ショートカット連携（OCRテキストの取り込み）</h2>
+          <p class="ingest-panel-lead">
+            iOS のショートカットなどから、<strong>マスク済み画像の OCR テキスト</strong>を送ってこのアカウントの記録に保存できます。
+            下の「トークンを発行」で出た文字列を、ショートカットの <code>Authorization: Bearer …</code> に使います（ログイン用パスワードではありません）。
+          </p>
+          <div class="ingest-panel-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="ingest-issue-btn">新しいトークンを発行</button>
+          </div>
+          <div class="ingest-token-list-wrap">
+            <h3 class="ingest-subtitle">発行済みトークン</h3>
+            <p class="ingest-hint">トークン文字列はセキュリティのため再表示できません。紛失したら削除して新しく発行してください。</p>
+            <ul class="ingest-token-list" id="ingest-token-list"></ul>
+          </div>
+          <details class="ingest-api-doc">
+            <summary>POST の送り方（詳細）</summary>
+            <div class="ingest-api-doc-body">
+              <dl class="ingest-dl">
+                <dt>エンドポイント</dt>
+                <dd><code id="ingest-api-url-endpoint">（読み込み後に表示）</code></dd>
+                <dt>HTTP メソッド</dt>
+                <dd><code>POST</code></dd>
+                <dt>認証ヘッダー（必須）</dt>
+                <dd>
+                  <code>Authorization: Bearer &lt;発行したトークン&gt;</code><br>
+                  例: <code>Authorization: Bearer AbCdEf123...</code>
+                </dd>
+                <dt>Content-Type（必須）</dt>
+                <dd><code>application/json</code></dd>
+                <dt>JSON ボディ</dt>
+                <dd>
+                  <table class="ingest-field-table">
+                    <thead>
+                      <tr><th>フィールド名</th><th>必須</th><th>説明</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>fullText</code> または <code>full_text</code></td>
+                        <td>必須</td>
+                        <td>サーバー OCR と同じ前提の<strong>プレーンテキスト</strong>（改行は <code>\n</code>）。曲名・難易度・判定数が読み取れる内容であること。</td>
+                      </tr>
+                      <tr>
+                        <td><code>takenAt</code> または <code>taken_at</code></td>
+                        <td>任意</td>
+                        <td>スクリーンショットの撮影日時。推奨形式: <code>yyyy/mm/dd hh:mm</code>（例: <code>2025/03/23 15:30</code>）。秒付き・ISO 8601 も可。タイムゾーン省略時は日本時間 (JST) とみなします。</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p class="ingest-example-label">リクエスト例（JSON）</p>
+                  <pre class="ingest-pre"><code>{
+  "fullText": "曲名の行\nMASTER\n…",
+  "takenAt": "2025/03/23 15:30"
+}</code></pre>
+                </dd>
+                <dt>成功時 <code>200</code></dt>
+                <dd>
+                  <code>saved</code>: 記録が新規/更新されたか（既存レコードの上書きルールは Web の OCR 保存と同じ）。<br>
+                  <code>message</code>: <code>saved: false</code> のとき理由の文字列。<br>
+                  <code>parsed</code>: サーバーが解釈した曲・難易度・判定・ポイントなど（デバッグ用）。
+                </dd>
+                <dt><code>400</code></dt>
+                <dd><code>full_text</code> が空、または <code>taken_at</code> の形式が解釈できない。</dd>
+                <dt><code>401</code></dt>
+                <dd>トークン未指定・無効・削除済み。</dd>
+                <dt><code>422</code></dt>
+                <dd>曲が特定できない、判定の合計が合わないなど。レスポンスの <code>detail</code> はオブジェクトで、<code>error</code>（種類）と <code>parsed</code>（中間結果）を含みます。</dd>
+                <dt><code>503</code></dt>
+                <dd>サーバーに Node.js が無く、テキストの後処理が実行できない場合。</dd>
+              </dl>
+            </div>
+          </details>
+        </section>
         <div id="records-groups"></div>
       </div>
       <div id="records-empty" class="records-message" style="display: none;">
@@ -106,6 +178,20 @@
       <div class="manual-modal-actions">
         <button type="button" class="btn btn-ghost" id="manual-modal-cancel">キャンセル</button>
         <button type="button" class="btn btn-primary" id="manual-submit">記録を保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 発行直後のトークン表示（再表示不可） -->
+  <div class="ingest-token-reveal" id="ingest-token-reveal" style="display: none;" aria-hidden="true">
+    <div class="ingest-token-reveal-backdrop" id="ingest-token-reveal-backdrop"></div>
+    <div class="ingest-token-reveal-content">
+      <h3 class="ingest-token-reveal-title">トークンをコピーしてください</h3>
+      <p class="ingest-token-reveal-warn">この画面を閉じると<strong>再表示できません</strong>。ショートカットの「テキスト」アクションなどに貼り付けて保管してください。</p>
+      <textarea class="ingest-token-reveal-text" id="ingest-token-reveal-text" readonly rows="3"></textarea>
+      <div class="ingest-token-reveal-actions">
+        <button type="button" class="btn btn-primary" id="ingest-token-copy-btn">コピー</button>
+        <button type="button" class="btn btn-ghost" id="ingest-token-reveal-close">閉じる</button>
       </div>
     </div>
   </div>

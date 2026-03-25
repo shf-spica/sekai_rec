@@ -40,6 +40,16 @@ const manualSubmit = $('#manual-submit');
 
 state.manualSelectedSong = null;
 
+const ingestPanel = $('#ingest-panel');
+const ingestIssueBtn = $('#ingest-issue-btn');
+const ingestTokenList = $('#ingest-token-list');
+const ingestApiUrlEndpoint = $('#ingest-api-url-endpoint');
+const ingestReveal = $('#ingest-token-reveal');
+const ingestRevealBackdrop = $('#ingest-token-reveal-backdrop');
+const ingestRevealText = $('#ingest-token-reveal-text');
+const ingestRevealClose = $('#ingest-token-reveal-close');
+const ingestCopyBtn = $('#ingest-token-copy-btn');
+
 const JACKET_BASE = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_';
 function jacketUrl(songId) {
   const id = String(Number(songId)).padStart(3, '0');
@@ -620,6 +630,78 @@ function closeDetail() {
   }
 }
 
+function openIngestReveal(token) {
+  if (!ingestReveal || !ingestRevealText) return;
+  ingestRevealText.value = token;
+  ingestReveal.style.display = 'flex';
+  ingestReveal.setAttribute('aria-hidden', 'false');
+  ingestRevealText.select();
+}
+
+function closeIngestReveal() {
+  if (!ingestReveal) return;
+  ingestReveal.style.display = 'none';
+  ingestReveal.setAttribute('aria-hidden', 'true');
+  if (ingestRevealText) ingestRevealText.value = '';
+}
+
+function formatIngestCreatedAt(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso.endsWith('Z') ? iso : `${iso}Z`);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return iso;
+  }
+}
+
+async function loadIngestTokens() {
+  if (!ingestTokenList || !state.canEdit || !state.token) return;
+  try {
+    const data = await apiCall('/api/ingest-tokens');
+    const items = data.tokens || [];
+    ingestTokenList.innerHTML = items.length
+      ? items
+          .map(
+            (t) => `
+        <li class="ingest-token-item">
+          <span class="ingest-token-meta">ID ${t.id} · 発行 ${escapeHtml(formatIngestCreatedAt(t.created_at))}</span>
+          <button type="button" class="btn btn-ghost btn-sm ingest-token-revoke" data-id="${t.id}">削除</button>
+        </li>`,
+          )
+          .join('')
+      : '<li class="ingest-token-empty">まだありません。「新しいトークンを発行」から追加できます。</li>';
+    ingestTokenList.querySelectorAll('.ingest-token-revoke').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id || !confirm('このトークンを削除しますか？（ショートカットからの取り込みができなくなります）')) return;
+        try {
+          await apiCall(`/api/ingest-tokens/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          await loadIngestTokens();
+        } catch (e) {
+          console.error(e);
+          alert(e.message || '削除に失敗しました');
+        }
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    ingestTokenList.innerHTML = '<li class="ingest-token-empty">一覧の取得に失敗しました。</li>';
+  }
+}
+
+async function issueIngestToken() {
+  if (!state.canEdit || !state.token) return;
+  try {
+    const data = await apiCall('/api/ingest-tokens', { method: 'POST' });
+    if (data.token) openIngestReveal(data.token);
+    await loadIngestTokens();
+  } catch (e) {
+    alert(e.message || '発行に失敗しました');
+  }
+}
+
 async function init() {
   try {
     // /records/{username} から username を取得
@@ -680,6 +762,18 @@ async function init() {
       manualEntryBtn.style.display = state.canEdit ? '' : 'none';
     }
 
+    if (ingestApiUrlEndpoint) {
+      ingestApiUrlEndpoint.textContent = `${window.location.origin}/api/ingest/ocr-text`;
+    }
+    if (ingestPanel) {
+      if (state.canEdit && state.token) {
+        ingestPanel.style.display = 'block';
+        await loadIngestTokens();
+      } else {
+        ingestPanel.style.display = 'none';
+      }
+    }
+
     const logoutBtn = $('#auth-logout-btn');
     if (logoutBtn) {
       if (state.user) {
@@ -714,6 +808,24 @@ async function init() {
 
   $('#record-detail-backdrop')?.addEventListener('click', closeDetail);
   $('#record-detail-close')?.addEventListener('click', closeDetail);
+
+  if (ingestIssueBtn) ingestIssueBtn.addEventListener('click', issueIngestToken);
+  if (ingestRevealBackdrop) ingestRevealBackdrop.addEventListener('click', closeIngestReveal);
+  if (ingestRevealClose) ingestRevealClose.addEventListener('click', closeIngestReveal);
+  if (ingestCopyBtn && ingestRevealText) {
+    ingestCopyBtn.addEventListener('click', () => {
+      ingestRevealText.select();
+      navigator.clipboard.writeText(ingestRevealText.value).then(
+        () => {
+          ingestCopyBtn.textContent = 'コピーしました';
+          setTimeout(() => {
+            ingestCopyBtn.textContent = 'コピー';
+          }, 1500);
+        },
+        () => {},
+      );
+    });
+  }
 }
 
 init();
