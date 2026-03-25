@@ -459,7 +459,7 @@
 .ingest-token-reveal {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 100000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,17 +488,16 @@
   font-size: 1.05rem;
 }
 
-.ingest-token-reveal-text {
+.ingest-token-reveal-input {
   width: 100%;
   box-sizing: border-box;
   font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   padding: var(--space-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text-primary);
-  resize: vertical;
   margin-bottom: var(--space-md);
 }
 

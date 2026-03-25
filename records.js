@@ -43,11 +43,6 @@ state.manualSelectedSong = null;
 const ingestPanel = $('#ingest-panel');
 const ingestIssueBtn = $('#ingest-issue-btn');
 const ingestTokenList = $('#ingest-token-list');
-const ingestReveal = $('#ingest-token-reveal');
-const ingestRevealBackdrop = $('#ingest-token-reveal-backdrop');
-const ingestRevealText = $('#ingest-token-reveal-text');
-const ingestRevealClose = $('#ingest-token-reveal-close');
-const ingestCopyBtn = $('#ingest-token-copy-btn');
 
 const JACKET_BASE = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_';
 function jacketUrl(songId) {
@@ -629,19 +624,27 @@ function closeDetail() {
   }
 }
 
-function openIngestReveal(token) {
-  if (!ingestReveal || !ingestRevealText) return;
-  ingestRevealText.value = token;
-  ingestReveal.style.display = 'flex';
-  ingestReveal.setAttribute('aria-hidden', 'false');
-  ingestRevealText.select();
+function openIngestReveal(secret) {
+  const wrap = document.getElementById('ingest-token-reveal');
+  const input = document.getElementById('ingest-token-reveal-input');
+  if (!wrap || !input) return;
+  input.value = secret;
+  wrap.style.display = 'flex';
+  wrap.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
 }
 
 function closeIngestReveal() {
-  if (!ingestReveal) return;
-  ingestReveal.style.display = 'none';
-  ingestReveal.setAttribute('aria-hidden', 'true');
-  if (ingestRevealText) ingestRevealText.value = '';
+  const wrap = document.getElementById('ingest-token-reveal');
+  const input = document.getElementById('ingest-token-reveal-input');
+  if (wrap) {
+    wrap.style.display = 'none';
+    wrap.setAttribute('aria-hidden', 'true');
+  }
+  if (input) input.value = '';
 }
 
 function formatIngestCreatedAt(iso) {
@@ -693,8 +696,22 @@ async function loadIngestTokens() {
 async function issueIngestToken() {
   if (!state.canEdit || !state.token) return;
   try {
-    const data = await apiCall('/api/ingest-tokens', { method: 'POST' });
-    if (data.token) openIngestReveal(data.token);
+    const data = await apiCall('/api/ingest-tokens', {
+      method: 'POST',
+      body: '{}',
+    });
+    const secret = data?.ingest_secret ?? data?.token;
+    if (!secret) {
+      alert('トークンを受け取れませんでした。サーバーまたは通信経路の設定を確認してください。');
+      await loadIngestTokens();
+      return;
+    }
+    openIngestReveal(secret);
+    try {
+      await navigator.clipboard.writeText(secret);
+    } catch {
+      /* 自動コピー不可環境ではモーダルから手動コピー */
+    }
     await loadIngestTokens();
   } catch (e) {
     alert(e.message || '発行に失敗しました');
@@ -806,12 +823,17 @@ async function init() {
   $('#record-detail-close')?.addEventListener('click', closeDetail);
 
   if (ingestIssueBtn) ingestIssueBtn.addEventListener('click', issueIngestToken);
+  const ingestRevealBackdrop = document.getElementById('ingest-token-reveal-backdrop');
+  const ingestRevealClose = document.getElementById('ingest-token-reveal-close');
+  const ingestCopyBtn = document.getElementById('ingest-token-copy-btn');
   if (ingestRevealBackdrop) ingestRevealBackdrop.addEventListener('click', closeIngestReveal);
   if (ingestRevealClose) ingestRevealClose.addEventListener('click', closeIngestReveal);
-  if (ingestCopyBtn && ingestRevealText) {
+  if (ingestCopyBtn) {
     ingestCopyBtn.addEventListener('click', () => {
-      ingestRevealText.select();
-      navigator.clipboard.writeText(ingestRevealText.value).then(
+      const input = document.getElementById('ingest-token-reveal-input');
+      if (!input) return;
+      input.select();
+      navigator.clipboard.writeText(input.value).then(
         () => {
           ingestCopyBtn.textContent = 'コピーしました';
           setTimeout(() => {

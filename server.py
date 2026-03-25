@@ -524,7 +524,8 @@ async def api_create_ingest_token(user=Depends(get_current_user)):
             (user["id"], token, created),
         )
         tid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    return {"id": tid, "token": token, "created_at": created}
+    # キー名は "token" ではなく ingest_secret（一部プロキシが token フィールドを落とす事例への回避）
+    return {"id": tid, "ingest_secret": token, "created_at": created}
 
 
 @app.delete("/api/ingest-tokens/{token_id}")
