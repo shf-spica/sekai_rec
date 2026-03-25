@@ -476,6 +476,21 @@ function extractJudgments(lines, totalNoteCount) {
             }
         }
     }
+    // Pass 0b: 「PERFECT」「1048」のようにラベル行の直後が数値のみ（別OCRブロック）のケース
+    for (let i = 0; i < lines.length - 1; i++) {
+        const rowNorm = lines[i].text.trim().toUpperCase().replace(/[^A-Z]/g, '');
+        const next = normalizeNumberLineText(lines[i + 1].text);
+        if (!/^[0-9]{1,4}$/.test(next)) continue;
+        const n = parseInt(next, 10);
+        for (const key of keys) {
+            if (inlineJudgments[key] !== null) continue;
+            if (rowNorm === key) {
+                inlineJudgments[key] = n;
+                break;
+            }
+        }
+    }
+    inlineCount = keys.filter((k) => inlineJudgments[k] !== null).length;
     if (inlineCount >= 5) {
         const allValid = Object.values(inlineJudgments).every(v => v !== null);
         if (allValid) {
@@ -494,7 +509,12 @@ function extractJudgments(lines, totalNoteCount) {
         // 改行で分かれた桁（例: 1 / 446）を事前にマージしてから総和マッチングを行う
         const merged = mergeNumberLinesFallback(rawNumberLines);
         const numberLines = merged.map(l => ({ ...l, text: String(l.mergedValue != null ? l.mergedValue : parseInt(l.text, 10) || 0) }));
-        return findJudgmentsBySum(numberLines, totalNoteCount);
+        const bySum = findJudgmentsBySum(numberLines, totalNoteCount);
+        const allNumeric = keys.every((k) => typeof bySum.judgments[k] === 'number');
+        // 総和・ラベル位置の都合で失敗した場合は「不明」で固まらず、下の fullText / 位置ベースへフォールバック
+        if (allNumeric && !bySum.sumError) {
+            return { judgments: filterValidJudgments({ ...bySum.judgments }), sumError: false };
+        }
     }
 
     const judgments = { PERFECT: null, GREAT: null, GOOD: null, BAD: null, MISS: null };
