@@ -224,14 +224,14 @@ def get_ingest_token_string(
 
 def _ingest_ocr_json_error(
     status_code: int,
-    error: str,
+    error_code: str,
     *,
     message: str | None = None,
     parsed: dict | None = None,
     **extra,
 ) -> JSONResponse:
-    """iOS ショートカット向け: ステータスコードを読めなくても JSON の error（bool）・error_code・http_status で分岐できる。"""
-    body: dict = {"error": True, "http_status": status_code, "error_code": error}
+    """iOS ショートカット向け: error は常に文字列（成功相当は別ルートで \"false\"）。失敗時はエラーコードを error に入れる。"""
+    body: dict = {"error": error_code, "http_status": status_code}
     if message is not None:
         body["message"] = message
     if parsed is not None:
@@ -244,12 +244,24 @@ def _ingest_ocr_from_subprocess_http_exception(exc: HTTPException) -> JSONRespon
     code = exc.status_code
     d = exc.detail
     if isinstance(d, dict):
-        merged = {k: v for k, v in d.items() if k != "ok"}
-        if "error" in merged and isinstance(merged["error"], str):
-            merged["error_code"] = merged.pop("error")
+        merged = {k: v for k, v in d.items() if k not in ("ok", "error", "error_code", "http_status")}
+        if isinstance(d.get("error_code"), str):
+            err_str = d["error_code"]
+        elif isinstance(d.get("error"), str) and d["error"] != "false":
+            err_str = d["error"]
+        else:
+            err_str = (
+                "postprocess_failed"
+                if code == 500
+                else "node_unavailable"
+                if code == 503
+                else "postprocess_timeout"
+                if code == 504
+                else "postprocess_error"
+            )
         return JSONResponse(
             status_code=code,
-            content={"error": True, "http_status": code, **merged},
+            content={"error": err_str, "http_status": code, **merged},
         )
     err = (
         "postprocess_failed"
@@ -506,7 +518,7 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
 @app.get("/api/ingest/ping")
 async def api_ingest_ping_get():
     """TLS・DNS・プロキシの到達テスト（認証なし・即応答）。ショートカットで GET できるか試す用。"""
-    return {"error": False, "http_status": 200}
+    return {"error": "false", "http_status": 200}
 
 
 @app.post("/api/ingest/ping")
@@ -519,7 +531,7 @@ async def api_ingest_ping_post(ingest_token: str | None = Depends(get_ingest_tok
         )
     if _resolve_user_id_for_ingest_token(ingest_token) is None:
         raise HTTPException(status_code=401, detail="Invalid ingest token")
-    return {"error": False, "http_status": 200}
+    return {"error": "false", "http_status": 200}
 
 
 @app.get("/api/ingest/ocr-text")
@@ -549,7 +561,7 @@ async def api_ingest_ocr_text_probe():
             "503": "Node なし",
             "504": "postprocess タイムアウト",
         },
-        "response_body_shortcuts": "JSON 先頭レベルに常に error（bool: 成功 false / 失敗 true）と http_status（int）。失敗時は error_code（文字列）。ショートカットはここで分岐可能。",
+        "response_body_shortcuts": "JSON 先頭レベルに常に error（文字列）と http_status（int）。成功時 error は \"false\"、失敗時はエラーコード文字列。ショートカットはここで分岐可能。",
     }
 
 
@@ -564,16 +576,16 @@ async def api_ingest_ocr_text(
 
     taken_at（任意）: 主に "yyyy/mm/dd hh:mm"（iOS からその形式で来る想定）。ISO 8601 も可。
 
-    レスポンス JSON は先頭レベルに常に error（bool）・http_status（int）を含む（ショートカットでステータス行が使えない場合用）。
-    成功時 error は false。失敗時 error は true で error_code にコード文字列（例: song_not_identified）。
+    レスポンス JSON は先頭レベルに常に error（文字列）・http_status（int）を含む（ショートカットでステータス行が使えない場合用）。
+    成功時 error は \"false\"。失敗時 error にエラーコード（例: song_not_identified）。
 
     返りうる HTTP ステータス（http_status と一致）:
-      200 成功（error: false）
-      400 full_text が空、taken_at が解釈不能（error_code: empty_full_text / bad_taken_at）
-      401 トークン（error_code: missing_token / invalid_token）
-      404 曲特定（error_code: song_not_identified / missing_song_id）
-      422 判定など（error_code: judgments_invalid / incomplete_judgments / invalid_point / bad_song_id）
-      500 内部・後処理（error_code: internal / postprocess_failed 等）
+      200 成功（error: \"false\"）
+      400 full_text が空、taken_at が解釈不能（error: empty_full_text / bad_taken_at）
+      401 トークン（error: missing_token / invalid_token）
+      404 曲特定（error: song_not_identified / missing_song_id）
+      422 判定など（error: judgments_invalid / incomplete_judgments / invalid_point / bad_song_id）
+      500 内部・後処理（error: internal / postprocess_failed 等）
       503 / 504 Node 関連
 
     リクエスト JSON の形エラーは FastAPI 標準の 422 になり、error フィールドは付かないことがある。
@@ -615,9 +627,8 @@ async def api_ingest_ocr_text(
             return JSONResponse(
                 status_code=404,
                 content={
-                    "error": True,
+                    "error": "song_not_identified",
                     "http_status": 404,
-                    "error_code": "song_not_identified",
                     "parsed": parsed,
                 },
             )
@@ -625,9 +636,8 @@ async def api_ingest_ocr_text(
             return JSONResponse(
                 status_code=422,
                 content={
-                    "error": True,
+                    "error": "judgments_invalid",
                     "http_status": 422,
-                    "error_code": "judgments_invalid",
                     "parsed": parsed,
                 },
             )
@@ -637,9 +647,8 @@ async def api_ingest_ocr_text(
             return JSONResponse(
                 status_code=404,
                 content={
-                    "error": True,
+                    "error": "missing_song_id",
                     "http_status": 404,
-                    "error_code": "missing_song_id",
                     "parsed": parsed,
                 },
             )
@@ -650,9 +659,8 @@ async def api_ingest_ocr_text(
             return JSONResponse(
                 status_code=422,
                 content={
-                    "error": True,
+                    "error": "bad_song_id",
                     "http_status": 422,
-                    "error_code": "bad_song_id",
                     "songId": song_id,
                     "parsed": parsed,
                 },
@@ -664,9 +672,8 @@ async def api_ingest_ocr_text(
                 return JSONResponse(
                     status_code=422,
                     content={
-                        "error": True,
+                        "error": "incomplete_judgments",
                         "http_status": 422,
-                        "error_code": "incomplete_judgments",
                         "parsed": parsed,
                     },
                 )
@@ -676,9 +683,8 @@ async def api_ingest_ocr_text(
             return JSONResponse(
                 status_code=422,
                 content={
-                    "error": True,
+                    "error": "invalid_point",
                     "http_status": 422,
-                    "error_code": "invalid_point",
                     "parsed": parsed,
                 },
             )
@@ -699,7 +705,7 @@ async def api_ingest_ocr_text(
             out = _upsert_user_record(conn, user_id, rec)
         return JSONResponse(
             status_code=200,
-            content={"error": False, "http_status": 200, **out, "parsed": parsed},
+            content={"error": "false", "http_status": 200, **out, "parsed": parsed},
         )
     except Exception as e:
         logger.exception("api_ingest_ocr_text failed")
