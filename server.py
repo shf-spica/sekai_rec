@@ -209,6 +209,19 @@ def _bearer_token(authorization: str | None) -> str | None:
     return authorization[7:].strip() or None
 
 
+def get_ingest_token_string(
+    authorization: str | None = Header(None),
+    x_ingest_token: str | None = Header(None, alias="X-Ingest-Token"),
+) -> str | None:
+    """POST で Authorization がプロキシにより落ちる場合に X-Ingest-Token を使える。"""
+    t = _bearer_token(authorization)
+    if t:
+        return t
+    if x_ingest_token and str(x_ingest_token).strip():
+        return str(x_ingest_token).strip()
+    return None
+
+
 def _resolve_user_id_for_ingest_token(token: str) -> int | None:
     """記録取得用 api_keys とは別テーブル ingest_tokens のみを参照する。"""
     with get_db() as conn:
@@ -422,12 +435,14 @@ async def api_ingest_ping_get():
 
 
 @app.post("/api/ingest/ping")
-async def api_ingest_ping_post(authorization: str | None = Header(None)):
+async def api_ingest_ping_post(ingest_token: str | None = Depends(get_ingest_token_string)):
     """ingest トークン付き POST が届くかだけ試す（Node や JSON 本文パースは使わない）。"""
-    token = _bearer_token(authorization)
-    if not token:
-        raise HTTPException(status_code=401, detail="Authorization: Bearer <ingest_token> required")
-    if _resolve_user_id_for_ingest_token(token) is None:
+    if not ingest_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization: Bearer <ingest_token> またはヘッダー X-Ingest-Token: <ingest_token>",
+        )
+    if _resolve_user_id_for_ingest_token(ingest_token) is None:
         raise HTTPException(status_code=401, detail="Invalid ingest token")
     return {"ok": True}
 
@@ -441,7 +456,8 @@ async def api_ingest_ocr_text_probe():
         "ping_get": "/api/ingest/ping",
         "ping_post": "/api/ingest/ping",
         "headers": {
-            "Authorization": "Bearer <ingest_tokens で発行したトークン（JWT ログインとは別）>",
+            "Authorization": "Bearer <ingest_token>（POST だけ失敗する場合は X-Ingest-Token に同じ値を入れて試す）",
+            "X-Ingest-Token": "ingest_token のみ（Authorization の代替。プロキシが Bearer を落とすとき用）",
             "Content-Type": "application/json",
         },
         "body": {
@@ -454,18 +470,20 @@ async def api_ingest_ocr_text_probe():
 @app.post("/api/ingest/ocr-text")
 async def api_ingest_ocr_text(
     body: IngestOcrTextBody,
-    authorization: str | None = Header(None),
+    ingest_token: str | None = Depends(get_ingest_token_string),
 ):
     """
     モバイル取り込み専用トークン（ingest_tokens テーブル）で認証。
-    GET /api/external/records 用の api_keys とは別物。Authorization: Bearer <ingest_token>
+    Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>
 
     taken_at（任意）: 主に "yyyy/mm/dd hh:mm"（iOS からその形式で来る想定）。ISO 8601 も可。
     """
-    token = _bearer_token(authorization)
-    if not token:
-        raise HTTPException(status_code=401, detail="Authorization: Bearer <ingest_token> required")
-    user_id = _resolve_user_id_for_ingest_token(token)
+    if not ingest_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
+        )
+    user_id = _resolve_user_id_for_ingest_token(ingest_token)
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid ingest token")
 
