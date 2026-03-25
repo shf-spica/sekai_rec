@@ -9,6 +9,8 @@ const state = {
   records: [],
   pageUsername: null,
   canEdit: false,
+  /** Lv. フィルタ: 'all' | レベル数値の文字列 */
+  levelFilter: 'all',
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -20,6 +22,8 @@ const contentEl = $('#records-content');
 const groupsEl = $('#records-groups');
 const emptyEl = $('#records-empty');
 const recordsCountEl = $('#records-count');
+const levelFilterWrap = $('#records-level-filter-wrap');
+const levelSelect = $('#records-level-select');
 
 // Manual entry (mypage)
 const manualEntryBtn = $('#manual-entry-link');
@@ -367,14 +371,56 @@ function calcPointMinus(record) {
   return -1 * (g + good * 2 + b * 3 + m * 3);
 }
 
+function populateLevelFilterOptions(groups) {
+  if (!levelSelect || !levelFilterWrap) return;
+  const levels = groups.map((g) => g.playLevel);
+  const prev = state.levelFilter;
+  const opts = ['<option value="all">すべて</option>'].concat(
+    levels.map((lv) => {
+      const label = lv === 0 ? 'Lv.0（譜面Lv.未設定）' : `Lv.${lv}`;
+      return `<option value="${lv}">${escapeHtml(label)}</option>`;
+    }),
+  );
+  levelSelect.innerHTML = opts.join('');
+  const stillValid = prev === 'all' || levels.some((l) => String(l) === String(prev));
+  state.levelFilter = stillValid ? prev : 'all';
+  levelSelect.value = state.levelFilter;
+  levelFilterWrap.style.display = '';
+  levelFilterWrap.setAttribute('aria-hidden', 'false');
+}
+
+function applyLevelFilter() {
+  if (!groupsEl) return;
+  const val = state.levelFilter;
+  groupsEl.querySelectorAll('.records-level-section').forEach((sec) => {
+    const lv = sec.dataset.level;
+    const show = val === 'all' || String(lv) === String(val);
+    sec.style.display = show ? '' : 'none';
+  });
+}
+
+function bindLevelFilterOnce() {
+  if (!levelSelect || levelSelect.dataset.bound) return;
+  levelSelect.dataset.bound = '1';
+  levelSelect.addEventListener('change', () => {
+    state.levelFilter = levelSelect.value;
+    applyLevelFilter();
+  });
+}
+
 function renderGroups() {
   updateRecordsCount();
   const groups = buildSlotsByLevel();
   if (groups.length === 0) {
     contentEl.style.display = 'none';
     emptyEl.style.display = 'block';
+    if (levelFilterWrap) {
+      levelFilterWrap.style.display = 'none';
+      levelFilterWrap.setAttribute('aria-hidden', 'true');
+    }
     return;
   }
+  populateLevelFilterOptions(groups);
   emptyEl.style.display = 'none';
   contentEl.style.display = 'block';
 
@@ -455,6 +501,8 @@ function renderGroups() {
   groupsEl.querySelectorAll('.record-card').forEach((btn) => {
     btn.addEventListener('click', () => openDetail(btn));
   });
+
+  applyLevelFilter();
 }
 
 /**
@@ -830,6 +878,7 @@ async function init() {
   }
 
   loadingEl.style.display = 'none';
+  bindLevelFilterOnce();
   renderGroups();
 
   if (manualEntryBtn) manualEntryBtn.addEventListener('click', openManualModal);
