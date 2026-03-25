@@ -322,22 +322,54 @@ def _upsert_user_record(conn: sqlite3.Connection, user_id: int, body: RecordBody
     return {"saved": True}
 
 
+_NODE_BIN = (os.environ.get("NODE_BIN", "node") or "node").strip()
+
+
+def _resolved_node_executable() -> str:
+    cmd = _NODE_BIN
+    if os.path.isfile(cmd):
+        return cmd
+    w = shutil.which(cmd)
+    if w:
+        return w
+    raise HTTPException(
+        status_code=503,
+        detail="Node.js が見つかりません。サーバーに Node を入れるか、環境変数 NODE_BIN にフルパスを設定してください。",
+    )
+
+
 def _run_parse_ocr_postprocess(full_text: str) -> dict:
-    if not shutil.which("node"):
-        raise HTTPException(status_code=503, detail="Node.js is required for OCR text parsing")
+    node_cmd = _resolved_node_executable()
     if not _PARSE_OCR_CLI.is_file():
         raise HTTPException(status_code=500, detail="parse_ocr_cli.mjs not found")
-    proc = subprocess.run(
-        ["node", str(_PARSE_OCR_CLI)],
-        input=json.dumps({"fullText": full_text}),
-        text=True,
-        capture_output=True,
-        timeout=120,
-        cwd=str(_ROOT),
-    )
+    try:
+        payload = json.dumps({"fullText": full_text}, ensure_ascii=False)
+        proc = subprocess.run(
+            [node_cmd, str(_PARSE_OCR_CLI)],
+            input=payload,
+            text=True,
+            capture_output=True,
+            timeout=120,
+            cwd=str(_ROOT),
+            env={**os.environ, "NODE_NO_WARNINGS": "1"},
+        )
+    except subprocess.TimeoutExpired:
+        logger.error("parse_ocr_cli timed out after 120s")
+        raise HTTPException(
+            status_code=504,
+            detail="OCR text postprocess timed out (text too long or server overload)",
+        ) from None
+    except FileNotFoundError as e:
+        logger.error("node executable not found: %s", e)
+        raise HTTPException(status_code=503, detail=f"Node.js not executable: {node_cmd}") from e
     if proc.returncode != 0:
-        logger.error("parse_ocr_cli failed: %s", proc.stderr or proc.stdout)
-        raise HTTPException(status_code=500, detail="OCR text postprocess failed")
+        err = (proc.stderr or proc.stdout or "").strip()
+        logger.error("parse_ocr_cli failed rc=%s: %s", proc.returncode, err[:2000])
+        hint = err[:400].replace("\n", " ") if err else "no stderr"
+        raise HTTPException(
+            status_code=500,
+            detail=f"OCR postprocess failed: {hint}",
+        )
     try:
         return json.loads(proc.stdout)
     except json.JSONDecodeError as e:
