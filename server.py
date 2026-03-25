@@ -348,6 +348,8 @@ def _run_parse_ocr_postprocess(full_text: str) -> dict:
             [node_cmd, str(_PARSE_OCR_CLI)],
             input=payload,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             capture_output=True,
             timeout=120,
             cwd=str(_ROOT),
@@ -510,69 +512,86 @@ async def api_ingest_ocr_text(
 
     taken_at（任意）: 主に "yyyy/mm/dd hh:mm"（iOS からその形式で来る想定）。ISO 8601 も可。
     """
-    if not ingest_token:
-        raise HTTPException(
-            status_code=401,
-            detail="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
-        )
-    user_id = _resolve_user_id_for_ingest_token(ingest_token)
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid ingest token")
+    try:
+        if not ingest_token:
+            raise HTTPException(
+                status_code=401,
+                detail="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
+            )
+        user_id = _resolve_user_id_for_ingest_token(ingest_token)
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid ingest token")
 
-    full_text = (body.full_text or "").strip()
-    if not full_text:
-        raise HTTPException(status_code=400, detail="full_text is empty")
+        full_text = (body.full_text or "").strip()
+        if not full_text:
+            raise HTTPException(status_code=400, detail="full_text is empty")
 
-    taken_raw = (body.taken_at or "").strip() or None
-    taken_at = _normalize_taken_at(taken_raw) if taken_raw else None
+        taken_raw = (body.taken_at or "").strip() or None
+        taken_at = _normalize_taken_at(taken_raw) if taken_raw else None
 
-    parsed = _run_parse_ocr_postprocess(full_text)
+        parsed = _run_parse_ocr_postprocess(full_text)
 
-    if parsed.get("songError"):
-        raise HTTPException(
-            status_code=422,
-            detail={"error": "song_not_identified", "parsed": parsed},
-        )
-    if parsed.get("judgmentsSumError"):
-        raise HTTPException(
-            status_code=422,
-            detail={"error": "judgments_invalid", "parsed": parsed},
-        )
-
-    song_id = parsed.get("songId")
-    if song_id is None:
-        raise HTTPException(
-            status_code=422,
-            detail={"error": "missing_song_id", "parsed": parsed},
-        )
-
-    j = parsed.get("judgments") or {}
-    for k in ("PERFECT", "GREAT", "GOOD", "BAD", "MISS"):
-        if not isinstance(j.get(k), int):
+        if parsed.get("songError"):
             raise HTTPException(
                 status_code=422,
-                detail={"error": "incomplete_judgments", "parsed": parsed},
+                detail={"error": "song_not_identified", "parsed": parsed},
+            )
+        if parsed.get("judgmentsSumError"):
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "judgments_invalid", "parsed": parsed},
             )
 
-    difficulty = parsed.get("difficulty") or "master"
-    if not isinstance(parsed.get("point"), int):
-        raise HTTPException(status_code=422, detail={"error": "invalid_point", "parsed": parsed})
+        song_id = parsed.get("songId")
+        if song_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "missing_song_id", "parsed": parsed},
+            )
 
-    rec = RecordBody(
-        song_id=int(song_id),
-        difficulty=str(difficulty),
-        perfect=int(j["PERFECT"]),
-        great=int(j["GREAT"]),
-        good=int(j["GOOD"]),
-        bad=int(j["BAD"]),
-        miss=int(j["MISS"]),
-        point=int(parsed["point"]),
-        taken_at=taken_at,
-    )
+        try:
+            sid = int(song_id)
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "bad_song_id", "songId": song_id, "parsed": parsed},
+            ) from None
 
-    with get_db() as conn:
-        out = _upsert_user_record(conn, user_id, rec)
-    return {**out, "parsed": parsed}
+        j = parsed.get("judgments") or {}
+        for k in ("PERFECT", "GREAT", "GOOD", "BAD", "MISS"):
+            if not isinstance(j.get(k), int):
+                raise HTTPException(
+                    status_code=422,
+                    detail={"error": "incomplete_judgments", "parsed": parsed},
+                )
+
+        difficulty = parsed.get("difficulty") or "master"
+        if not isinstance(parsed.get("point"), int):
+            raise HTTPException(status_code=422, detail={"error": "invalid_point", "parsed": parsed})
+
+        rec = RecordBody(
+            song_id=sid,
+            difficulty=str(difficulty),
+            perfect=int(j["PERFECT"]),
+            great=int(j["GREAT"]),
+            good=int(j["GOOD"]),
+            bad=int(j["BAD"]),
+            miss=int(j["MISS"]),
+            point=int(parsed["point"]),
+            taken_at=taken_at,
+        )
+
+        with get_db() as conn:
+            out = _upsert_user_record(conn, user_id, rec)
+        return {**out, "parsed": parsed}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("api_ingest_ocr_text failed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"ingest_internal: {type(e).__name__}: {e}",
+        ) from e
 
 
 @app.get("/api/ingest-tokens")
