@@ -311,11 +311,10 @@ function mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount) {
 }
 
 /**
- * 判定ラベル（PERFECT, GREAT 等）は画面上で連続せず一定の順で並ぶため、
- * ラベルのY位置と数字グループのY位置から対応づける
- * @param {Object} labelPositions - 各判定キーワードの行Y（未指定時は上から PERFECT, GREAT, GOOD, BAD, MISS の順を仮定）
+ * プロセカの結果画面は上から常に PERFECT → GREAT → GOOD → BAD → MISS の固定順。
+ * 数字行を5区間に分けた各ブロックの平均Yで上から並べ、i番目を i番目の判定に対応づける。
  */
-function assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions) {
+function assignByPosition(numberLines, five, s1, s2, s3, s4) {
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
     const ranges = [[0, s1], [s1, s2], [s2, s3], [s3, s4], [s4, numberLines.length]];
     const groupPositions = ranges.map(([start, end]) => {
@@ -329,18 +328,14 @@ function assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions) {
         return n > 0 ? sum / n : 0;
     });
     const groupIndicesByY = [0, 1, 2, 3, 4].sort((a, b) => groupPositions[a] - groupPositions[b]);
-    const keysByY = labelPositions && typeof labelPositions === 'object'
-        ? [...keys].sort((a, b) => (labelPositions[a] ?? 9999) - (labelPositions[b] ?? 9999))
-        : keys;
-    return Object.fromEntries(keysByY.map((k, i) => [k, five[groupIndicesByY[i]]]));
+    return Object.fromEntries(keys.map((k, i) => [k, five[groupIndicesByY[i]]]));
 }
 
 /**
  * 数字行から、総和が totalNoteCount と一致する5数を探し、
- * ラベル行のY位置と数字グループのY位置から PERFECT/GREAT/GOOD/BAD/MISS に割り当てる
- * @param {Object} labelPositions - 各判定キーワードが含まれる行のY（extractJudgments で取得）
+ * 数字グループの上から順を PERFECT … MISS の固定順に割り当てる
  */
-function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
+function findJudgmentsBySum(numberLines, totalNoteCount) {
     const texts = numberLines.map(l => l.text.trim());
     const K = texts.length;
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
@@ -353,7 +348,7 @@ function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
     for (const [s1, s2, s3, s4] of partitionIntoFive(K)) {
         let five = mergePartitionAndMatch(texts, s1, s2, s3, s4, totalNoteCount);
         if (five) {
-            const judgments = assignByPosition(numberLines, five, s1, s2, s3, s4, labelPositions);
+            const judgments = assignByPosition(numberLines, five, s1, s2, s3, s4);
             // PERFECT が最大でないケースはほぼあり得ないのでエラー扱い
             const vals = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(k => judgments[k]);
             const max = Math.max(...vals);
@@ -382,7 +377,7 @@ function findJudgmentsBySum(numberLines, totalNoteCount, labelPositions) {
                                     if (arr[pos] + add > 9999 || arr[pos] + add < 0) continue;
                                     arr[pos] += add;
                                     if (arr[0] + arr[1] + arr[2] + arr[3] + arr[4] === totalNoteCount) {
-                                        const judgments = assignByPosition(numberLines, [...arr], s1, s2, s3, s4, labelPositions);
+                                        const judgments = assignByPosition(numberLines, [...arr], s1, s2, s3, s4);
                                         const vals = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'].map(k => judgments[k]);
                                         const max = Math.max(...vals);
                                         if (judgments.PERFECT !== max) {
@@ -463,37 +458,6 @@ function normalizeNumberLineText(t) {
     return s;
 }
 
-/** 全行から判定キーワード（PERFECT, GREAT 等）が含まれる行のY位置を取得。表示順の補正に使う */
-function getLabelPositions(lines) {
-    const judgmentKeywords = {
-        'PERFECT': ['PERFECT', 'PEREFCT', 'PERFT'],
-        'GREAT': ['GREAT', 'GRET', 'GREA'],
-        'GOOD': ['GOOD', 'GO0D', 'COON', 'GOO'],
-        'BAD': ['BAD', '8AD', 'BA0'],
-        'MISS': ['MISS', 'M1SS']
-    };
-    const positions = {};
-    for (const line of lines) {
-        const text = line.text.toUpperCase();
-        const y = line.y ?? line.readingOrder ?? 0;
-        for (const [key, aliases] of Object.entries(judgmentKeywords)) {
-            if (positions[key] != null) continue;
-            if (aliases.some(a => text.includes(a))) {
-                positions[key] = y;
-                break;
-            }
-            const words = text.split(/[^A-Z0-9]/).filter(w => w.length >= 3);
-            for (const word of words) {
-                if (similarity(word, key) > 0.6) {
-                    positions[key] = y;
-                    break;
-                }
-            }
-        }
-    }
-    return positions;
-}
-
 function extractJudgments(lines, totalNoteCount) {
     const keys = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS'];
 
@@ -530,8 +494,7 @@ function extractJudgments(lines, totalNoteCount) {
         // 改行で分かれた桁（例: 1 / 446）を事前にマージしてから総和マッチングを行う
         const merged = mergeNumberLinesFallback(rawNumberLines);
         const numberLines = merged.map(l => ({ ...l, text: String(l.mergedValue != null ? l.mergedValue : parseInt(l.text, 10) || 0) }));
-        const labelPositions = getLabelPositions(lines);
-        return findJudgmentsBySum(numberLines, totalNoteCount, labelPositions);
+        return findJudgmentsBySum(numberLines, totalNoteCount);
     }
 
     const judgments = { PERFECT: null, GREAT: null, GOOD: null, BAD: null, MISS: null };
