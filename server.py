@@ -482,7 +482,7 @@ def _run_parse_ocr_postprocess(full_text: str) -> dict:
         raise HTTPException(status_code=500, detail="Invalid postprocess output") from e
 
 
-async def _encode_access_token(user_id: int) -> str:
+def _encode_access_token(user_id: int) -> str:
     """python-jose / 環境によって jwt.encode が bytes を返すことがあるため JSON 用に str にそろえる。"""
     raw = jwt.encode(
         {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
