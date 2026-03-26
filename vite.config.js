@@ -23,7 +23,16 @@ export default defineConfig({
           };
           if (req.method === 'GET') {
             if (url === '/' || url === '') {
-              if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
+              const homePath = path.resolve(process.cwd(), 'home.html');
+              try {
+                const html = fs.readFileSync(homePath, 'utf-8');
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.end(html);
+                return;
+              } catch (e) {
+                next(e);
+                return;
+              }
             }
             if (/^\/records\/[^/]+\/?$/.test(url)) {
               // /records/me は FastAPI のリダイレクト（プロキシへ回す）
@@ -52,9 +61,18 @@ export default defineConfig({
             }
           };
           const distRecords = path.resolve(process.cwd(), 'dist', 'records.html');
+          const distHome = path.resolve(process.cwd(), 'dist', 'home.html');
           if (req.method === 'GET') {
             if (url === '/' || url === '') {
-              if (serveRecordsHtml(distRecords)) return;
+              try {
+                const html = fs.readFileSync(distHome, 'utf-8');
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                res.end(html);
+                return;
+              } catch (e) {
+                next(e);
+                return;
+              }
             }
             if (/^\/records\/[^/]+\/?$/.test(url)) {
               if (url === '/records/me' || url === '/records/me/') {
@@ -81,6 +99,7 @@ export default defineConfig({
     // records.html もビルド出力に含める（preview で必要）
     rollupOptions: {
       input: {
+        home: path.resolve(process.cwd(), 'home.html'),
         index: path.resolve(process.cwd(), 'index.html'),
         records: path.resolve(process.cwd(), 'records.html'),
         admin_users: path.resolve(process.cwd(), 'admin-users.html'),
