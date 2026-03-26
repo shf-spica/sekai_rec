@@ -432,11 +432,54 @@ function bindLevelFilterOnce() {
   });
 }
 
-async function refreshRecords() {
+let _recordsEventSource = null;
+let _liveRefreshDebounce = null;
+
+function stopRecordsLiveStream() {
+  if (_recordsEventSource) {
+    _recordsEventSource.close();
+    _recordsEventSource = null;
+  }
+}
+
+/** 記録が変わったとき SSE で受け取り、静かに一覧を取り直す */
+function startRecordsLiveStream() {
+  if (!state.pageUsername || typeof EventSource === 'undefined') return;
+  stopRecordsLiveStream();
+  const url = `/api/public/records/stream?username=${encodeURIComponent(state.pageUsername)}`;
+  try {
+    _recordsEventSource = new EventSource(url);
+    _recordsEventSource.onmessage = (ev) => {
+      try {
+        const d = JSON.parse(ev.data);
+        if (d && d.type === 'records_updated') {
+          if (_liveRefreshDebounce) clearTimeout(_liveRefreshDebounce);
+          _liveRefreshDebounce = setTimeout(() => {
+            _liveRefreshDebounce = null;
+            refreshRecords({ silent: true });
+          }, 400);
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    };
+    _recordsEventSource.onerror = () => {
+      if (_recordsEventSource && _recordsEventSource.readyState === EventSource.CLOSED) {
+        stopRecordsLiveStream();
+        setTimeout(() => startRecordsLiveStream(), 8000);
+      }
+    };
+  } catch (e) {
+    console.warn('EventSource:', e);
+  }
+}
+
+async function refreshRecords(options = {}) {
+  const silent = options.silent === true;
   if (!state.pageUsername) return;
   const btn = recordsRefreshBtn;
   const prevText = btn?.textContent;
-  if (btn) {
+  if (!silent && btn) {
     btn.disabled = true;
     btn.textContent = '更新中…';
   }
@@ -454,9 +497,9 @@ async function refreshRecords() {
     }
   } catch (e) {
     console.error(e);
-    alert(e.message || '記録の更新に失敗しました');
+    if (!silent) alert(e.message || '記録の更新に失敗しました');
   } finally {
-    if (btn) {
+    if (!silent && btn) {
       btn.disabled = false;
       btn.textContent = prevText || '更新';
     }
@@ -939,6 +982,8 @@ async function init() {
     recordsRefreshBtn.addEventListener('click', () => refreshRecords());
   }
   renderGroups();
+  startRecordsLiveStream();
+  window.addEventListener('beforeunload', stopRecordsLiveStream);
 
   if (manualEntryBtn) manualEntryBtn.addEventListener('click', openManualModal);
   if (manualModalBackdrop) manualModalBackdrop.addEventListener('click', closeManualModal);

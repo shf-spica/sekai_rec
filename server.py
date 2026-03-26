@@ -24,7 +24,7 @@ logger = logging.getLogger("prsk_ocr")
 
 from fastapi import FastAPI, Depends, File, Header, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, FileResponse
+from fastapi.responses import JSONResponse, Response, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import AliasChoices, BaseModel, Field
@@ -50,6 +50,21 @@ except ImportError:
     jwt = None
 
 app = FastAPI()
+
+# マイページ用 SSE: 同一プロセス内のみ有効（複数ワーカーでは各ワーカー別々に購読）
+_mypage_sse_subscribers: dict[str, list[asyncio.Queue]] = {}
+
+
+async def notify_mypage_records_updated(username: str) -> None:
+    """記録が変わったユーザーのマイページ購読者へ通知（username は DB のユーザー名と一致すること）。"""
+    if not username:
+        return
+    for q in list(_mypage_sse_subscribers.get(username, [])):
+        try:
+            q.put_nowait(1)
+        except Exception:
+            pass
+
 
 # Auth
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
@@ -512,7 +527,10 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
         raise HTTPException(status_code=401, detail="Login required")
     _require_auth()
     with get_db() as conn:
-        return _upsert_user_record(conn, user["id"], body)
+        out = _upsert_user_record(conn, user["id"], body)
+    if out.get("saved"):
+        await notify_mypage_records_updated(user["username"])
+    return out
 
 
 @app.get("/api/ingest/ping")
@@ -703,6 +721,9 @@ async def api_ingest_ocr_text(
 
         with get_db() as conn:
             out = _upsert_user_record(conn, user_id, rec)
+            urow = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
+        if out.get("saved") and urow:
+            await notify_mypage_records_updated(urow["username"])
         return JSONResponse(
             status_code=200,
             content={"error": "false", "http_status": 200, **out, "parsed": parsed},
@@ -797,6 +818,52 @@ async def api_public_records(username: str):
     return {"user": {"id": user_row["id"], "username": user_row["username"]}, "records": [dict(r) for r in rows]}
 
 
+@app.get("/api/public/records/stream")
+async def api_public_records_stream(username: str):
+    """
+    マイページ用 Server-Sent Events。記録の作成・更新・削除時にイベントを送る。
+    同一オリジンのみ想定。Nginx 利用時はプロキシのバッファリング無効化推奨。
+    注: 複数 uvicorn ワーカーではプロセス間で通知が共有されない（Redis 等が必要）。
+    """
+    with get_db() as conn:
+        user_row = conn.execute(
+            "SELECT username FROM users WHERE username = ?", (username,)
+        ).fetchone()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="User not found")
+    canonical = user_row["username"]
+
+    async def event_gen():
+        queue: asyncio.Queue = asyncio.Queue()
+        subs = _mypage_sse_subscribers.setdefault(canonical, [])
+        subs.append(queue)
+        try:
+            yield f"data: {json.dumps({'type': 'hello'})}\n\n"
+            while True:
+                try:
+                    await asyncio.wait_for(queue.get(), timeout=25.0)
+                    yield f"data: {json.dumps({'type': 'records_updated'})}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+        finally:
+            try:
+                subs.remove(queue)
+            except ValueError:
+                pass
+            if not subs:
+                _mypage_sse_subscribers.pop(canonical, None)
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 def _require_admin(user):
     if user is None:
         raise HTTPException(status_code=401, detail="Login required")
@@ -826,6 +893,8 @@ async def api_delete_record(song_id: int, difficulty: str, user=Depends(get_curr
             (user["id"], song_id, difficulty_norm),
         )
         deleted = cur.rowcount > 0
+    if deleted:
+        await notify_mypage_records_updated(user["username"])
     return {"deleted": deleted}
 
 
