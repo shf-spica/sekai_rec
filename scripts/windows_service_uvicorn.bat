@@ -61,7 +61,8 @@ if errorlevel 1 (
 )
 
 echo ----- uvicorn ----->>"%T%"
-%PYCMD% -u -m uvicorn server:app --host 0.0.0.0 --port 8000>>"%T%" 2>&1
+REM SSE 等の長寿命接続でも、停止後にこの秒数で強制終了（次回起動でポート占有を防ぐ）
+%PYCMD% -u -m uvicorn server:app --host 0.0.0.0 --port 8000 --timeout-graceful-shutdown 15>>"%T%" 2>&1
 echo uvicorn exit=%errorlevel%>>"%T%"
 type "%T%">>"%LOG%" 2>nul
 exit /b %errorlevel%

@@ -9,9 +9,8 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
-import sys
 import threading
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
@@ -30,7 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("prsk_ocr")
 
-from fastapi import FastAPI, Depends, File, Header, UploadFile, HTTPException
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -54,10 +53,28 @@ except ImportError:
     bcrypt = None
     jwt = None
 
-app = FastAPI()
-
 # マイページ用 SSE: 同一プロセス内のみ有効（複数ワーカーでは各ワーカー別々に購読）
 _mypage_sse_subscribers: dict[str, list[asyncio.Queue]] = {}
+_sse_shutdown: asyncio.Event | None = None
+
+
+@asynccontextmanager
+async def _app_lifespan(app: FastAPI):
+    """停止時に SSE を即座に終了させ、uvicorn が長時間「接続終了待ち」でブロックしないようにする。"""
+    global _sse_shutdown
+    _sse_shutdown = asyncio.Event()
+    yield
+    if _sse_shutdown is not None:
+        _sse_shutdown.set()
+    for subs in list(_mypage_sse_subscribers.values()):
+        for q in subs:
+            try:
+                q.put_nowait(None)
+            except Exception:
+                pass
+
+
+app = FastAPI(lifespan=_app_lifespan)
 
 
 async def notify_mypage_records_updated(username: str) -> None:
@@ -824,7 +841,7 @@ async def api_public_records(username: str):
 
 
 @app.get("/api/public/records/stream")
-async def api_public_records_stream(username: str):
+async def api_public_records_stream(request: Request, username: str):
     """
     マイページ用 Server-Sent Events。記録の作成・更新・削除時にイベントを送る。
     同一オリジンのみ想定。Nginx 利用時はプロキシのバッファリング無効化推奨。
@@ -837,18 +854,50 @@ async def api_public_records_stream(username: str):
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
     canonical = user_row["username"]
+    shutdown_ev = _sse_shutdown
 
     async def event_gen():
         queue: asyncio.Queue = asyncio.Queue()
         subs = _mypage_sse_subscribers.setdefault(canonical, [])
         subs.append(queue)
+
+        async def until_disconnected():
+            while True:
+                if await request.is_disconnected():
+                    return
+                await asyncio.sleep(0.25)
+
         try:
             yield f"data: {json.dumps({'type': 'hello'})}\n\n"
             while True:
-                try:
-                    await asyncio.wait_for(queue.get(), timeout=25.0)
+                t_get = asyncio.create_task(queue.get())
+                t_disc = asyncio.create_task(until_disconnected())
+                t_ping = asyncio.create_task(asyncio.sleep(25.0))
+                wait_tasks: list[asyncio.Task] = [t_get, t_disc, t_ping]
+                t_shutdown: asyncio.Task | None = None
+                if shutdown_ev is not None:
+                    t_shutdown = asyncio.create_task(shutdown_ev.wait())
+                    wait_tasks.append(t_shutdown)
+
+                done, pending = await asyncio.wait(wait_tasks, return_when=asyncio.FIRST_COMPLETED)
+                for p in pending:
+                    p.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+
+                if t_shutdown is not None and t_shutdown in done:
+                    break
+                if t_disc in done:
+                    break
+                if t_get in done:
+                    try:
+                        item = t_get.result()
+                    except asyncio.CancelledError:
+                        break
+                    if item is None:
+                        break
                     yield f"data: {json.dumps({'type': 'records_updated'})}\n\n"
-                except asyncio.TimeoutError:
+                    continue
+                if t_ping in done:
                     yield ": ping\n\n"
         finally:
             try:
@@ -1067,20 +1116,17 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-# Windows サービス（Session 0）では import 時の cv2 / Paddle / GPU で即死し 1067 になりやすい。
-# cv2・numpy は /ocr 内のみ遅延 import。Paddle は初回 OCR 時。GPU 既定は下記 _paddle_use_gpu。
+# Windows サービス（Session 0）では import 時の cv2 などで即死し 1067 になりやすい。
+# cv2・numpy は /ocr 内のみ遅延 import。Paddle は初回 OCR 時（use_gpu は PRSK_OCR_USE_GPU で制御）。
 _paddle_lock = threading.Lock()
 _paddle_ocr = None
 
 
 def _paddle_use_gpu() -> bool:
-    """PRSK_OCR_USE_GPU 未設定時: Windows は CPU 既定（サービスで GPU 初期化が落ちやすい）。他 OS は GPU 試行。"""
     v = (os.environ.get("PRSK_OCR_USE_GPU") or "").strip().lower()
-    if v in ("0", "false", "no", "off"):
-        return False
-    if v in ("1", "true", "yes", "on"):
+    if not v:
         return True
-    return sys.platform != "win32"
+    return v in ("1", "true", "yes", "on")
 
 
 def _get_paddle_ocr():
@@ -1246,4 +1292,6 @@ async def mypage_slash(username: str):
     return await mypage(username)
 
 app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")
+
+logger.info("server module load finished")
 
