@@ -42,12 +42,17 @@ async function init() {
     const authUser = $('#auth-user');
     if (authUser) authUser.textContent = state.user.username;
 
+    const titleLink = document.querySelector('a.title-link');
+    if (titleLink) {
+      titleLink.href = `/records/${encodeURIComponent(state.user.username)}`;
+    }
+
     const logoutBtn = $('#auth-logout-btn');
     if (logoutBtn) {
       logoutBtn.style.display = '';
       logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('prsk_ocr_token');
-        window.location.href = '/mypage';
+        window.location.href = '/records/me';
       });
     }
 

@@ -5,6 +5,7 @@ import base64
 import json
 import logging
 import os
+from urllib.parse import quote
 import secrets
 import shutil
 import sqlite3
@@ -40,7 +41,13 @@ logger = logging.getLogger("prsk_ocr")
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, FileResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import AliasChoices, BaseModel, Field
@@ -102,6 +109,8 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 7  # 7 days
 security = HTTPBearer(auto_error=False)
+# 未ログイン時 /records/me のリダイレクト先（環境で上書き可）
+DEFAULT_RECORDS_USERNAME = (os.environ.get("DEFAULT_RECORDS_USERNAME") or "shf_spica").strip() or "shf_spica"
 
 
 def _hash_password(password: str) -> str:
@@ -1287,14 +1296,17 @@ async def mypage_root():
     return FileResponse(path)
 
 
-@app.get("/mypage")
-@app.get("/mypage/")
-async def mypage_alias():
-    """マイページ用の固定 URL（プロキシが / だけ index.html を返す場合の回避・リンク用）。"""
-    path = Path(_static_dir) / "records.html"
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="records.html not found")
-    return FileResponse(path)
+@app.get("/records/me")
+@app.get("/records/me/")
+async def records_me_redirect(user=Depends(get_current_user)):
+    """マイページ入口。ブラウザの <a> では JWT を送れないため、未ログイン時は既定ユーザーへ。"""
+    if user:
+        return RedirectResponse(
+            url=f"/records/{quote(user['username'], safe='')}",
+            status_code=307,
+        )
+    u = DEFAULT_RECORDS_USERNAME
+    return RedirectResponse(url=f"/records/{quote(u, safe='')}", status_code=307)
 
 
 @app.get("/records/{username}")

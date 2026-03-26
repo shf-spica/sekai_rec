@@ -25,10 +25,11 @@ export default defineConfig({
             if (url === '/' || url === '') {
               if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
             }
-            if (url === '/mypage' || url === '/mypage/') {
-              if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
-            }
             if (/^\/records\/[^/]+\/?$/.test(url)) {
+              // /records/me は FastAPI のリダイレクト（プロキシへ回す）
+              if (url === '/records/me' || url === '/records/me/') {
+                return next();
+              }
               if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
             }
           }
@@ -55,10 +56,10 @@ export default defineConfig({
             if (url === '/' || url === '') {
               if (serveRecordsHtml(distRecords)) return;
             }
-            if (url === '/mypage' || url === '/mypage/') {
-              if (serveRecordsHtml(distRecords)) return;
-            }
             if (/^\/records\/[^/]+\/?$/.test(url)) {
+              if (url === '/records/me' || url === '/records/me/') {
+                return next();
+              }
               if (serveRecordsHtml(distRecords)) return;
             }
           }

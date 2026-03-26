@@ -1158,7 +1158,7 @@ function renderAuthArea() {
     authLoginBtn.style.display = '';
     authRegisterBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = '/mypage';
+      recordsLink.href = '/records/me';
     }
   }
 }

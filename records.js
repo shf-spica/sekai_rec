@@ -858,16 +858,15 @@ async function issueIngestToken() {
 
 async function init() {
   try {
-    // /records/{username} または トップ /・/mypage から username を決める
+    // /records/{username} または トップ / から username を決める
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
       const candidate = decodeURIComponent(parts[1]);
-      // /records/index.html のような誤ったパスを username と誤認しない
-      if (!/\.html$/i.test(candidate)) {
+      // /records/me はサーバー側リダイレクト用（ユーザー名ではない）
+      if (candidate !== 'me' && !/\.html$/i.test(candidate)) {
         state.pageUsername = candidate;
       }
     }
-    // /mypage はマイページシェル（URL にユーザー名なし。ログイン後に下で pageUsername を埋める）
 
     const dbRes = await fetch('/songDatabase.json');
     if (dbRes.ok) state.songDatabase = await dbRes.json();
@@ -891,6 +890,8 @@ async function init() {
 
     // 公開APIからレコード取得（閲覧は誰でも）
     if (!state.pageUsername) {
+      const titleLink = document.querySelector('a.title-link');
+      if (titleLink) titleLink.href = '/records/me';
       loadingEl.style.display = 'none';
       loginRequiredEl.style.display = 'block';
       contentEl.style.display = 'none';
@@ -910,6 +911,11 @@ async function init() {
     const authUser = $('#auth-user');
     if (authUser) {
       authUser.textContent = state.pageUsername || '';
+    }
+
+    const titleLink = document.querySelector('a.title-link');
+    if (titleLink && state.pageUsername) {
+      titleLink.href = `/records/${encodeURIComponent(state.pageUsername)}`;
     }
 
     if (manualEntryBtn) {
@@ -933,7 +939,7 @@ async function init() {
           state.token = null;
           state.user = null;
           localStorage.removeItem('prsk_ocr_token');
-          window.location.href = '/mypage';
+          window.location.href = '/records/me';
         });
       } else {
         logoutBtn.style.display = 'none';
