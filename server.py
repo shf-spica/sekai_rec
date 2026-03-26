@@ -482,7 +482,19 @@ def _run_parse_ocr_postprocess(full_text: str) -> dict:
         raise HTTPException(status_code=500, detail="Invalid postprocess output") from e
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def _encode_access_token(user_id: int) -> str:
+    """python-jose / 環境によって jwt.encode が bytes を返すことがあるため JSON 用に str にそろえる。"""
+    raw = jwt.encode(
+        {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
+        JWT_SECRET,
+        algorithm=JWT_ALGORITHM,
+    )
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8")
+    return str(raw)
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     _require_auth()
     if not credentials:
         return None
@@ -520,11 +532,7 @@ async def api_register(body: RegisterBody):
                 (username, password_hash, created),
             )
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        token = jwt.encode(
-            {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
-            JWT_SECRET,
-            algorithm=JWT_ALGORITHM,
-        )
+        token = _encode_access_token(user_id)
         return {"access_token": token, "user": {"id": user_id, "username": username}}
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="Username already taken")
@@ -541,11 +549,7 @@ async def api_login(body: LoginBody):
         ).fetchone()
     if not row or not _verify_password(password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    token = jwt.encode(
-        {"sub": str(row["id"]), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
-        JWT_SECRET,
-        algorithm=JWT_ALGORITHM,
-    )
+    token = _encode_access_token(int(row["id"]))
     return {"access_token": token, "user": {"id": row["id"], "username": row["username"]}}
 
 
@@ -1217,15 +1221,6 @@ async def ocr_image(file: UploadFile = File(...)):
 
 # フロント一式を配信（/ocr は上で定義済みのため優先される）
 _static_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-@app.get("/")
-async def mypage_root():
-    """トップをマイページとする（未ログイン時は records.html 内で案内）"""
-    path = Path(_static_dir) / "records.html"
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="records.html not found")
-    return FileResponse(path)
 
 
 @app.get("/records/{username}")

@@ -74,13 +74,26 @@ const manualSubmit = $('#manual-submit');
 // ========================================
 // API (認証付き)
 // ========================================
+/** FastAPI の detail（文字列 or バリデーション配列）を表示用にする */
+function formatApiDetail(detail) {
+  if (detail == null) return '';
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e) => (e && typeof e === 'object' && e.msg != null ? String(e.msg) : JSON.stringify(e)))
+      .join(' / ');
+  }
+  if (typeof detail === 'object') return detail.msg != null ? String(detail.msg) : JSON.stringify(detail);
+  return String(detail);
+}
+
 async function apiCall(path, options = {}) {
   const headers = { ...options.headers, 'Content-Type': 'application/json' };
   if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
   const res = await fetch(path, { ...options, headers });
   const data = res.ok ? await res.json().catch(() => ({})) : null;
   if (!res.ok) {
-    const err = new Error(data?.detail || res.statusText || 'Request failed');
+    const err = new Error(formatApiDetail(data?.detail) || res.statusText || 'Request failed');
     err.status = res.status;
     err.data = data;
     throw err;
@@ -1137,7 +1150,7 @@ function renderAuthArea() {
     authRegisterBtn.style.display = 'none';
     authLogoutBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = '/';
+      recordsLink.href = `/records/${encodeURIComponent(state.user.username)}`;
     }
   } else {
     authUser.style.display = 'none';
@@ -1145,7 +1158,7 @@ function renderAuthArea() {
     authLoginBtn.style.display = '';
     authRegisterBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = '/';
+      recordsLink.href = 'records.html';
     }
   }
 }
@@ -1171,19 +1184,19 @@ function closeAuthModal() {
 async function submitAuth(e) {
   e.preventDefault();
   if (authSubmit) authSubmit.disabled = true;
-  const mode = authModal?.dataset.mode || 'login';
-  const username = (authUsername?.value || '').trim();
-  const password = authPassword?.value || '';
   authError.textContent = '';
-  if (username.length < 2) {
-    authError.textContent = 'ユーザー名は2文字以上です';
-    return;
-  }
-  if (password.length < 6) {
-    authError.textContent = 'パスワードは6文字以上です';
-    return;
-  }
   try {
+    const mode = authModal?.dataset.mode || 'login';
+    const username = (authUsername?.value || '').trim();
+    const password = authPassword?.value || '';
+    if (username.length < 2) {
+      authError.textContent = 'ユーザー名は2文字以上です';
+      return;
+    }
+    if (password.length < 6) {
+      authError.textContent = 'パスワードは6文字以上です';
+      return;
+    }
     const path = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
     const res = await fetch(path, {
       method: 'POST',
@@ -1192,17 +1205,18 @@ async function submitAuth(e) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      authError.textContent = data.detail || res.statusText || '失敗しました';
+      authError.textContent = formatApiDetail(data.detail) || res.statusText || '失敗しました';
       return;
     }
-    if (data.access_token && data.user) {
-      state.token = data.access_token;
+    const token = data.access_token != null ? String(data.access_token) : '';
+    if (token && data.user) {
+      state.token = token;
       state.user = data.user;
       localStorage.setItem('prsk_ocr_token', state.token);
       closeAuthModal();
       renderAuthArea();
     } else {
-      authError.textContent = '応答が不正です';
+      authError.textContent = '応答が不正です（トークンがありません）';
     }
   } catch (err) {
     authError.textContent = err.message || '通信エラー';
@@ -1218,14 +1232,14 @@ async function submitAuth(e) {
 async function init() {
   console.log("Loading song database...");
   try {
-    const res = await fetch('songDatabase.json');
+    const res = await fetch('/songDatabase.json');
     if (res.ok) {
       state.songDatabase = await res.json();
       const n = state.songDatabase?.songs?.length ?? 0;
       console.log(`Loaded songDatabase.json: ${n} songs.`);
     } else {
       console.warn("songDatabase.json not found, trying songs.json");
-      const fallback = await fetch('songs.json');
+      const fallback = await fetch('/songs.json');
       if (fallback.ok) {
         state.songDatabase = await fallback.json();
         console.log(`Loaded songs.json: ${state.songDatabase.length} titles (no totalNoteCount).`);

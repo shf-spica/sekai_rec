@@ -903,7 +903,7 @@ async function issueIngestToken() {
 
 async function init() {
   try {
-    // /records/{username} から username を取得（"/" は URL からは取らず、ログイン済みなら自分の username を使う）
+    // /records/{username} から username を取得
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
       const candidate = decodeURIComponent(parts[1]);
@@ -931,14 +931,14 @@ async function init() {
     // 公開APIからレコード取得（閲覧は誰でも）
     if (!state.pageUsername) {
       if (state.user?.username) {
-        state.pageUsername = state.user.username;
-      } else {
-        loadingEl.style.display = 'none';
-        loginRequiredEl.style.display = 'block';
-        contentEl.style.display = 'none';
-        emptyEl.style.display = 'none';
+        window.location.href = `/records/${encodeURIComponent(state.user.username)}`;
         return;
       }
+      loadingEl.style.display = 'none';
+      loginRequiredEl.style.display = 'block';
+      contentEl.style.display = 'none';
+      emptyEl.style.display = 'none';
+      return;
     }
     const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
     if (!publicRes.ok) {
@@ -976,7 +976,7 @@ async function init() {
           state.token = null;
           state.user = null;
           localStorage.removeItem('prsk_ocr_token');
-          window.location.href = '/';
+          window.location.href = '/index.html';
         });
       } else {
         logoutBtn.style.display = 'none';
