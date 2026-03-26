@@ -1,6 +1,10 @@
 api_key.txt
 ingest_token.txt
 
+# SQLite（コミットすると pull で丸ごと差し替わり、ユーザー行だけ消えたように見える）
+prsk_ocr.db
+*.db
+
 # ログ（リポジトリ直下や bat のリダイレクト先。git pull やマージで衝突しないよう無視）
 *.log
 
