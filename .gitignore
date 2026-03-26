@@ -3,3 +3,6 @@ ingest_token.txt
 
 # ログ（リポジトリ直下や bat のリダイレクト先。git pull やマージで衝突しないよう無視）
 *.log
+
+__pycache__/
+*.py[cod]
