@@ -35,6 +35,8 @@ echo %cd%>>"%T%"
 echo %cd%>>"%LOG%" 2>nul
 
 set PYTHONUNBUFFERED=1
+REM server.py の FileHandler 先（未設定だとリポジトリ直下 prsk_ocr.log → git / ロックで困りやすい）
+if not defined PRSK_OCR_LOG_FILE set "PRSK_OCR_LOG_FILE=%TEMP%\prsk_ocr.log"
 if not defined PRSK_OCR_USE_GPU set PRSK_OCR_USE_GPU=0
 
 echo ----- python on PATH ----->>"%T%"

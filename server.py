@@ -15,13 +15,22 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
+
+def _log_file_path() -> Path:
+    """PRSK_OCR_LOG_FILE があればそのパス（git 作業コピー外を推奨）。未設定は従来どおりリポジトリ直下。"""
+    override = (os.environ.get("PRSK_OCR_LOG_FILE") or "").strip()
+    if override:
+        return Path(override).expanduser()
+    return Path(__file__).resolve().parent / "prsk_ocr.log"
+
+
 _log_handlers = [logging.StreamHandler()]
+_log_path = _log_file_path()
 try:
-    _log_handlers.append(
-        logging.FileHandler(Path(__file__).resolve().parent / "prsk_ocr.log", encoding="utf-8")
-    )
+    _log_path.parent.mkdir(parents=True, exist_ok=True)
+    _log_handlers.append(logging.FileHandler(_log_path, encoding="utf-8"))
 except OSError as e:
-    print(f"[prsk_ocr] log file skipped: {e}", flush=True)
+    print(f"[prsk_ocr] log file skipped ({_log_path}): {e}", flush=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
