@@ -7,7 +7,7 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
@@ -20,7 +20,10 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def _configure_logging() -> None:
-    """コンソールは常に。ファイルは書けない環境（Windows サービス等）ではスキップして起動を続行。"""
+    """コンソールは常に。ファイルは書けない環境（Windows サービス等）ではスキップして起動を続行。
+
+    force=True は使わない（uvicorn 等が先に付けたルートロガーを消してログや起動順に影響するため）。
+    """
     log_path = Path(__file__).resolve().parent / "prsk_ocr.log"
     handlers: list[logging.Handler] = [logging.StreamHandler()]
     try:
@@ -31,7 +34,6 @@ def _configure_logging() -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
         handlers=handlers,
-        force=True,
     )
 
 
@@ -65,7 +67,24 @@ except ImportError:
     bcrypt = None
     jwt = None
 
-app = FastAPI()
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Windows サービスで手動再起動するとき、停止直後にポートが残る原因になりやすい OCR 用スレッドを片付ける。"""
+    yield
+    ex = globals().get("_ocr_executor")
+    if ex is not None:
+        logger.info("Shutting down OCR thread pool")
+        try:
+            try:
+                ex.shutdown(wait=False, cancel_futures=True)
+            except TypeError:
+                ex.shutdown(wait=False)
+        except Exception as e:
+            logger.warning("OCR executor shutdown: %s", e)
+
+
+app = FastAPI(lifespan=_lifespan)
 
 # マイページ用 SSE: 同一プロセス内のみ有効（複数ワーカーでは各ワーカー別々に購読）
 _mypage_sse_subscribers: dict[str, list[asyncio.Queue]] = {}
@@ -1078,22 +1097,13 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-def _init_paddle_ocr() -> PaddleOCR:
-    """GPU は環境変数で制御。初期化失敗時は CPU にフォールバック（Windows サービス・CUDA 非表示時など）。"""
-    want_gpu = _env_bool("PRSK_OCR_USE_GPU", True)
-    kwargs = dict(use_angle_cls=True, lang="japan", use_gpu=want_gpu)
-    try:
-        return PaddleOCR(**kwargs)
-    except Exception as e:
-        if want_gpu:
-            logger.warning("PaddleOCR GPU init failed (%s), retrying with use_gpu=False", e)
-            kwargs["use_gpu"] = False
-            return PaddleOCR(**kwargs)
-        raise
-
-
-# Windows サービスでは PRSK_OCR_USE_GPU=0 を推奨（LOCAL SYSTEM では GPU が使えないことが多い）
-ocr = _init_paddle_ocr()
+# GPU の ON/OFF は PRSK_OCR_USE_GPU（1/true/yes/on）。未設定は従来どおり True。
+# 二重に PaddleOCR() しない（1回目が失敗しても内部状態が残り、2回目で不安定になることがあるため）。
+ocr = PaddleOCR(
+    use_angle_cls=True,
+    lang="japan",
+    use_gpu=_env_bool("PRSK_OCR_USE_GPU", True),
+)
 _ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
