@@ -2,27 +2,6 @@
  * 記録一覧ページ: ログイン済みユーザーの記録を Lv. / 難易度でグループ表示
  */
 
-const LEVEL_FILTER_STORAGE_KEY = 'prsk_records_level_filter';
-
-function loadSavedLevelFilter() {
-  try {
-    const v = sessionStorage.getItem(LEVEL_FILTER_STORAGE_KEY);
-    if (v === 'all') return 'all';
-    if (v != null && /^\d+$/.test(v)) return v;
-  } catch (_) {
-    /* ignore */
-  }
-  return 'all';
-}
-
-function persistLevelFilter() {
-  try {
-    sessionStorage.setItem(LEVEL_FILTER_STORAGE_KEY, state.levelFilter);
-  } catch (_) {
-    /* ignore */
-  }
-}
-
 const state = {
   token: localStorage.getItem('prsk_ocr_token') || null,
   user: null,
@@ -30,8 +9,6 @@ const state = {
   records: [],
   pageUsername: null,
   canEdit: false,
-  /** Lv. フィルタ: 'all' | レベル数値の文字列 */
-  levelFilter: loadSavedLevelFilter(),
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -43,8 +20,6 @@ const contentEl = $('#records-content');
 const groupsEl = $('#records-groups');
 const emptyEl = $('#records-empty');
 const recordsCountEl = $('#records-count');
-const levelFilterWrap = $('#records-level-filter-wrap');
-const levelSelect = $('#records-level-select');
 const recordsRefreshBtn = $('#records-refresh-btn');
 
 // Manual entry (mypage)
@@ -410,42 +385,19 @@ function calcPointMinus(record) {
   return -1 * (g + good * 2 + b * 3 + m * 3);
 }
 
-function populateLevelFilterOptions(groups) {
-  if (!levelSelect || !levelFilterWrap) return;
-  const levels = groups.map((g) => g.playLevel);
-  const prev = state.levelFilter;
-  const opts = ['<option value="all">すべて</option>'].concat(
-    levels.map((lv) => {
-      const label = lv === 0 ? 'Lv.0（譜面Lv.未設定）' : `Lv.${lv}`;
-      return `<option value="${lv}">${escapeHtml(label)}</option>`;
-    }),
-  );
-  levelSelect.innerHTML = opts.join('');
-  const stillValid = prev === 'all' || levels.some((l) => String(l) === String(prev));
-  state.levelFilter = stillValid ? prev : 'all';
-  levelSelect.value = state.levelFilter;
-  persistLevelFilter();
-  levelFilterWrap.style.display = '';
-  levelFilterWrap.setAttribute('aria-hidden', 'false');
-}
-
-function applyLevelFilter() {
+function bindLevelAccordions() {
   if (!groupsEl) return;
-  const val = state.levelFilter;
-  groupsEl.querySelectorAll('.records-level-section').forEach((sec) => {
-    const lv = sec.dataset.level;
-    const show = val === 'all' || String(lv) === String(val);
-    sec.style.display = show ? '' : 'none';
-  });
-}
-
-function bindLevelFilterOnce() {
-  if (!levelSelect || levelSelect.dataset.bound) return;
-  levelSelect.dataset.bound = '1';
-  levelSelect.addEventListener('change', () => {
-    state.levelFilter = levelSelect.value;
-    persistLevelFilter();
-    applyLevelFilter();
+  groupsEl.querySelectorAll('.records-level-toggle').forEach((btn) => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      const next = !expanded;
+      btn.setAttribute('aria-expanded', String(next));
+      const panelId = btn.getAttribute('aria-controls');
+      const panel = panelId ? document.getElementById(panelId) : null;
+      if (panel) panel.hidden = !next;
+    });
   });
 }
 
@@ -529,13 +481,8 @@ function renderGroups() {
   if (groups.length === 0) {
     contentEl.style.display = 'none';
     emptyEl.style.display = 'block';
-    if (levelFilterWrap) {
-      levelFilterWrap.style.display = 'none';
-      levelFilterWrap.setAttribute('aria-hidden', 'true');
-    }
     return;
   }
-  populateLevelFilterOptions(groups);
   emptyEl.style.display = 'none';
   contentEl.style.display = 'block';
 
@@ -558,20 +505,27 @@ function renderGroups() {
     return stats;
   };
 
+  const panelId = (lv) => `records-lv-panel-${lv}`;
+
   groupsEl.innerHTML = groups
     .map((g) => {
       const st = levelStats(g);
       const mainText = `AP ${st.main.ap}/${st.main.total} · FC ${st.main.fc}/${st.main.total}`;
       const appendText = `APPEND AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
+      const pid = panelId(g.playLevel);
       return `
     <section class="records-level-section" data-level="${g.playLevel}">
       <h2 class="records-level-title">
-        <span>Lv.${g.playLevel}</span>
-        <span class="records-level-stats">
-          <span class="records-level-stat records-level-stat-main">${escapeHtml(mainText)}</span>
-          <span class="records-level-stat records-level-stat-append">${escapeHtml(appendText)}</span>
-        </span>
+        <button type="button" class="records-level-toggle" aria-expanded="false" aria-controls="${pid}" id="records-lv-btn-${g.playLevel}">
+          <span class="records-level-toggle-label">Lv.${g.playLevel}</span>
+          <span class="records-level-stats">
+            <span class="records-level-stat records-level-stat-main">${escapeHtml(mainText)}</span>
+            <span class="records-level-stat records-level-stat-append">${escapeHtml(appendText)}</span>
+          </span>
+          <span class="records-level-chevron" aria-hidden="true"></span>
+        </button>
       </h2>
+      <div class="records-level-body" id="${pid}" hidden>
       ${g.difficulties
         .map(
           (df) => `
@@ -608,6 +562,7 @@ function renderGroups() {
       `
         )
         .join('')}
+      </div>
     </section>
   `;
     })
@@ -617,7 +572,7 @@ function renderGroups() {
     btn.addEventListener('click', () => openDetail(btn));
   });
 
-  applyLevelFilter();
+  bindLevelAccordions();
 }
 
 /**
@@ -992,7 +947,6 @@ async function init() {
   }
 
   loadingEl.style.display = 'none';
-  bindLevelFilterOnce();
   if (recordsRefreshBtn && !recordsRefreshBtn.dataset.bound) {
     recordsRefreshBtn.dataset.bound = '1';
     recordsRefreshBtn.addEventListener('click', () => refreshRecords());

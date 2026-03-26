@@ -11,12 +11,12 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/records.css?v=20260326f">
+  <link rel="stylesheet" href="/records.css?v=20260327a">
 </head>
 
 <body>
   <div class="app-container">
-    <header class="app-header">
+    <header class="app-header records-page-header">
       <div class="mypage-header">
         <div class="mypage-user">
           <span class="auth-user" id="auth-user"></span>
@@ -29,6 +29,7 @@
           <div class="mypage-actions">
             <a href="/index.html" class="btn btn-ghost btn-sm" id="to-ocr-link">OCRする</a>
             <button type="button" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="records-refresh-btn">更新</button>
             <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
           </div>
         </div>
@@ -50,13 +51,6 @@
           </div>
           <ul class="ingest-token-list" id="ingest-token-list"></ul>
         </section>
-        <div class="records-level-filter-wrap" id="records-level-filter-wrap" style="display: none;" aria-hidden="true">
-          <label class="records-level-filter-label" for="records-level-select">Lv.で絞り込み</label>
-          <select id="records-level-select" class="records-level-select">
-            <option value="all">すべて</option>
-          </select>
-          <button type="button" class="btn btn-ghost btn-sm records-refresh-btn" id="records-refresh-btn">更新</button>
-        </div>
         <div id="records-groups"></div>
       </div>
       <div id="records-empty" class="records-message" style="display: none;">
@@ -137,7 +131,7 @@
     </div>
   </div>
 
-  <script type="module" src="/records.js?v=20260326f"></script>
+  <script type="module" src="/records.js?v=20260327a"></script>
 </body>
 
 </html>

@@ -16,6 +16,19 @@
   padding-bottom: var(--space-2xl);
 }
 
+/* スクロールしてもユーザー名・タイトル・操作を常に表示 */
+.records-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin-left: calc(-1 * var(--space-md));
+  margin-right: calc(-1 * var(--space-md));
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
 .mypage-header {
   width: 100%;
   display: flex;
@@ -70,38 +83,6 @@
   gap: var(--space-xl);
 }
 
-.records-level-filter-wrap {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-}
-
-.records-level-filter-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.records-level-select {
-  min-width: 10rem;
-  padding: 6px 10px;
-  font-size: 0.9rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.records-level-filter-wrap .records-refresh-btn {
-  margin-left: auto;
-}
-
 .records-level-section {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -110,14 +91,72 @@
 }
 
 .records-level-title {
+  margin: 0 0 var(--space-sm);
   font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: var(--space-md);
   color: var(--accent-secondary);
+}
+
+.records-level-toggle {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  margin: 0;
+  box-sizing: border-box;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: rgba(149, 76, 233, 0.08);
+  border: 1px solid rgba(149, 76, 233, 0.35);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.records-level-toggle:hover {
+  background: rgba(149, 76, 233, 0.14);
+  border-color: rgba(149, 76, 233, 0.55);
+}
+
+.records-level-toggle-label {
+  flex: 0 0 auto;
+  color: var(--accent-secondary);
+}
+
+.records-level-toggle .records-level-stats {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+.records-level-chevron {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.records-level-chevron::before {
+  content: '▼';
+  font-size: 0.55rem;
+  line-height: 1;
+  display: block;
+  transition: transform var(--transition-fast);
+}
+
+.records-level-toggle[aria-expanded='false'] .records-level-chevron::before {
+  transform: rotate(-90deg);
+}
+
+.records-level-body {
+  margin-top: var(--space-md);
+  padding-top: var(--space-xs);
 }
 
 .records-level-stats {
