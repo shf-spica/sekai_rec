@@ -7,9 +7,21 @@ export default defineConfig({
     {
       name: 'records-route-rewrite',
       configureServer(server) {
-        // dev時: /records/{username} を records.html にルーティング
+        // dev時: / をマイページ(records.html)、/records/{username} も records.html
         server.middlewares.use((req, res, next) => {
           const url = (req.url || '').split('?', 1)[0];
+          if (url === '/' || url === '') {
+            const filePath = path.resolve(process.cwd(), 'records.html');
+            try {
+              const html = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(html);
+              return;
+            } catch (e) {
+              next(e);
+              return;
+            }
+          }
           if (/^\/records\/[^/]+\/?$/.test(url)) {
             const filePath = path.resolve(process.cwd(), 'records.html');
             try {
@@ -29,6 +41,18 @@ export default defineConfig({
         // preview時: /records/{username} を dist/records.html にルーティング
         server.middlewares.use((req, res, next) => {
           const url = (req.url || '').split('?', 1)[0];
+          if (url === '/' || url === '') {
+            const filePath = path.resolve(process.cwd(), 'dist', 'records.html');
+            try {
+              const html = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(html);
+              return;
+            } catch (e) {
+              next(e);
+              return;
+            }
+          }
           if (/^\/records\/[^/]+\/?$/.test(url)) {
             const filePath = path.resolve(process.cwd(), 'dist', 'records.html');
             try {

@@ -727,6 +727,46 @@ async function ocrViaServer(file) {
   };
 }
 
+/** 画像 EXIF から撮影日時を取得（ブラウザ OCR でサーバーが返さない場合の補完用） */
+async function getImageDateTimeFromFile(file) {
+  if (!file || !String(file.type || '').startsWith('image/')) return null;
+  try {
+    const mod = await import('https://esm.sh/exifr@7.1.3');
+    const exifr = mod.default ?? mod;
+    const tags = await exifr.parse(file, { pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate'] });
+    if (!tags) return null;
+    const raw = tags.DateTimeOriginal ?? tags.CreateDate ?? tags.ModifyDate;
+    if (raw == null) return null;
+    let dt;
+    if (raw instanceof Date) {
+      dt = raw;
+    } else if (typeof raw === 'string') {
+      const m = raw.trim().match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+      if (m) {
+        dt = new Date(
+          Number(m[1]),
+          Number(m[2]) - 1,
+          Number(m[3]),
+          Number(m[4]),
+          Number(m[5]),
+          Number(m[6]),
+        );
+      } else {
+        dt = new Date(raw);
+      }
+    } else if (typeof raw === 'number') {
+      dt = new Date(raw < 1e12 ? raw * 1000 : raw);
+    } else {
+      return null;
+    }
+    if (!dt || Number.isNaN(dt.getTime())) return null;
+    return dt.toISOString();
+  } catch (e) {
+    console.warn('[EXIF] image date read failed', e?.message || e);
+    return null;
+  }
+}
+
 // ========================================
 // OCR Processing
 // ========================================
@@ -789,6 +829,13 @@ async function processImages() {
         ocrUsed = 'server_fallback';
         if (state.songDatabase && (state.songDatabase.songs?.length > 0 || (Array.isArray(state.songDatabase) && state.songDatabase.length > 0))) {
           parsed = parseGameResult(ocrResult, state.songDatabase);
+        }
+      }
+
+      if (!ocrResult.imageDateTime || !String(ocrResult.imageDateTime).trim()) {
+        const exifIso = await getImageDateTimeFromFile(entry.file);
+        if (exifIso) {
+          ocrResult = { ...ocrResult, imageDateTime: exifIso };
         }
       }
 
@@ -1090,7 +1137,7 @@ function renderAuthArea() {
     authRegisterBtn.style.display = 'none';
     authLogoutBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = `/records/${encodeURIComponent(state.user.username)}`;
+      recordsLink.href = '/';
     }
   } else {
     authUser.style.display = 'none';
@@ -1098,8 +1145,7 @@ function renderAuthArea() {
     authLoginBtn.style.display = '';
     authRegisterBtn.style.display = '';
     if (recordsLink) {
-      // 未ログインの場合は records.html へ（公開URLは username が必要）
-      recordsLink.href = 'records.html';
+      recordsLink.href = '/';
     }
   }
 }

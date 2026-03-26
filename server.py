@@ -1178,6 +1178,15 @@ async def ocr_image(file: UploadFile = File(...)):
 _static_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+@app.get("/")
+async def mypage_root():
+    """トップをマイページとする（未ログイン時は records.html 内で案内）"""
+    path = Path(_static_dir) / "records.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="records.html not found")
+    return FileResponse(path)
+
+
 @app.get("/records/{username}")
 async def mypage(username: str):
     """公開マイページ: /records/{username} は records.html を返す"""

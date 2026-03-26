@@ -64,6 +64,12 @@
   margin-bottom: var(--space-md);
 }
 
+.records-login-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
 .records-content {
   display: flex;
   flex-direction: column;

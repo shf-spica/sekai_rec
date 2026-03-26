@@ -53,7 +53,7 @@ async function init() {
 
     const toMypage = $('#to-mypage');
     if (toMypage) {
-      toMypage.href = `/records/${encodeURIComponent(state.user.username)}`;
+      toMypage.href = '/';
     }
 
     const data = await apiCall('/api/admin/users');

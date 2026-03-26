@@ -117,6 +117,23 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+/** 記録日時表示: yyyy/mm/dd hh:mm（秒なし、端末ローカル） */
+function formatRecordTakenAt(isoOrDate) {
+  if (isoOrDate == null || (typeof isoOrDate === 'string' && !isoOrDate.trim())) return '-';
+  try {
+    const d = isoOrDate instanceof Date ? isoOrDate : new Date(String(isoOrDate).trim());
+    if (Number.isNaN(d.getTime())) return typeof isoOrDate === 'string' ? isoOrDate : '-';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}/${m}/${day} ${h}:${min}`;
+  } catch {
+    return typeof isoOrDate === 'string' ? isoOrDate : '-';
+  }
+}
+
 function openManualModal() {
   if (!manualModal) return;
   state.manualSelectedSong = null;
@@ -690,9 +707,9 @@ function openDetail(btn) {
   jacketEl.alt = title;
   titleEl.textContent = title;
   const takenAt = btn.dataset.takenAt || '';
-  const timeText = takenAt ? new Date(takenAt).toLocaleString() : '-';
+  const timeText = takenAt ? formatRecordTakenAt(takenAt) : '-';
   metaEl.textContent = `Lv.${getPlayLevel(song, difficulty)} · ${(difficulty || '').toUpperCase()}`;
-  if (timeEl) timeEl.textContent = timeText ? `記録日時: ${timeText}` : '';
+  if (timeEl) timeEl.textContent = takenAt ? `記録日時: ${timeText}` : '';
 
   const diffNorm = (difficulty || '').toLowerCase();
 
@@ -796,9 +813,10 @@ function closeIngestReveal() {
 function formatIngestCreatedAt(iso) {
   if (!iso) return '';
   try {
-    const d = new Date(iso.endsWith('Z') ? iso : `${iso}Z`);
+    const s = String(iso).trim();
+    const d = new Date(s.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(s) ? s : `${s}Z`);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' });
+    return formatRecordTakenAt(d);
   } catch {
     return iso;
   }
@@ -885,7 +903,7 @@ async function issueIngestToken() {
 
 async function init() {
   try {
-    // /records/{username} から username を取得
+    // /records/{username} から username を取得（"/" は URL からは取らず、ログイン済みなら自分の username を使う）
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
       const candidate = decodeURIComponent(parts[1]);
@@ -912,17 +930,15 @@ async function init() {
 
     // 公開APIからレコード取得（閲覧は誰でも）
     if (!state.pageUsername) {
-      // username が取れない場合は自分のページへ誘導
       if (state.user?.username) {
-        window.location.href = `/records/${encodeURIComponent(state.user.username)}`;
+        state.pageUsername = state.user.username;
+      } else {
+        loadingEl.style.display = 'none';
+        loginRequiredEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        emptyEl.style.display = 'none';
         return;
       }
-      // 未ログインで /records/{username} 以外に来た場合はここで止める
-      loadingEl.style.display = 'none';
-      loginRequiredEl.style.display = 'block';
-      contentEl.style.display = 'none';
-      emptyEl.style.display = 'none';
-      return;
     }
     const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
     if (!publicRes.ok) {
@@ -960,7 +976,7 @@ async function init() {
           state.token = null;
           state.user = null;
           localStorage.removeItem('prsk_ocr_token');
-          window.location.href = 'index.html';
+          window.location.href = '/';
         });
       } else {
         logoutBtn.style.display = 'none';
