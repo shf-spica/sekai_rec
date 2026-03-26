@@ -7,18 +7,23 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
+_log_handlers = [logging.StreamHandler()]
+try:
+    _log_handlers.append(
+        logging.FileHandler(Path(__file__).resolve().parent / "prsk_ocr.log", encoding="utf-8")
+    )
+except OSError as e:
+    print(f"[prsk_ocr] log file skipped: {e}", flush=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(Path(__file__).resolve().parent / "prsk_ocr.log", encoding="utf-8"),
-    ],
+    handlers=_log_handlers,
 )
 logger = logging.getLogger("prsk_ocr")
 
@@ -28,7 +33,6 @@ from fastapi.responses import JSONResponse, Response, FileResponse, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import AliasChoices, BaseModel, Field
-from paddleocr import PaddleOCR
 import numpy as np
 import cv2
 import io
@@ -1062,7 +1066,41 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
+# Windows サービス（LOCAL SYSTEM 等）では import 直後の Paddle 初期化や GPU でプロセスごと落ち 1067 になりやすい。
+# 認証・API の挙動は従来どおり。サーバー OCR だけ初回リクエスト時に初期化する。
+_paddle_lock = threading.Lock()
+_paddle_ocr = None
+
+
+def _paddle_use_gpu() -> bool:
+    v = (os.environ.get("PRSK_OCR_USE_GPU") or "").strip().lower()
+    if not v:
+        return True
+    return v in ("1", "true", "yes", "on")
+
+
+def _get_paddle_ocr():
+    global _paddle_ocr
+    if _paddle_ocr is not None:
+        return _paddle_ocr
+    with _paddle_lock:
+        if _paddle_ocr is not None:
+            return _paddle_ocr
+        from paddleocr import PaddleOCR
+
+        logger.info("PaddleOCR 初期化中…")
+        _paddle_ocr = PaddleOCR(
+            use_angle_cls=True,
+            lang="japan",
+            use_gpu=_paddle_use_gpu(),
+        )
+        return _paddle_ocr
+
+
+def _paddle_ocr_run(masked: np.ndarray):
+    return _get_paddle_ocr().ocr(masked, cls=True)
+
+
 _ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
@@ -1154,7 +1192,7 @@ async def ocr_image(file: UploadFile = File(...)):
             start = time.time()
             logger.info("OCR GPU processing started")
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(_ocr_executor, partial(ocr.ocr, masked, cls=True))
+            result = await loop.run_in_executor(_ocr_executor, partial(_paddle_ocr_run, masked))
             elapsed_ms = int((time.time() - start) * 1000)
             logger.info("OCR GPU done in %dms", elapsed_ms)
 

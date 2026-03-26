@@ -1,4 +1,10 @@
 @echo off
+REM NSSM を直接使う場合の例（この bat を使わないとき）:
+REM   Application  : C:\Path\to\venv\Scripts\python.exe  （フルパス）
+REM   Arguments    : -m uvicorn server:app --host 0.0.0.0 --port 8000
+REM   Startup dir  : server.py があるフォルダ（リポジトリルート）
+REM 1067 のときは「python が違う」「カレントが違う」「ポート占有」が多い。
+REM
 REM 必ず %TEMP% に最初からログを書く（リポジトリに書けない・cd 失敗でも残る）
 setlocal
 set "T=%TEMP%\prsk_ocr_service_boot.log"
