@@ -16,10 +16,12 @@ except ImportError:
 
 def main() -> None:
     root = Path(__file__).resolve().parent.parent
-    db_path = root / "prsk_ocr.db"
+    db_path = (root / "prsk_ocr.db").resolve()
     if not db_path.is_file():
         print(f"DB が見つかりません: {db_path}", file=sys.stderr)
         sys.exit(2)
+
+    print(f"開いているファイル（絶対パス）:\n  {db_path}\n")
 
     username = (sys.argv[1] if len(sys.argv) > 1 else input("username: ")).strip()
     password = getpass.getpass("password: ")
@@ -30,11 +32,20 @@ def main() -> None:
         "SELECT id, username, password_hash FROM users WHERE username = ?",
         (username,),
     ).fetchone()
-    conn.close()
 
     if not row:
-        print("DB: その username の行はありません（大文字小文字・別DBを確認）")
+        all_users = conn.execute("SELECT id, username FROM users ORDER BY id").fetchall()
+        conn.close()
+        print(f"入力した username（repr）: {username!r}")
+        print("このファイルの users テーブルに、上記と完全一致する username の行はありません。")
+        if not all_users:
+            print("users テーブルは空です（未登録か、別のファイルを見ている可能性があります）。")
+        else:
+            print("この DB に登録されている username（repr・見えない空白や全角が分かります）:")
+            for r in all_users:
+                print(f"  id={r['id']}  {r['username']!r}")
         sys.exit(1)
+    conn.close()
 
     ph = row["password_hash"]
     if isinstance(ph, str):
