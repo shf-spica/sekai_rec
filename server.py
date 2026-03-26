@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import json
@@ -7,6 +9,7 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
+import sys
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -33,8 +36,6 @@ from fastapi.responses import JSONResponse, Response, FileResponse, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import AliasChoices, BaseModel, Field
-import numpy as np
-import cv2
 import io
 from PIL import Image
 import time
@@ -1066,17 +1067,20 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-# Windows サービス（LOCAL SYSTEM 等）では import 直後の Paddle 初期化や GPU でプロセスごと落ち 1067 になりやすい。
-# 認証・API の挙動は従来どおり。サーバー OCR だけ初回リクエスト時に初期化する。
+# Windows サービス（Session 0）では import 時の cv2 / Paddle / GPU で即死し 1067 になりやすい。
+# cv2・numpy は /ocr 内のみ遅延 import。Paddle は初回 OCR 時。GPU 既定は下記 _paddle_use_gpu。
 _paddle_lock = threading.Lock()
 _paddle_ocr = None
 
 
 def _paddle_use_gpu() -> bool:
+    """PRSK_OCR_USE_GPU 未設定時: Windows は CPU 既定（サービスで GPU 初期化が落ちやすい）。他 OS は GPU 試行。"""
     v = (os.environ.get("PRSK_OCR_USE_GPU") or "").strip().lower()
-    if not v:
+    if v in ("0", "false", "no", "off"):
+        return False
+    if v in ("1", "true", "yes", "on"):
         return True
-    return v in ("1", "true", "yes", "on")
+    return sys.platform != "win32"
 
 
 def _get_paddle_ocr():
@@ -1097,7 +1101,7 @@ def _get_paddle_ocr():
         return _paddle_ocr
 
 
-def _paddle_ocr_run(masked: np.ndarray):
+def _paddle_ocr_run(masked):
     return _get_paddle_ocr().ocr(masked, cls=True)
 
 
@@ -1107,13 +1111,16 @@ _OCR_QUEUE_MAX = 5
 _ocr_waiting = 0
 
 
-def _load_image_bgr(data: bytes) -> np.ndarray:
+def _load_image_bgr(data: bytes):
+    import cv2
+    import numpy as np
+
     img = Image.open(io.BytesIO(data)).convert("RGB")
     arr = np.array(img)
     return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
 
 
-def _apply_black_mask(img: np.ndarray) -> np.ndarray:
+def _apply_black_mask(img):
     h, w = img.shape[:2]
     masked = img.copy()
     masked[h // 4 : h // 2, 0:w] = 0
