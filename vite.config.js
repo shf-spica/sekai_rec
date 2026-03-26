@@ -25,6 +25,9 @@ export default defineConfig({
             if (url === '/' || url === '') {
               if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
             }
+            if (url === '/mypage' || url === '/mypage/') {
+              if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
+            }
             if (/^\/records\/[^/]+\/?$/.test(url)) {
               if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
             }
@@ -50,6 +53,9 @@ export default defineConfig({
           const distRecords = path.resolve(process.cwd(), 'dist', 'records.html');
           if (req.method === 'GET') {
             if (url === '/' || url === '') {
+              if (serveRecordsHtml(distRecords)) return;
+            }
+            if (url === '/mypage' || url === '/mypage/') {
               if (serveRecordsHtml(distRecords)) return;
             }
             if (/^\/records\/[^/]+\/?$/.test(url)) {

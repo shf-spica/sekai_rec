@@ -1150,7 +1150,7 @@ function renderAuthArea() {
     authRegisterBtn.style.display = 'none';
     authLogoutBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = '/';
+      recordsLink.href = `/records/${encodeURIComponent(state.user.username)}`;
     }
   } else {
     authUser.style.display = 'none';
@@ -1158,7 +1158,7 @@ function renderAuthArea() {
     authLoginBtn.style.display = '';
     authRegisterBtn.style.display = '';
     if (recordsLink) {
-      recordsLink.href = '/';
+      recordsLink.href = '/mypage';
     }
   }
 }

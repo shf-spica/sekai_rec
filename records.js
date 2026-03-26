@@ -858,7 +858,7 @@ async function issueIngestToken() {
 
 async function init() {
   try {
-    // /records/{username} または トップ / から username を決める
+    // /records/{username} または トップ /・/mypage から username を決める
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
       const candidate = decodeURIComponent(parts[1]);
@@ -867,6 +867,7 @@ async function init() {
         state.pageUsername = candidate;
       }
     }
+    // /mypage はマイページシェル（URL にユーザー名なし。ログイン後に下で pageUsername を埋める）
 
     const dbRes = await fetch('/songDatabase.json');
     if (dbRes.ok) state.songDatabase = await dbRes.json();
@@ -932,7 +933,7 @@ async function init() {
           state.token = null;
           state.user = null;
           localStorage.removeItem('prsk_ocr_token');
-          window.location.href = '/';
+          window.location.href = '/mypage';
         });
       } else {
         logoutBtn.style.display = 'none';

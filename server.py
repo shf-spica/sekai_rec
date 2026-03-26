@@ -1287,6 +1287,16 @@ async def mypage_root():
     return FileResponse(path)
 
 
+@app.get("/mypage")
+@app.get("/mypage/")
+async def mypage_alias():
+    """マイページ用の固定 URL（プロキシが / だけ index.html を返す場合の回避・リンク用）。"""
+    path = Path(_static_dir) / "records.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="records.html not found")
+    return FileResponse(path)
+
+
 @app.get("/records/{username}")
 async def mypage(username: str):
     """公開マイページ: /records/{username} は records.html を返す"""
