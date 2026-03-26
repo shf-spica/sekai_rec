@@ -12,14 +12,30 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(Path(__file__).resolve().parent / "prsk_ocr.log", encoding="utf-8"),
-    ],
-)
+def _env_bool(name: str, default: bool) -> bool:
+    v = os.environ.get(name)
+    if v is None or not str(v).strip():
+        return default
+    return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _configure_logging() -> None:
+    """コンソールは常に。ファイルは書けない環境（Windows サービス等）ではスキップして起動を続行。"""
+    log_path = Path(__file__).resolve().parent / "prsk_ocr.log"
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    try:
+        handlers.append(logging.FileHandler(log_path, encoding="utf-8"))
+    except OSError as e:
+        print(f"[prsk_ocr] WARNING: log file not writable ({log_path}): {e}", flush=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        handlers=handlers,
+        force=True,
+    )
+
+
+_configure_logging()
 logger = logging.getLogger("prsk_ocr")
 
 from fastapi import FastAPI, Depends, File, Header, UploadFile, HTTPException
@@ -1062,7 +1078,22 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
+def _init_paddle_ocr() -> PaddleOCR:
+    """GPU は環境変数で制御。初期化失敗時は CPU にフォールバック（Windows サービス・CUDA 非表示時など）。"""
+    want_gpu = _env_bool("PRSK_OCR_USE_GPU", True)
+    kwargs = dict(use_angle_cls=True, lang="japan", use_gpu=want_gpu)
+    try:
+        return PaddleOCR(**kwargs)
+    except Exception as e:
+        if want_gpu:
+            logger.warning("PaddleOCR GPU init failed (%s), retrying with use_gpu=False", e)
+            kwargs["use_gpu"] = False
+            return PaddleOCR(**kwargs)
+        raise
+
+
+# Windows サービスでは PRSK_OCR_USE_GPU=0 を推奨（LOCAL SYSTEM では GPU が使えないことが多い）
+ocr = _init_paddle_ocr()
 _ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
