@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-24T16:08:39.092908+00:00",
+  "updatedAt": "2026-03-25T16:12:28.978433+00:00",
   "songs": [
     {
       "id": 1,
@@ -16368,6 +16368,36 @@
         "master": {
           "totalNoteCount": 1064,
           "playLevel": 29
+        }
+      }
+    },
+    {
+      "id": 662,
+      "title": "告白",
+      "difficulties": {
+        "easy": {
+          "totalNoteCount": 145,
+          "playLevel": 5
+        },
+        "normal": {
+          "totalNoteCount": 206,
+          "playLevel": 12
+        },
+        "hard": {
+          "totalNoteCount": 460,
+          "playLevel": 16
+        },
+        "expert": {
+          "totalNoteCount": 565,
+          "playLevel": 22
+        },
+        "master": {
+          "totalNoteCount": 588,
+          "playLevel": 27
+        },
+        "append": {
+          "totalNoteCount": 729,
+          "playLevel": 27
         }
       }
     },
