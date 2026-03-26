@@ -7,6 +7,7 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
+import threading
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import partial
@@ -70,7 +71,14 @@ except ImportError:
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    """Windows サービスで手動再起動するとき、停止直後にポートが残る原因になりやすい OCR 用スレッドを片付ける。"""
+    """起動時: 任意で Paddle をウォームアップ。終了時: OCR 用スレッドプールを片付ける。"""
+    if _env_bool("PRSK_OCR_WARMUP", False):
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(_ocr_executor, _get_paddle_ocr)
+            logger.info("PRSK_OCR_WARMUP: PaddleOCR OK")
+        except Exception:
+            logger.exception("PRSK_OCR_WARMUP: PaddleOCR 失敗（HTTP は継続します）")
     yield
     ex = globals().get("_ocr_executor")
     if ex is not None:
@@ -1101,13 +1109,33 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-# GPU の ON/OFF は PRSK_OCR_USE_GPU（1/true/yes/on）。未設定は従来どおり True。
-# 二重に PaddleOCR() しない（1回目が失敗しても内部状態が残り、2回目で不安定になることがあるため）。
-ocr = PaddleOCR(
-    use_angle_cls=True,
-    lang="japan",
-    use_gpu=_env_bool("PRSK_OCR_USE_GPU", True),
-)
+# PaddleOCR は import 時に初期化しない（Windows サービスで GPU 初期化が落ちるとプロセスごと終了し、
+# SCM が「エラーを返さなかった」と表示しやすい）。初回 OCR 時に遅延初期化する。
+_paddle_ocr_lock = threading.Lock()
+_paddle_ocr_instance: PaddleOCR | None = None
+
+
+def _get_paddle_ocr() -> PaddleOCR:
+    global _paddle_ocr_instance
+    if _paddle_ocr_instance is not None:
+        return _paddle_ocr_instance
+    with _paddle_ocr_lock:
+        if _paddle_ocr_instance is not None:
+            return _paddle_ocr_instance
+        logger.info("PaddleOCR 初期化開始（遅延・初回 OCR またはウォームアップ時）")
+        _paddle_ocr_instance = PaddleOCR(
+            use_angle_cls=True,
+            lang="japan",
+            use_gpu=_env_bool("PRSK_OCR_USE_GPU", True),
+        )
+        logger.info("PaddleOCR 初期化完了")
+        return _paddle_ocr_instance
+
+
+def _run_paddle_ocr_masked(masked: np.ndarray):
+    return _get_paddle_ocr().ocr(masked, cls=True)
+
+
 _ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
@@ -1199,7 +1227,7 @@ async def ocr_image(file: UploadFile = File(...)):
             start = time.time()
             logger.info("OCR GPU processing started")
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(_ocr_executor, partial(ocr.ocr, masked, cls=True))
+            result = await loop.run_in_executor(_ocr_executor, partial(_run_paddle_ocr_masked, masked))
             elapsed_ms = int((time.time() - start) * 1000)
             logger.info("OCR GPU done in %dms", elapsed_ms)
 
