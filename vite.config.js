@@ -10,16 +10,23 @@ export default defineConfig({
         // dev時: /records/{username} を records.html にルーティング
         server.middlewares.use((req, res, next) => {
           const url = (req.url || '').split('?', 1)[0];
-          if (/^\/records\/[^/]+\/?$/.test(url)) {
-            const filePath = path.resolve(process.cwd(), 'records.html');
+          const serveRecordsHtml = (filePath) => {
             try {
               const html = fs.readFileSync(filePath, 'utf-8');
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
               res.end(html);
-              return;
+              return true;
             } catch (e) {
               next(e);
-              return;
+              return true;
+            }
+          };
+          if (req.method === 'GET') {
+            if (url === '/' || url === '') {
+              if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
+            }
+            if (/^\/records\/[^/]+\/?$/.test(url)) {
+              if (serveRecordsHtml(path.resolve(process.cwd(), 'records.html'))) return;
             }
           }
           next();
@@ -29,16 +36,24 @@ export default defineConfig({
         // preview時: /records/{username} を dist/records.html にルーティング
         server.middlewares.use((req, res, next) => {
           const url = (req.url || '').split('?', 1)[0];
-          if (/^\/records\/[^/]+\/?$/.test(url)) {
-            const filePath = path.resolve(process.cwd(), 'dist', 'records.html');
+          const serveRecordsHtml = (filePath) => {
             try {
               const html = fs.readFileSync(filePath, 'utf-8');
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
               res.end(html);
-              return;
+              return true;
             } catch (e) {
               next(e);
-              return;
+              return true;
+            }
+          };
+          const distRecords = path.resolve(process.cwd(), 'dist', 'records.html');
+          if (req.method === 'GET') {
+            if (url === '/' || url === '') {
+              if (serveRecordsHtml(distRecords)) return;
+            }
+            if (/^\/records\/[^/]+\/?$/.test(url)) {
+              if (serveRecordsHtml(distRecords)) return;
             }
           }
           next();

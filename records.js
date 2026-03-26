@@ -858,7 +858,7 @@ async function issueIngestToken() {
 
 async function init() {
   try {
-    // /records/{username} から username を取得
+    // /records/{username} または トップ / から username を決める
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
       const candidate = decodeURIComponent(parts[1]);
@@ -883,12 +883,13 @@ async function init() {
       }
     }
 
+    // トップ / かつログイン済み → URL にユーザー名が無くても自分のマイページとして表示
+    if (!state.pageUsername && state.user?.username) {
+      state.pageUsername = state.user.username;
+    }
+
     // 公開APIからレコード取得（閲覧は誰でも）
     if (!state.pageUsername) {
-      if (state.user?.username) {
-        window.location.href = `/records/${encodeURIComponent(state.user.username)}`;
-        return;
-      }
       loadingEl.style.display = 'none';
       loginRequiredEl.style.display = 'block';
       contentEl.style.display = 'none';
@@ -931,7 +932,7 @@ async function init() {
           state.token = null;
           state.user = null;
           localStorage.removeItem('prsk_ocr_token');
-          window.location.href = '/index.html';
+          window.location.href = '/';
         });
       } else {
         logoutBtn.style.display = 'none';
