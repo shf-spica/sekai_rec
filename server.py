@@ -7,38 +7,19 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
-import threading
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from pathlib import Path
 
-def _env_bool(name: str, default: bool) -> bool:
-    v = os.environ.get(name)
-    if v is None or not str(v).strip():
-        return default
-    return str(v).strip().lower() in ("1", "true", "yes", "on")
-
-
-def _configure_logging() -> None:
-    """コンソールは常に。ファイルは書けない環境（Windows サービス等）ではスキップして起動を続行。
-
-    force=True は使わない（uvicorn 等が先に付けたルートロガーを消してログや起動順に影響するため）。
-    """
-    log_path = Path(__file__).resolve().parent / "prsk_ocr.log"
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
-    try:
-        handlers.append(logging.FileHandler(log_path, encoding="utf-8"))
-    except OSError as e:
-        print(f"[prsk_ocr] WARNING: log file not writable ({log_path}): {e}", flush=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
-        handlers=handlers,
-    )
-
-
-_configure_logging()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(Path(__file__).resolve().parent / "prsk_ocr.log", encoding="utf-8"),
+    ],
+)
 logger = logging.getLogger("prsk_ocr")
 
 from fastapi import FastAPI, Depends, File, Header, UploadFile, HTTPException
@@ -68,31 +49,7 @@ except ImportError:
     bcrypt = None
     jwt = None
 
-
-@asynccontextmanager
-async def _lifespan(app: FastAPI):
-    """起動時: 任意で Paddle をウォームアップ。終了時: OCR 用スレッドプールを片付ける。"""
-    if _env_bool("PRSK_OCR_WARMUP", False):
-        try:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(_ocr_executor, _get_paddle_ocr)
-            logger.info("PRSK_OCR_WARMUP: PaddleOCR OK")
-        except Exception:
-            logger.exception("PRSK_OCR_WARMUP: PaddleOCR 失敗（HTTP は継続します）")
-    yield
-    ex = globals().get("_ocr_executor")
-    if ex is not None:
-        logger.info("Shutting down OCR thread pool")
-        try:
-            try:
-                ex.shutdown(wait=False, cancel_futures=True)
-            except TypeError:
-                ex.shutdown(wait=False)
-        except Exception as e:
-            logger.warning("OCR executor shutdown: %s", e)
-
-
-app = FastAPI(lifespan=_lifespan)
+app = FastAPI()
 
 # マイページ用 SSE: 同一プロセス内のみ有効（複数ワーカーでは各ワーカー別々に購読）
 _mypage_sse_subscribers: dict[str, list[asyncio.Queue]] = {}
@@ -490,19 +447,7 @@ def _run_parse_ocr_postprocess(full_text: str) -> dict:
         raise HTTPException(status_code=500, detail="Invalid postprocess output") from e
 
 
-def _encode_access_token(user_id: int) -> str:
-    """python-jose / 環境によって jwt.encode が bytes を返すことがあるため JSON 用に str にそろえる。"""
-    raw = jwt.encode(
-        {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
-        JWT_SECRET,
-        algorithm=JWT_ALGORITHM,
-    )
-    if isinstance(raw, bytes):
-        return raw.decode("utf-8")
-    return str(raw)
-
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     _require_auth()
     if not credentials:
         return None
@@ -540,7 +485,11 @@ async def api_register(body: RegisterBody):
                 (username, password_hash, created),
             )
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        token = _encode_access_token(user_id)
+        token = jwt.encode(
+            {"sub": str(user_id), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
+            JWT_SECRET,
+            algorithm=JWT_ALGORITHM,
+        )
         return {"access_token": token, "user": {"id": user_id, "username": username}}
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=400, detail="Username already taken")
@@ -557,7 +506,11 @@ async def api_login(body: LoginBody):
         ).fetchone()
     if not row or not _verify_password(password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    token = _encode_access_token(int(row["id"]))
+    token = jwt.encode(
+        {"sub": str(row["id"]), "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS)},
+        JWT_SECRET,
+        algorithm=JWT_ALGORITHM,
+    )
     return {"access_token": token, "user": {"id": row["id"], "username": row["username"]}}
 
 
@@ -1109,33 +1062,7 @@ app.add_middleware(
     expose_headers=["X-Ingest-Secret"],
 )
 
-# PaddleOCR は import 時に初期化しない（Windows サービスで GPU 初期化が落ちるとプロセスごと終了し、
-# SCM が「エラーを返さなかった」と表示しやすい）。初回 OCR 時に遅延初期化する。
-_paddle_ocr_lock = threading.Lock()
-_paddle_ocr_instance: PaddleOCR | None = None
-
-
-def _get_paddle_ocr() -> PaddleOCR:
-    global _paddle_ocr_instance
-    if _paddle_ocr_instance is not None:
-        return _paddle_ocr_instance
-    with _paddle_ocr_lock:
-        if _paddle_ocr_instance is not None:
-            return _paddle_ocr_instance
-        logger.info("PaddleOCR 初期化開始（遅延・初回 OCR またはウォームアップ時）")
-        _paddle_ocr_instance = PaddleOCR(
-            use_angle_cls=True,
-            lang="japan",
-            use_gpu=_env_bool("PRSK_OCR_USE_GPU", True),
-        )
-        logger.info("PaddleOCR 初期化完了")
-        return _paddle_ocr_instance
-
-
-def _run_paddle_ocr_masked(masked: np.ndarray):
-    return _get_paddle_ocr().ocr(masked, cls=True)
-
-
+ocr = PaddleOCR(use_angle_cls=True, lang="japan", use_gpu=True)
 _ocr_executor = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor(max_workers=1)
 _ocr_semaphore = asyncio.Semaphore(1)
 _OCR_QUEUE_MAX = 5
@@ -1227,7 +1154,7 @@ async def ocr_image(file: UploadFile = File(...)):
             start = time.time()
             logger.info("OCR GPU processing started")
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(_ocr_executor, partial(_run_paddle_ocr_masked, masked))
+            result = await loop.run_in_executor(_ocr_executor, partial(ocr.ocr, masked, cls=True))
             elapsed_ms = int((time.time() - start) * 1000)
             logger.info("OCR GPU done in %dms", elapsed_ms)
 

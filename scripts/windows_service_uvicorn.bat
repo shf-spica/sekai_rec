@@ -1,28 +1,61 @@
 @echo off
-REM Windows サービス（NSSM 等）から起動するときの補助。
-REM NSSM の Application にこの bat のフルパス、Startup directory にリポジトリのルート（このファイルの親の親）を指定。
-REM ログで失敗原因を追えるようにする。Python は PATH にある想定（または下の python をフルパスに変更）。
-
+REM 必ず %TEMP% に最初からログを書く（リポジトリに書けない・cd 失敗でも残る）
 setlocal
-set "ROOT=%~dp0.."
+set "T=%TEMP%\prsk_ocr_service_boot.log"
+echo.>>"%T%"
+echo ========== BOOT %date% %time% ==========>>"%T%"
+echo dp0=%~dp0>>"%T%"
+
+REM リポジトリルートを正規パスに（scripts\ の親）
+for %%I in ("%~dp0..") do set "ROOT=%%~fI"
+echo ROOT=%ROOT%>>"%T%"
+if not exist "%ROOT%\server.py" (
+  echo ERROR: server.py not under ROOT. Edit bat or move repo.>>"%T%"
+  exit /b 1
+)
+
+set "LOG=%ROOT%\prsk_ocr_service_boot.log"
+echo ----- copy to repo log ----->>"%T%"
+type "%T%">>"%LOG%" 2>nul
+if errorlevel 1 echo WARN: cannot write "%LOG%" check permissions>>"%T%"
+
 cd /d "%ROOT%"
+if errorlevel 1 (
+  echo ERROR: cd failed>>"%T%"
+  exit /b 1
+)
+echo cd OK:>>"%T%"
+echo %cd%>>"%T%"
+echo %cd%>>"%LOG%" 2>nul
 
 set PYTHONUNBUFFERED=1
 if not defined PRSK_OCR_USE_GPU set PRSK_OCR_USE_GPU=0
 
-set "LOG=%ROOT%\prsk_ocr_service_boot.log"
-echo ========== %date% %time% ========== >> "%LOG%"
-echo cd=%cd% >> "%LOG%"
-where python >> "%LOG%" 2>&1
-python -c "import sys; print(sys.version); print(sys.executable)" >> "%LOG%" 2>&1
+echo ----- python on PATH ----->>"%T%"
+where py>>"%T%" 2>&1
+where python>>"%T%" 2>&1
 
-python -c "import server; print('import server: OK')" >> "%LOG%" 2>&1
+set "PYCMD=py -3"
+%PYCMD% -c "import sys">nul 2>>"%T%"
+if errorlevel 1 set "PYCMD=python"
+%PYCMD% -c "import sys">nul 2>>"%T%"
 if errorlevel 1 (
-  echo import server FAILED >> "%LOG%"
+  echo ERROR: neither "py -3" nor "python" runs. Install Python or fix PATH.>>"%T%"
+  exit /b 1
+)
+echo Using: %PYCMD%>>"%T%"
+echo Using: %PYCMD%>>"%LOG%" 2>nul
+
+echo ----- import server ----->>"%T%"
+%PYCMD% -u -c "import server; print('import server: OK')">>"%T%" 2>&1
+if errorlevel 1 (
+  echo import server FAILED>>"%T%"
+  type "%T%">>"%LOG%" 2>nul
   exit /b 1
 )
 
-echo starting uvicorn... >> "%LOG%"
-python -u -m uvicorn server:app --host 0.0.0.0 --port 8000 >> "%LOG%" 2>&1
-echo uvicorn exited errorlevel=%errorlevel% >> "%LOG%"
+echo ----- uvicorn ----->>"%T%"
+%PYCMD% -u -m uvicorn server:app --host 0.0.0.0 --port 8000>>"%T%" 2>&1
+echo uvicorn exit=%errorlevel%>>"%T%"
+type "%T%">>"%LOG%" 2>nul
 exit /b %errorlevel%
