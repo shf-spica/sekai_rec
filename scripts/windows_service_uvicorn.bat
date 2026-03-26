@@ -4,6 +4,11 @@ REM   Application  : C:\Path\to\venv\Scripts\python.exe  （フルパス）
 REM   Arguments    : -m uvicorn server:app --host 0.0.0.0 --port 8000
 REM   Startup dir  : server.py があるフォルダ（リポジトリルート）
 REM 1067 のときは「python が違う」「カレントが違う」「ポート占有」が多い。
+REM 1064（制御要求処理中に例外）: WinSW 本体か子プロセス起動の失敗。対処の手順:
+REM   1) イベントビューア → Windows ログ → アプリケーション（WinSW / .NET のエラーとスタック）
+REM   2) 管理者 CMD で start.bat を手動実行（サービスと同じユーザーならより近い）
+REM   3) WinSW の <executable> を cmd.exe、<arguments>/c "...\start.bat"</arguments> にすると bat 起因の例外を避けやすい
+REM   4) サービスが「グループ MSA 等の制限付きアカウント」のとき WinSW と相性問題あり → Local System で試す
 REM
 REM 必ず %TEMP% に最初からログを書く（リポジトリに書けない・cd 失敗でも残る）
 setlocal
