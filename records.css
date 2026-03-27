@@ -41,10 +41,17 @@
   padding-top: 2px;
 }
 
-.mypage-user .auth-user {
+.mypage-user .records-page-owner {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.mypage-actions .records-auth-user {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  align-self: center;
+  margin-right: var(--space-xs);
 }
 
 .records-count {

@@ -19,9 +19,34 @@
     <header class="app-header">
       <h1 class="app-title">SEKAI recorder</h1>
       <p class="app-subtitle">案内・使い方（このページは自由に編集してください）</p>
-      <div class="header-actions" style="flex-wrap: wrap; gap: 0.5rem;">
+      <div class="header-actions" style="flex-wrap: wrap; gap: 0.5rem; align-items: center;">
         <a href="/ocr.html" class="btn btn-primary btn-sm">リザルトを読み取る（OCR）</a>
-        <a href="/records/me" class="btn btn-ghost btn-sm">マイページへ</a>
+        <a href="/records/me" class="btn btn-ghost btn-sm" id="records-link">マイページへ</a>
+        <span class="auth-user" id="auth-user" style="display: none; font-size: 0.9rem; color: var(--text-secondary);"></span>
+        <button type="button" class="btn btn-ghost btn-sm" id="auth-login-btn">ログイン</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="auth-register-btn">新規登録</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
+      </div>
+      <div class="auth-modal" id="auth-modal" style="display: none;" aria-hidden="true">
+        <div class="auth-modal-backdrop" id="auth-modal-backdrop"></div>
+        <div class="auth-modal-content">
+          <h3 class="auth-modal-title" id="auth-modal-title">ログイン</h3>
+          <form id="auth-form">
+            <label class="auth-field">
+              <span>ユーザー名</span>
+              <input type="text" id="auth-username" autocomplete="username" required minlength="2">
+            </label>
+            <label class="auth-field">
+              <span>パスワード</span>
+              <input type="password" id="auth-password" autocomplete="current-password" required minlength="6">
+            </label>
+            <p class="auth-error" id="auth-error"></p>
+            <div class="auth-modal-actions">
+              <button type="button" class="btn btn-ghost" id="auth-modal-cancel">キャンセル</button>
+              <button type="submit" class="btn btn-primary" id="auth-submit">ログイン</button>
+            </div>
+          </form>
+        </div>
       </div>
     </header>
 
@@ -42,6 +67,10 @@
       <p>このファイルは <code>home.html</code> です。ルート <code>/</code> はバックエンドなら直表示、nginx 等で <code>index.html</code> が返る場合は <code>/home.html</code> へリダイレクトされます。</p>
     </footer>
   </div>
+  <script type="module">
+    import { mountStandaloneAuth } from '/auth-ui.js?v=20260325a';
+    mountStandaloneAuth({ afterLoginNavigate: '/records/me' }).init();
+  </script>
 </body>
 
 </html>

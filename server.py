@@ -229,6 +229,12 @@ class RecordBody(BaseModel):
     taken_at: str | None = None
 
 
+class RecordsBatchBody(BaseModel):
+    """大量投入用: 1 トランザクション・通知は最大 1 回（レート制限ではなく往復削減）。"""
+
+    records: list[RecordBody]
+
+
 class DatasetBody(BaseModel):
     source: str  # "ocr" | "manual"
     image_base64: str | None = None
@@ -571,6 +577,37 @@ async def api_save_record(body: RecordBody, user=Depends(get_current_user)):
     if out.get("saved"):
         await notify_mypage_records_updated(user["username"])
     return out
+
+
+_RECORDS_BATCH_MAX = 400
+
+
+@app.post("/api/records/batch")
+async def api_save_records_batch(body: RecordsBatchBody, user=Depends(get_current_user)):
+    """複数件を一度に保存。クライアントが 1 件ずつ POST すると HTTP/1.1 の同時接続数で待ちが出やすい。"""
+    if user is None:
+        raise HTTPException(status_code=401, detail="Login required")
+    _require_auth()
+    items = body.records
+    if not items:
+        raise HTTPException(status_code=400, detail="records must be a non-empty array")
+    if len(items) > _RECORDS_BATCH_MAX:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many records (max {_RECORDS_BATCH_MAX} per request)",
+        )
+    saved = 0
+    skipped = 0
+    with get_db() as conn:
+        for rec in items:
+            out = _upsert_user_record(conn, user["id"], rec)
+            if out.get("saved"):
+                saved += 1
+            else:
+                skipped += 1
+    if saved:
+        await notify_mypage_records_updated(user["username"])
+    return {"saved_count": saved, "skipped_count": skipped, "total": len(items)}
 
 
 @app.get("/api/ingest/ping")
@@ -1110,17 +1147,27 @@ async def api_jacket(song_id: str, gray: int = 0):
     cache_path = _jacket_cache_path(sid, gray=use_gray)
 
     if cache_path.exists():
-        return Response(content=cache_path.read_bytes(), media_type="image/webp")
-
-    if use_gray:
-        color_path = _ensure_color_jacket(sid)
-        data = _jacket_to_grayscale_bytes(color_path)
-        cache_path.write_bytes(data)
+        data = await asyncio.to_thread(cache_path.read_bytes)
         return Response(content=data, media_type="image/webp")
 
+    if use_gray:
+
+        def _gray_pipeline():
+            color_path = _ensure_color_jacket(sid)
+            data = _jacket_to_grayscale_bytes(color_path)
+            cache_path.write_bytes(data)
+            return data
+
+        try:
+            data = await asyncio.to_thread(_gray_pipeline)
+            return Response(content=data, media_type="image/webp")
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
+
     try:
-        color_path = _ensure_color_jacket(sid)
-        return Response(content=color_path.read_bytes(), media_type="image/webp")
+        color_path = await asyncio.to_thread(_ensure_color_jacket, sid)
+        data = await asyncio.to_thread(color_path.read_bytes)
+        return Response(content=data, media_type="image/webp")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 

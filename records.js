@@ -2,6 +2,11 @@
  * 記録一覧ページ: ログイン済みユーザーの記録を Lv. / 難易度でグループ表示
  */
 
+import { mountStandaloneAuth } from '/auth-ui.js?v=20260325a';
+
+/** @type {ReturnType<typeof mountStandaloneAuth> | null} */
+let recordsAuthUi = null;
+
 const state = {
   token: localStorage.getItem('prsk_ocr_token') || null,
   user: null,
@@ -573,7 +578,7 @@ function renderGroups() {
                 const dataAttrs = hasRecord
                   ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}" data-taken-at="${r.taken_at || ''}"`
                   : '';
-                const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
+                const imgUrl = hasRecord ? jacketUrl(slot.songId) : jacketProxyUrl(slot.songId, true);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
                 const titleText = slot.song?.title || `ID:${slot.songId}`;
                 return `
@@ -632,7 +637,7 @@ function updateOneCard(songId, difficulty, record) {
       card.classList.add('record-card-fc');
     }
     const img = card.querySelector('.record-card-jacket');
-    if (img) img.src = jacketProxyUrl(songId, false);
+    if (img) img.src = jacketUrl(songId);
     let badge = card.querySelector('.record-card-point-minus-badge');
     if (!badge) {
       badge = document.createElement('span');
@@ -687,7 +692,7 @@ function openDetail(btn) {
   const addManualBtn = $('#record-detail-add-manual');
   const timeEl = $('#record-detail-time');
 
-  jacketEl.src = jacketProxyUrl(songId);
+  jacketEl.src = hasRecord ? jacketUrl(songId) : jacketProxyUrl(songId, true);
   jacketEl.alt = title;
   titleEl.textContent = title;
   const takenAt = btn.dataset.takenAt || '';
@@ -896,6 +901,18 @@ async function init() {
   try {
     ensureRecordsTitleHomeLink();
 
+    recordsAuthUi = mountStandaloneAuth({
+      afterLogin: (u) => {
+        window.location.href = `/records/${encodeURIComponent(u.username)}`;
+      },
+      onLogout: () => {
+        window.location.href = '/records/me';
+      },
+    });
+    await recordsAuthUi.init();
+    state.token = recordsAuthUi.getToken();
+    state.user = recordsAuthUi.getUser();
+
     // /records/{username} または トップ / から username を決める
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
@@ -909,18 +926,6 @@ async function init() {
     const dbRes = await fetch('/songDatabase.json');
     if (dbRes.ok) state.songDatabase = await dbRes.json();
 
-    // ログインしていれば me を取得（編集可否の判定に使う）
-    if (state.token) {
-      const meRes = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${state.token}` } });
-      const meData = meRes.ok ? await meRes.json().catch(() => ({})) : null;
-      if (meData?.user) {
-        state.user = meData.user;
-      } else {
-        state.token = null;
-        localStorage.removeItem('prsk_ocr_token');
-      }
-    }
-
     // トップ / かつログイン済み → URL にユーザー名が無くても自分のマイページとして表示
     if (!state.pageUsername && state.user?.username) {
       state.pageUsername = state.user.username;
@@ -933,6 +938,11 @@ async function init() {
       loginRequiredEl.style.display = 'block';
       contentEl.style.display = 'none';
       emptyEl.style.display = 'none';
+      const lob = $('#records-login-open-btn');
+      if (lob && !lob.dataset.authBound) {
+        lob.dataset.authBound = '1';
+        lob.addEventListener('click', () => recordsAuthUi?.openAuthModal('login'));
+      }
       return;
     }
     const publicRes = await fetch(`/api/public/records?username=${encodeURIComponent(state.pageUsername)}`);
@@ -945,9 +955,9 @@ async function init() {
 
     state.canEdit = !!(state.user?.username && state.user.username === state.pageUsername);
 
-    const authUser = $('#auth-user');
-    if (authUser) {
-      authUser.textContent = state.pageUsername || '';
+    const pageOwnerEl = $('#records-page-owner');
+    if (pageOwnerEl) {
+      pageOwnerEl.textContent = state.pageUsername || '';
     }
 
     if (manualEntryBtn) {
@@ -960,21 +970,6 @@ async function init() {
         await loadIngestTokens();
       } else {
         ingestPanel.style.display = 'none';
-      }
-    }
-
-    const logoutBtn = $('#auth-logout-btn');
-    if (logoutBtn) {
-      if (state.user) {
-        logoutBtn.style.display = '';
-        logoutBtn.addEventListener('click', () => {
-          state.token = null;
-          state.user = null;
-          localStorage.removeItem('prsk_ocr_token');
-          window.location.href = '/records/me';
-        });
-      } else {
-        logoutBtn.style.display = 'none';
       }
     }
 

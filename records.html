@@ -11,7 +11,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/records.css?v=20260327f">
+  <link rel="stylesheet" href="/records.css?v=20260325a">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
     <header class="app-header records-page-header">
       <div class="mypage-header">
         <div class="mypage-user">
-          <span class="auth-user" id="auth-user"></span>
+          <span class="records-page-owner" id="records-page-owner"></span>
           <div class="records-count" id="records-count"></div>
         </div>
         <div class="mypage-title">
@@ -30,8 +30,32 @@
             <a href="/ocr.html" class="btn btn-ghost btn-sm" id="to-ocr-link">OCRする</a>
             <button type="button" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</button>
             <button type="button" class="btn btn-ghost btn-sm" id="records-refresh-btn">更新</button>
+            <span class="records-auth-user" id="auth-user" style="display: none;"></span>
+            <button type="button" class="btn btn-ghost btn-sm" id="auth-login-btn">ログイン</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="auth-register-btn">新規登録</button>
             <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
           </div>
+        </div>
+      </div>
+      <div class="auth-modal" id="auth-modal" style="display: none;" aria-hidden="true">
+        <div class="auth-modal-backdrop" id="auth-modal-backdrop"></div>
+        <div class="auth-modal-content">
+          <h3 class="auth-modal-title" id="auth-modal-title">ログイン</h3>
+          <form id="auth-form">
+            <label class="auth-field">
+              <span>ユーザー名</span>
+              <input type="text" id="auth-username" autocomplete="username" required minlength="2">
+            </label>
+            <label class="auth-field">
+              <span>パスワード</span>
+              <input type="password" id="auth-password" autocomplete="current-password" required minlength="6">
+            </label>
+            <p class="auth-error" id="auth-error"></p>
+            <div class="auth-modal-actions">
+              <button type="button" class="btn btn-ghost" id="auth-modal-cancel">キャンセル</button>
+              <button type="submit" class="btn btn-primary" id="auth-submit">ログイン</button>
+            </div>
+          </form>
         </div>
       </div>
     </header>
@@ -39,6 +63,7 @@
     <main class="main-content records-main">
       <div id="records-login-required" class="records-message" style="display: none;">
         <p>ログインしてください。</p>
+        <button type="button" class="btn btn-primary btn-sm" id="records-login-open-btn">ログイン / 新規登録</button>
       </div>
       <div id="records-loading" class="records-message">
         <p>読み込み中...</p>
@@ -131,7 +156,7 @@
     </div>
   </div>
 
-  <script type="module" src="/records.js?v=20260327f"></script>
+  <script type="module" src="/records.js?v=20260325a"></script>
 </body>
 
 </html>
