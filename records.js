@@ -77,6 +77,75 @@ function getSongById(songId) {
   );
 }
 
+/** songDatabase の difficulties から totalNoteCount（ocr-postprocess と同じ解釈） */
+function getTotalNoteCountForDifficulty(song, difficulty) {
+  if (!song?.difficulties) return null;
+  const d = String(difficulty || '').toLowerCase();
+  const raw = song.difficulties[d] ?? song.difficulties[difficulty] ?? null;
+  if (raw == null) return null;
+  if (typeof raw === 'number') return raw > 0 && Number.isFinite(raw) ? raw : null;
+  const n = raw.totalNoteCount;
+  return typeof n === 'number' && n > 0 && Number.isFinite(n) ? n : null;
+}
+
+function slotPointPercent(slot) {
+  if (!slot?.record || !slot.song) return null;
+  const tn = getTotalNoteCountForDifficulty(slot.song, slot.difficulty);
+  if (tn == null) return null;
+  const pt = slot.record.point;
+  if (typeof pt !== 'number' || !Number.isFinite(pt)) return null;
+  return (pt / tn) * 100;
+}
+
+function averageFinite(values) {
+  const v = values.filter((x) => x != null && Number.isFinite(x));
+  if (v.length === 0) return null;
+  return v.reduce((a, b) => a + b, 0) / v.length;
+}
+
+function computePercentAggregates(groups) {
+  const allPercents = [];
+  const byLevel = new Map();
+  for (const g of groups) {
+    const levelPercents = [];
+    for (const df of g.difficulties) {
+      for (const slot of df.slots) {
+        const p = slotPointPercent(slot);
+        if (p == null) continue;
+        allPercents.push(p);
+        levelPercents.push(p);
+      }
+    }
+    byLevel.set(String(g.playLevel), averageFinite(levelPercents));
+  }
+  return { overall: averageFinite(allPercents), byLevel };
+}
+
+function setOverallPctHeader(overall) {
+  const overallEl = $('#records-overall-pct-avg');
+  if (!overallEl) return;
+  if (overall == null || !Number.isFinite(overall)) {
+    overallEl.hidden = true;
+    overallEl.textContent = '';
+  } else {
+    overallEl.hidden = false;
+    overallEl.textContent = `平均 ${overall.toFixed(4)}%`;
+  }
+}
+
+/** カード1枚更新後にヘッダー・Lv 行の平均だけ再計算 */
+function syncPointPercentSummary() {
+  if (!groupsEl) return;
+  const groups = buildSlotsByLevel();
+  const agg = computePercentAggregates(groups);
+  setOverallPctHeader(agg.overall);
+  groupsEl.querySelectorAll('.records-level-pct-avg').forEach((el) => {
+    const lv = el.getAttribute('data-play-level');
+    const v = lv != null ? agg.byLevel.get(lv) : null;
+    el.textContent = v != null && Number.isFinite(v) ? `平均 ${v.toFixed(4)}%` : '';
+  });
+}
+
 async function apiCall(path, options = {}) {
   const headers = { ...options.headers, 'Content-Type': 'application/json' };
   if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
@@ -512,8 +581,10 @@ function renderGroups() {
   if (groups.length === 0) {
     contentEl.style.display = 'none';
     emptyEl.style.display = 'block';
+    setOverallPctHeader(null);
     return;
   }
+  const pctAgg = computePercentAggregates(groups);
   emptyEl.style.display = 'none';
   contentEl.style.display = 'block';
 
@@ -546,11 +617,15 @@ function renderGroups() {
       const mainText = `AP ${st.main.ap}/${st.main.total} · FC ${st.main.fc}/${st.main.total}`;
       const appendText = `APPEND AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
       const pid = panelId(g.playLevel);
+      const lvlAvg = pctAgg.byLevel.get(String(g.playLevel));
+      const levelPctText =
+        lvlAvg != null && Number.isFinite(lvlAvg) ? `平均 ${lvlAvg.toFixed(4)}%` : '';
       return `
     <section class="records-level-section" data-level="${g.playLevel}">
       <h2 class="records-level-title">
         <button type="button" class="records-level-toggle" aria-expanded="false" aria-controls="${pid}" id="records-lv-btn-${g.playLevel}">
           <span class="records-level-toggle-label">Lv.${g.playLevel}</span>
+          <span class="records-level-pct-avg" data-play-level="${g.playLevel}">${escapeHtml(levelPctText)}</span>
           <span class="records-level-stats">
             <span class="records-level-stat records-level-stat-main">${escapeHtml(mainText)}</span>
             <span class="records-level-stat records-level-stat-append">${escapeHtml(appendText)}</span>
@@ -581,10 +656,18 @@ function renderGroups() {
                 const imgUrl = hasRecord ? jacketUrl(slot.songId) : jacketProxyUrl(slot.songId, true);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
                 const titleText = slot.song?.title || `ID:${slot.songId}`;
+                const pctVal = hasRecord ? slotPointPercent(slot) : null;
+                const pointLine =
+                  hasRecord && r
+                    ? pctVal != null
+                      ? `Point ${r.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
+                      : `Point ${r.point.toLocaleString()}`
+                    : '';
                 return `
               <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
                 <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">
                 ${hasRecord ? `<span class="record-card-point-minus-badge">${pm}</span>` : ''}
+                ${pointLine ? `<span class="record-card-point-line">${escapeHtml(pointLine)}</span>` : ''}
                 <span class="record-card-title">${escapeHtml(titleText)}</span>
               </button>
             `;
@@ -607,6 +690,7 @@ function renderGroups() {
 
   bindLevelAccordions();
   applyOpenLevelAccordionKeys(openLevelKeys);
+  setOverallPctHeader(pctAgg.overall);
 }
 
 /**
@@ -647,6 +731,22 @@ function updateOneCard(songId, difficulty, record) {
     }
     badge.textContent = String(calcPointMinus(record));
     badge.hidden = false;
+    const song = getSongById(songId);
+    const slot = { song, difficulty: (difficulty || '').toLowerCase(), record };
+    const pctVal = slotPointPercent(slot);
+    const pl =
+      pctVal != null
+        ? `Point ${record.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
+        : `Point ${record.point.toLocaleString()}`;
+    let pointLineEl = card.querySelector('.record-card-point-line');
+    if (!pointLineEl) {
+      pointLineEl = document.createElement('span');
+      pointLineEl.className = 'record-card-point-line';
+      const titleSpan = card.querySelector('.record-card-title');
+      if (titleSpan) card.insertBefore(pointLineEl, titleSpan);
+      else card.appendChild(pointLineEl);
+    }
+    pointLineEl.textContent = pl;
   } else {
     delete card.dataset.perfect;
     delete card.dataset.great;
@@ -661,8 +761,10 @@ function updateOneCard(songId, difficulty, record) {
     if (img) img.src = jacketProxyUrl(songId, true);
     const badge = card.querySelector('.record-card-point-minus-badge');
     if (badge) badge.hidden = true;
+    card.querySelector('.record-card-point-line')?.remove();
   }
   updateRecordsCount();
+  syncPointPercentSummary();
 }
 
 function openDetail(btn) {
@@ -712,7 +814,12 @@ function openDetail(btn) {
     }
   } else {
     pointEl.parentElement.classList.remove('record-detail-no-record');
-    pointEl.textContent = `Point: ${recordData.point.toLocaleString()}`;
+    const tn = getTotalNoteCountForDifficulty(song, diffNorm);
+    const pctVal = tn != null ? (recordData.point / tn) * 100 : null;
+    pointEl.textContent =
+      pctVal != null && Number.isFinite(pctVal)
+        ? `Point: ${recordData.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
+        : `Point: ${recordData.point.toLocaleString()}`;
     judgmentsEl.innerHTML = ['PERFECT', 'GREAT', 'GOOD', 'BAD', 'MISS']
       .map(
         (j) => `

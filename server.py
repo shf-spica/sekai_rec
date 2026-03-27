@@ -260,6 +260,15 @@ class IngestOcrTextBody(BaseModel):
     taken_at: str | None = Field(None, validation_alias=AliasChoices("taken_at", "takenAt"))
 
 
+_INGEST_OCR_BATCH_MAX = 50
+
+
+class IngestOcrTextBatchBody(BaseModel):
+    """複数件を 1 リクエストで POST（中身は各要素が従来の fullText + takenAt と同じ）。"""
+
+    items: list[IngestOcrTextBody] = Field(..., min_length=1, max_length=_INGEST_OCR_BATCH_MAX)
+
+
 _ROOT = Path(__file__).resolve().parent
 _PARSE_OCR_CLI = _ROOT / "scripts" / "parse_ocr_cli.mjs"
 
@@ -283,6 +292,24 @@ def get_ingest_token_string(
     return None
 
 
+def _ingest_ocr_error_payload(
+    status_code: int,
+    error_code: str,
+    *,
+    message: str | None = None,
+    parsed: dict | None = None,
+    **extra,
+) -> dict:
+    """ingest 用 JSON 本文（error / http_status 必須）。"""
+    body: dict = {"error": error_code, "http_status": status_code}
+    if message is not None:
+        body["message"] = message
+    if parsed is not None:
+        body["parsed"] = parsed
+    body.update(extra)
+    return body
+
+
 def _ingest_ocr_json_error(
     status_code: int,
     error_code: str,
@@ -292,16 +319,15 @@ def _ingest_ocr_json_error(
     **extra,
 ) -> JSONResponse:
     """iOS ショートカット向け: error は常に文字列（成功相当は別ルートで \"false\"）。失敗時はエラーコードを error に入れる。"""
-    body: dict = {"error": error_code, "http_status": status_code}
-    if message is not None:
-        body["message"] = message
-    if parsed is not None:
-        body["parsed"] = parsed
-    body.update(extra)
-    return JSONResponse(status_code=status_code, content=body)
+    return JSONResponse(
+        status_code=status_code,
+        content=_ingest_ocr_error_payload(
+            status_code, error_code, message=message, parsed=parsed, **extra
+        ),
+    )
 
 
-def _ingest_ocr_from_subprocess_http_exception(exc: HTTPException) -> JSONResponse:
+def _ingest_ocr_subprocess_http_payload(exc: HTTPException) -> tuple[int, dict]:
     code = exc.status_code
     d = exc.detail
     if isinstance(d, dict):
@@ -320,10 +346,7 @@ def _ingest_ocr_from_subprocess_http_exception(exc: HTTPException) -> JSONRespon
                 if code == 504
                 else "postprocess_error"
             )
-        return JSONResponse(
-            status_code=code,
-            content={"error": err_str, "http_status": code, **merged},
-        )
+        return code, {"error": err_str, "http_status": code, **merged}
     err = (
         "postprocess_failed"
         if code == 500
@@ -333,7 +356,12 @@ def _ingest_ocr_from_subprocess_http_exception(exc: HTTPException) -> JSONRespon
         if code == 504
         else "postprocess_error"
     )
-    return _ingest_ocr_json_error(code, err, message=str(d))
+    return code, _ingest_ocr_error_payload(code, err, message=str(d))
+
+
+def _ingest_ocr_from_subprocess_http_exception(exc: HTTPException) -> JSONResponse:
+    code, payload = _ingest_ocr_subprocess_http_payload(exc)
+    return JSONResponse(status_code=code, content=payload)
 
 
 def _resolve_user_id_for_ingest_token(token: str) -> int | None:
@@ -642,10 +670,18 @@ async def api_ingest_ocr_text_probe():
             "X-Ingest-Token": "ingest_token のみ（Authorization の代替。プロキシが Bearer を落とすとき用）",
             "Content-Type": "application/json",
         },
-        "body": {
+        "body_single": {
             "fullText": "マスク後OCRの全文（改行含む）",
             "takenAt": "任意 yyyy/mm/dd hh:mm など",
         },
+        "batch_endpoint": "/api/ingest/ocr-text/batch",
+        "body_batch": {
+            "items": [
+                {"fullText": "…", "takenAt": "2025/01/01 12:00"},
+                {"fullText": "…"},
+            ],
+        },
+        "batch_max_items": _INGEST_OCR_BATCH_MAX,
         "response_status_codes": {
             "200": "成功",
             "400": "full_text 空 / taken_at 不正",
@@ -658,6 +694,112 @@ async def api_ingest_ocr_text_probe():
         },
         "response_body_shortcuts": "JSON 先頭レベルに常に error（文字列）と http_status（int）。成功時 error は \"false\"、失敗時はエラーコード文字列。ショートカットはここで分岐可能。",
     }
+
+
+async def _ingest_ocr_text_process_one(
+    user_id: int,
+    body: IngestOcrTextBody,
+    *,
+    skip_notify: bool = False,
+) -> tuple[int, dict]:
+    """1 件分の解析・保存。戻り値は (HTTP ステータス, JSON 本文)。"""
+    try:
+        full_text = (body.full_text or "").strip()
+        if not full_text:
+            return 400, _ingest_ocr_error_payload(400, "empty_full_text", message="full_text is empty")
+
+        taken_raw = (body.taken_at or "").strip() or None
+        if taken_raw:
+            try:
+                taken_at = _normalize_taken_at(taken_raw)
+            except HTTPException as e:
+                return 400, _ingest_ocr_error_payload(
+                    400,
+                    "bad_taken_at",
+                    message=str(e.detail),
+                )
+        else:
+            taken_at = None
+
+        try:
+            parsed = _run_parse_ocr_postprocess(full_text)
+        except HTTPException as e:
+            code, payload = _ingest_ocr_subprocess_http_payload(e)
+            return code, payload
+
+        if parsed.get("songError"):
+            return 404, {
+                "error": "song_not_identified",
+                "http_status": 404,
+                "parsed": parsed,
+            }
+        if parsed.get("judgmentsSumError"):
+            return 422, {
+                "error": "judgments_invalid",
+                "http_status": 422,
+                "parsed": parsed,
+            }
+
+        song_id = parsed.get("songId")
+        if song_id is None:
+            return 404, {
+                "error": "missing_song_id",
+                "http_status": 404,
+                "parsed": parsed,
+            }
+
+        try:
+            sid = int(song_id)
+        except (TypeError, ValueError):
+            return 422, {
+                "error": "bad_song_id",
+                "http_status": 422,
+                "songId": song_id,
+                "parsed": parsed,
+            }
+
+        j = parsed.get("judgments") or {}
+        for k in ("PERFECT", "GREAT", "GOOD", "BAD", "MISS"):
+            if not isinstance(j.get(k), int):
+                return 422, {
+                    "error": "incomplete_judgments",
+                    "http_status": 422,
+                    "parsed": parsed,
+                }
+
+        difficulty = parsed.get("difficulty") or "master"
+        if not isinstance(parsed.get("point"), int):
+            return 422, {
+                "error": "invalid_point",
+                "http_status": 422,
+                "parsed": parsed,
+            }
+
+        rec = RecordBody(
+            song_id=sid,
+            difficulty=str(difficulty),
+            perfect=int(j["PERFECT"]),
+            great=int(j["GREAT"]),
+            good=int(j["GOOD"]),
+            bad=int(j["BAD"]),
+            miss=int(j["MISS"]),
+            point=int(parsed["point"]),
+            taken_at=taken_at,
+        )
+
+        with get_db() as conn:
+            out = _upsert_user_record(conn, user_id, rec)
+            urow = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
+        if out.get("saved") and urow and not skip_notify:
+            await notify_mypage_records_updated(urow["username"])
+        return 200, {"error": "false", "http_status": 200, **out, "parsed": parsed}
+    except Exception as e:
+        logger.exception("_ingest_ocr_text_process_one failed")
+        return 500, _ingest_ocr_error_payload(
+            500,
+            "internal",
+            message=f"{type(e).__name__}: {e}"[:800],
+        )
 
 
 @app.post("/api/ingest/ocr-text")
@@ -684,134 +826,74 @@ async def api_ingest_ocr_text(
       503 / 504 Node 関連
 
     リクエスト JSON の形エラーは FastAPI 標準の 422 になり、error フィールドは付かないことがある。
+
+    複数件は POST /api/ingest/ocr-text/batch（本文に items 配列）。
     """
-    try:
-        if not ingest_token:
-            return _ingest_ocr_json_error(
-                401,
-                "missing_token",
-                message="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
-            )
-        user_id = _resolve_user_id_for_ingest_token(ingest_token)
-        if user_id is None:
-            return _ingest_ocr_json_error(401, "invalid_token", message="Invalid ingest token")
-
-        full_text = (body.full_text or "").strip()
-        if not full_text:
-            return _ingest_ocr_json_error(400, "empty_full_text", message="full_text is empty")
-
-        taken_raw = (body.taken_at or "").strip() or None
-        if taken_raw:
-            try:
-                taken_at = _normalize_taken_at(taken_raw)
-            except HTTPException as e:
-                return _ingest_ocr_json_error(
-                    400,
-                    "bad_taken_at",
-                    message=str(e.detail),
-                )
-        else:
-            taken_at = None
-
-        try:
-            parsed = _run_parse_ocr_postprocess(full_text)
-        except HTTPException as e:
-            return _ingest_ocr_from_subprocess_http_exception(e)
-
-        if parsed.get("songError"):
-            return JSONResponse(
-                status_code=404,
-                content={
-                    "error": "song_not_identified",
-                    "http_status": 404,
-                    "parsed": parsed,
-                },
-            )
-        if parsed.get("judgmentsSumError"):
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "error": "judgments_invalid",
-                    "http_status": 422,
-                    "parsed": parsed,
-                },
-            )
-
-        song_id = parsed.get("songId")
-        if song_id is None:
-            return JSONResponse(
-                status_code=404,
-                content={
-                    "error": "missing_song_id",
-                    "http_status": 404,
-                    "parsed": parsed,
-                },
-            )
-
-        try:
-            sid = int(song_id)
-        except (TypeError, ValueError):
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "error": "bad_song_id",
-                    "http_status": 422,
-                    "songId": song_id,
-                    "parsed": parsed,
-                },
-            )
-
-        j = parsed.get("judgments") or {}
-        for k in ("PERFECT", "GREAT", "GOOD", "BAD", "MISS"):
-            if not isinstance(j.get(k), int):
-                return JSONResponse(
-                    status_code=422,
-                    content={
-                        "error": "incomplete_judgments",
-                        "http_status": 422,
-                        "parsed": parsed,
-                    },
-                )
-
-        difficulty = parsed.get("difficulty") or "master"
-        if not isinstance(parsed.get("point"), int):
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "error": "invalid_point",
-                    "http_status": 422,
-                    "parsed": parsed,
-                },
-            )
-
-        rec = RecordBody(
-            song_id=sid,
-            difficulty=str(difficulty),
-            perfect=int(j["PERFECT"]),
-            great=int(j["GREAT"]),
-            good=int(j["GOOD"]),
-            bad=int(j["BAD"]),
-            miss=int(j["MISS"]),
-            point=int(parsed["point"]),
-            taken_at=taken_at,
-        )
-
-        with get_db() as conn:
-            out = _upsert_user_record(conn, user_id, rec)
-            urow = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
-        if out.get("saved") and urow:
-            await notify_mypage_records_updated(urow["username"])
-        return JSONResponse(
-            status_code=200,
-            content={"error": "false", "http_status": 200, **out, "parsed": parsed},
-        )
-    except Exception as e:
-        logger.exception("api_ingest_ocr_text failed")
+    if not ingest_token:
         return _ingest_ocr_json_error(
-            500,
-            "internal",
-            message=f"{type(e).__name__}: {e}"[:800],
+            401,
+            "missing_token",
+            message="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
         )
+    user_id = _resolve_user_id_for_ingest_token(ingest_token)
+    if user_id is None:
+        return _ingest_ocr_json_error(401, "invalid_token", message="Invalid ingest token")
+
+    status, payload = await _ingest_ocr_text_process_one(user_id, body, skip_notify=False)
+    return JSONResponse(status_code=status, content=payload)
+
+
+@app.post("/api/ingest/ocr-text/batch")
+async def api_ingest_ocr_text_batch(
+    body: IngestOcrTextBatchBody,
+    ingest_token: str | None = Depends(get_ingest_token_string),
+):
+    """
+    複数の { fullText, takenAt } を 1 回の POST で送る。各要素の処理内容は /api/ingest/ocr-text と同じ。
+    HTTP ステータスは常に 200（トークンエラー時のみ 401）。各要素の成否は results[].http_status / error を見る。
+    いずれかで DB に保存があれば、終了後にマイページ SSE 通知は最大 1 回。
+    """
+    if not ingest_token:
+        return _ingest_ocr_json_error(
+            401,
+            "missing_token",
+            message="Authorization: Bearer <ingest_token> または X-Ingest-Token: <ingest_token>",
+        )
+    user_id = _resolve_user_id_for_ingest_token(ingest_token)
+    if user_id is None:
+        return _ingest_ocr_json_error(401, "invalid_token", message="Invalid ingest token")
+
+    results: list[dict] = []
+    any_saved = False
+    for i, item in enumerate(body.items):
+        status, payload = await _ingest_ocr_text_process_one(user_id, item, skip_notify=True)
+        results.append({**payload, "index": i})
+        if status == 200 and payload.get("error") == "false" and payload.get("saved") is True:
+            any_saved = True
+
+    if any_saved:
+        with get_db() as conn:
+            urow = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
+        if urow:
+            await notify_mypage_records_updated(urow["username"])
+
+    saved_count = sum(
+        1
+        for r in results
+        if r.get("http_status") == 200 and r.get("error") == "false" and r.get("saved") is True
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "error": "false",
+            "http_status": 200,
+            "batch": True,
+            "total": len(results),
+            "saved_count": saved_count,
+            "failed_count": len(results) - saved_count,
+            "results": results,
+        },
+    )
 
 
 @app.get("/api/ingest-tokens")
