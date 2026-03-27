@@ -88,16 +88,6 @@ function getTotalNoteCountForDifficulty(song, difficulty) {
   return typeof n === 'number' && n > 0 && Number.isFinite(n) ? n : null;
 }
 
-/** 記録あり・totalNoteCount ありのときだけ。Point/(totalNoteCount*3)*100 */
-function slotRecordScorePercent(slot) {
-  if (!slot?.record || !slot.song) return null;
-  const tn = getTotalNoteCountForDifficulty(slot.song, slot.difficulty);
-  if (tn == null) return null;
-  const pt = slot.record.point;
-  if (typeof pt !== 'number' || !Number.isFinite(pt)) return null;
-  return (pt / (tn * 3)) * 100;
-}
-
 /**
  * 総平均・レベル別平均: totalNoteCount が取れる全スロット（一覧に出る譜面）を母数。
  * 記録なしは 0% として合算。母数に入れないのは DB に totalNoteCount が無い譜面のみ。
@@ -137,7 +127,7 @@ function setOverallPctHeader(overall) {
     overallEl.textContent = '';
   } else {
     overallEl.hidden = false;
-    overallEl.textContent = `平均 ${overall.toFixed(4)}%`;
+    overallEl.textContent = `${overall.toFixed(4)}%`;
   }
 }
 
@@ -150,7 +140,7 @@ function syncPointPercentSummary() {
   groupsEl.querySelectorAll('.records-level-pct-avg').forEach((el) => {
     const lv = el.getAttribute('data-play-level');
     const v = lv != null ? agg.byLevel.get(lv) : null;
-    el.textContent = v != null && Number.isFinite(v) ? `平均 ${v.toFixed(4)}%` : '';
+    el.textContent = v != null && Number.isFinite(v) ? `${v.toFixed(4)}%` : '';
   });
 }
 
@@ -626,8 +616,7 @@ function renderGroups() {
       const appendText = `APPEND AP ${st.append.ap}/${st.append.total} · FC ${st.append.fc}/${st.append.total}`;
       const pid = panelId(g.playLevel);
       const lvlAvg = pctAgg.byLevel.get(String(g.playLevel));
-      const levelPctText =
-        lvlAvg != null && Number.isFinite(lvlAvg) ? `平均 ${lvlAvg.toFixed(4)}%` : '';
+      const levelPctText = lvlAvg != null && Number.isFinite(lvlAvg) ? `${lvlAvg.toFixed(4)}%` : '';
       return `
     <section class="records-level-section" data-level="${g.playLevel}">
       <h2 class="records-level-title">
@@ -664,18 +653,10 @@ function renderGroups() {
                 const imgUrl = hasRecord ? jacketUrl(slot.songId) : jacketProxyUrl(slot.songId, true);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
                 const titleText = slot.song?.title || `ID:${slot.songId}`;
-                const pctVal = hasRecord ? slotRecordScorePercent(slot) : null;
-                const pointLine =
-                  hasRecord && r
-                    ? pctVal != null
-                      ? `Point ${r.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
-                      : `Point ${r.point.toLocaleString()}`
-                    : '';
                 return `
               <button type="button" class="${cardClasses.join(' ')}" data-song-id="${slot.songId}" data-difficulty="${escapeHtml(slot.difficulty)}" data-has-record="${hasRecord}" ${dataAttrs}>
                 <img class="record-card-jacket" src="${imgUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src=''; this.style.background='var(--bg-card)'">
                 ${hasRecord ? `<span class="record-card-point-minus-badge">${pm}</span>` : ''}
-                ${pointLine ? `<span class="record-card-point-line">${escapeHtml(pointLine)}</span>` : ''}
                 <span class="record-card-title">${escapeHtml(titleText)}</span>
               </button>
             `;
@@ -739,22 +720,6 @@ function updateOneCard(songId, difficulty, record) {
     }
     badge.textContent = String(calcPointMinus(record));
     badge.hidden = false;
-    const song = getSongById(songId);
-    const slot = { song, difficulty: (difficulty || '').toLowerCase(), record };
-    const pctVal = slotRecordScorePercent(slot);
-    const pl =
-      pctVal != null
-        ? `Point ${record.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
-        : `Point ${record.point.toLocaleString()}`;
-    let pointLineEl = card.querySelector('.record-card-point-line');
-    if (!pointLineEl) {
-      pointLineEl = document.createElement('span');
-      pointLineEl.className = 'record-card-point-line';
-      const titleSpan = card.querySelector('.record-card-title');
-      if (titleSpan) card.insertBefore(pointLineEl, titleSpan);
-      else card.appendChild(pointLineEl);
-    }
-    pointLineEl.textContent = pl;
   } else {
     delete card.dataset.perfect;
     delete card.dataset.great;
@@ -769,7 +734,6 @@ function updateOneCard(songId, difficulty, record) {
     if (img) img.src = jacketProxyUrl(songId, true);
     const badge = card.querySelector('.record-card-point-minus-badge');
     if (badge) badge.hidden = true;
-    card.querySelector('.record-card-point-line')?.remove();
   }
   updateRecordsCount();
   syncPointPercentSummary();

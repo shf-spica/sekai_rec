@@ -55,9 +55,9 @@
 }
 
 .records-overall-pct-avg {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .mypage-actions .records-auth-user {
@@ -320,14 +320,6 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
-}
-
-.record-card-point-line {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  line-height: 1.25;
-  max-width: 100%;
 }
 
 .record-card-point-minus-badge {
