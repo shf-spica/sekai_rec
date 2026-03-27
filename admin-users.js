@@ -44,7 +44,7 @@ async function init() {
 
     const titleLink = document.querySelector('a.title-link');
     if (titleLink) {
-      titleLink.href = `/records/${encodeURIComponent(state.user.username)}`;
+      titleLink.href = '/home.html';
     }
 
     const logoutBtn = $('#auth-logout-btn');

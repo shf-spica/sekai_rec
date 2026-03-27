@@ -401,6 +401,32 @@ function bindLevelAccordions() {
   });
 }
 
+/** Lv. アコーディオン開いている playLevel（SSE 等で renderGroups しても状態を維持） */
+function getOpenLevelAccordionKeys() {
+  if (!groupsEl) return new Set();
+  const open = new Set();
+  groupsEl.querySelectorAll('.records-level-toggle[aria-expanded="true"]').forEach((btn) => {
+    const section = btn.closest('.records-level-section');
+    const lv = section?.dataset?.level;
+    if (lv != null && lv !== '') open.add(String(lv));
+  });
+  return open;
+}
+
+function applyOpenLevelAccordionKeys(openLevels) {
+  if (!groupsEl || openLevels.size === 0) return;
+  groupsEl.querySelectorAll('.records-level-section').forEach((section) => {
+    const lv = section.dataset.level;
+    if (lv == null || !openLevels.has(String(lv))) return;
+    const btn = section.querySelector('.records-level-toggle');
+    if (!btn) return;
+    const panelId = btn.getAttribute('aria-controls');
+    btn.setAttribute('aria-expanded', 'true');
+    const panel = panelId ? document.getElementById(panelId) : null;
+    if (panel) panel.hidden = false;
+  });
+}
+
 let _recordsEventSource = null;
 let _liveRefreshDebounce = null;
 
@@ -507,6 +533,8 @@ function renderGroups() {
 
   const panelId = (lv) => `records-lv-panel-${lv}`;
 
+  const openLevelKeys = getOpenLevelAccordionKeys();
+
   groupsEl.innerHTML = groups
     .map((g) => {
       const st = levelStats(g);
@@ -573,6 +601,7 @@ function renderGroups() {
   });
 
   bindLevelAccordions();
+  applyOpenLevelAccordionKeys(openLevelKeys);
 }
 
 /**
@@ -856,8 +885,17 @@ async function issueIngestToken() {
   }
 }
 
+const RECORDS_TITLE_HOME_HREF = '/home.html';
+
+function ensureRecordsTitleHomeLink() {
+  const el = document.getElementById('records-site-title-link');
+  if (el) el.setAttribute('href', RECORDS_TITLE_HOME_HREF);
+}
+
 async function init() {
   try {
+    ensureRecordsTitleHomeLink();
+
     // /records/{username} または トップ / から username を決める
     const parts = window.location.pathname.split('/').filter(Boolean);
     if (parts[0] === 'records' && parts[1]) {
@@ -890,8 +928,7 @@ async function init() {
 
     // 公開APIからレコード取得（閲覧は誰でも）
     if (!state.pageUsername) {
-      const titleLink = document.querySelector('a.title-link');
-      if (titleLink) titleLink.href = '/records/me';
+      ensureRecordsTitleHomeLink();
       loadingEl.style.display = 'none';
       loginRequiredEl.style.display = 'block';
       contentEl.style.display = 'none';
@@ -911,11 +948,6 @@ async function init() {
     const authUser = $('#auth-user');
     if (authUser) {
       authUser.textContent = state.pageUsername || '';
-    }
-
-    const titleLink = document.querySelector('a.title-link');
-    if (titleLink && state.pageUsername) {
-      titleLink.href = `/records/${encodeURIComponent(state.pageUsername)}`;
     }
 
     if (manualEntryBtn) {
@@ -996,4 +1028,5 @@ async function init() {
   }
 }
 
+ensureRecordsTitleHomeLink();
 init();

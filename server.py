@@ -1289,7 +1289,7 @@ _static_dir = os.path.dirname(os.path.abspath(__file__))
 
 @app.get("/")
 async def home_root():
-    """トップは案内ページ（home.html）。OCR は /index.html、マイページは /records/…。"""
+    """トップは案内（home.html）。静的配信では index.html が /home.html へリダイレクト。OCR は /ocr.html。"""
     path = Path(_static_dir) / "home.html"
     if not path.exists():
         raise HTTPException(status_code=404, detail="home.html not found")

@@ -11,7 +11,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/records.css?v=20260327d">
+  <link rel="stylesheet" href="/records.css?v=20260327f">
 </head>
 
 <body>
@@ -24,10 +24,10 @@
         </div>
         <div class="mypage-title">
           <h1 class="app-title">
-            <a href="/records/me" class="title-link">SEKAI recorder</a>
+            <a href="/home.html" class="title-link" id="records-site-title-link">SEKAI recorder</a>
           </h1>
           <div class="mypage-actions">
-            <a href="/index.html" class="btn btn-ghost btn-sm" id="to-ocr-link">OCRする</a>
+            <a href="/ocr.html" class="btn btn-ghost btn-sm" id="to-ocr-link">OCRする</a>
             <button type="button" class="btn btn-ghost btn-sm" id="manual-entry-link">手動入力</button>
             <button type="button" class="btn btn-ghost btn-sm" id="records-refresh-btn">更新</button>
             <button type="button" class="btn btn-ghost btn-sm" id="auth-logout-btn" style="display: none;">ログアウト</button>
@@ -55,7 +55,7 @@
       </div>
       <div id="records-empty" class="records-message" style="display: none;">
         <p>記録がまだありません。OCRでリザルトを読み取って保存しましょう。</p>
-        <a href="/index.html" class="btn btn-primary">OCRする</a>
+        <a href="/ocr.html" class="btn btn-primary">OCRする</a>
       </div>
     </main>
 
@@ -131,7 +131,7 @@
     </div>
   </div>
 
-  <script type="module" src="/records.js?v=20260327d"></script>
+  <script type="module" src="/records.js?v=20260327f"></script>
 </body>
 
 </html>

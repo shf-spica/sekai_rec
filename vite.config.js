@@ -101,6 +101,7 @@ export default defineConfig({
       input: {
         home: path.resolve(process.cwd(), 'home.html'),
         index: path.resolve(process.cwd(), 'index.html'),
+        ocr: path.resolve(process.cwd(), 'ocr.html'),
         records: path.resolve(process.cwd(), 'records.html'),
         admin_users: path.resolve(process.cwd(), 'admin-users.html'),
       },

@@ -1279,7 +1279,7 @@ async function init() {
   if (manualSearch) manualSearch.addEventListener('input', renderManualSearchResults);
   if (manualSubmit) manualSubmit.addEventListener('click', submitManualEntry);
 
-  // マイページから遷移してきた場合: index.html?manual=1 で手動入力を開く
+  // マイページから遷移してきた場合: ocr.html?manual=1 で手動入力を開く
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('manual') === '1') {

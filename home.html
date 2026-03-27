@@ -20,7 +20,7 @@
       <h1 class="app-title">SEKAI recorder</h1>
       <p class="app-subtitle">案内・使い方（このページは自由に編集してください）</p>
       <div class="header-actions" style="flex-wrap: wrap; gap: 0.5rem;">
-        <a href="/index.html" class="btn btn-primary btn-sm">リザルトを読み取る（OCR）</a>
+        <a href="/ocr.html" class="btn btn-primary btn-sm">リザルトを読み取る（OCR）</a>
         <a href="/records/me" class="btn btn-ghost btn-sm">マイページへ</a>
       </div>
     </header>
@@ -32,14 +32,14 @@
           ここに手順や注意事項を書いてください。HTML のまま編集できます。
         </p>
         <ul style="margin-top: 1rem; line-height: 1.7; padding-left: 1.25rem;">
-          <li><strong>OCR</strong>：スクリーンショットからスコアを読み取ります → <a href="/index.html">/index.html</a></li>
+          <li><strong>OCR</strong>：スクリーンショットからスコアを読み取ります → <a href="/ocr.html">/ocr.html</a></li>
           <li><strong>マイページ</strong>：記録の一覧・手動入力など → <a href="/records/me">/records/me</a>（未ログイン時は既定ユーザーへ移動します）</li>
         </ul>
       </section>
     </main>
 
     <footer class="app-footer">
-      <p>このファイルは <code>home.html</code> です。ルート <code>/</code> で表示されます。</p>
+      <p>このファイルは <code>home.html</code> です。ルート <code>/</code> はバックエンドなら直表示、nginx 等で <code>index.html</code> が返る場合は <code>/home.html</code> へリダイレクトされます。</p>
     </footer>
   </div>
 </body>
