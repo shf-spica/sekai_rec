@@ -50,12 +50,7 @@ const ingestPanel = $('#ingest-panel');
 const ingestIssueBtn = $('#ingest-issue-btn');
 const ingestTokenList = $('#ingest-token-list');
 
-const JACKET_BASE = 'https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_';
-function jacketUrl(songId) {
-  const id = String(Number(songId)).padStart(3, '0');
-  return `${JACKET_BASE}${id}/jacket_s_${id}.webp`;
-}
-/** 画像表示用: サーバー経由プロキシ（ブロック対策）。grayscale=true でモノクロ（記録なし用） */
+/** 画像は常に /api/jacket 経由（サーバー側ディスクキャッシュ。取得元が不安定でも再訪で安定） */
 function jacketProxyUrl(songId, grayscale = false) {
   const id = String(Number(songId));
   const base = `/api/jacket/${encodeURIComponent(id)}`;
@@ -650,7 +645,7 @@ function renderGroups() {
                 const dataAttrs = hasRecord
                   ? `data-perfect="${r.perfect}" data-great="${r.great}" data-good="${r.good}" data-bad="${r.bad}" data-miss="${r.miss}" data-point="${r.point}" data-taken-at="${r.taken_at || ''}"`
                   : '';
-                const imgUrl = hasRecord ? jacketUrl(slot.songId) : jacketProxyUrl(slot.songId, true);
+                const imgUrl = jacketProxyUrl(slot.songId, !hasRecord);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
                 const titleText = slot.song?.title || `ID:${slot.songId}`;
                 return `
@@ -710,7 +705,7 @@ function updateOneCard(songId, difficulty, record) {
       card.classList.add('record-card-fc');
     }
     const img = card.querySelector('.record-card-jacket');
-    if (img) img.src = jacketUrl(songId);
+    if (img) img.src = jacketProxyUrl(songId, false);
     let badge = card.querySelector('.record-card-point-minus-badge');
     if (!badge) {
       badge = document.createElement('span');
@@ -766,7 +761,7 @@ function openDetail(btn) {
   const addManualBtn = $('#record-detail-add-manual');
   const timeEl = $('#record-detail-time');
 
-  jacketEl.src = hasRecord ? jacketUrl(songId) : jacketProxyUrl(songId, true);
+  jacketEl.src = jacketProxyUrl(songId, !hasRecord);
   jacketEl.alt = title;
   titleEl.textContent = title;
   const takenAt = btn.dataset.takenAt || '';

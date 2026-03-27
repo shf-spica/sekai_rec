@@ -1188,6 +1188,8 @@ async def api_save_dataset(body: DatasetBody):
 
 JACKET_BASE_URL = "https://storage.sekai.best/sekai-jp-assets/music/jacket/jacket_s_{id}/jacket_s_{id}.webp"
 _jacket_cache_dir = Path(__file__).resolve().parent / "jacket_cache"
+_JACKET_CACHE_CONTROL = "public, max-age=604800, stale-while-revalidate=86400"
+_JACKET_FETCH_ATTEMPTS = 3
 
 
 def _jacket_cache_path(sid: str, gray: bool = False) -> Path:
@@ -1195,17 +1197,51 @@ def _jacket_cache_path(sid: str, gray: bool = False) -> Path:
     return _jacket_cache_dir / f"{sid}_gray.webp" if gray else _jacket_cache_dir / f"{sid}.webp"
 
 
+def _jacket_webp_response(data: bytes) -> Response:
+    return Response(
+        content=data,
+        media_type="image/webp",
+        headers={"Cache-Control": _JACKET_CACHE_CONTROL},
+    )
+
+
 def _ensure_color_jacket(sid: str) -> Path:
-    """カラー画像を取得してキャッシュし、パスを返す"""
-    path = _jacket_cache_path(sid, gray=False)
-    if path.exists():
-        return path
-    url = JACKET_BASE_URL.format(id=sid)
+    """カラー画像を取得してディスクにキャッシュ（原子書き込み・失敗時リトライ）。"""
+    import time
     import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        path.write_bytes(resp.read())
-    return path
+
+    path = _jacket_cache_path(sid, gray=False)
+    try:
+        if path.exists() and path.stat().st_size > 0:
+            return path
+    except OSError:
+        pass
+
+    url = JACKET_BASE_URL.format(id=sid)
+    tmp = path.with_name(path.name + ".tmp")
+    last_err: Exception | None = None
+    for attempt in range(_JACKET_FETCH_ATTEMPTS):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "prsk-ocr/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                body = resp.read()
+            if not body:
+                raise ValueError("empty jacket body")
+            tmp.write_bytes(body)
+            os.replace(tmp, path)
+            return path
+        except Exception as e:
+            last_err = e
+            logger.warning("jacket fetch sid=%s attempt %s/%s: %s", sid, attempt + 1, _JACKET_FETCH_ATTEMPTS, e)
+            try:
+                if tmp.exists():
+                    tmp.unlink()
+            except OSError:
+                pass
+            if attempt + 1 < _JACKET_FETCH_ATTEMPTS:
+                time.sleep(0.5 * (attempt + 1))
+    assert last_err is not None
+    raise last_err
 
 
 def _jacket_to_grayscale_bytes(color_path: Path) -> bytes:
@@ -1229,27 +1265,33 @@ async def api_jacket(song_id: str, gray: int = 0):
     cache_path = _jacket_cache_path(sid, gray=use_gray)
 
     if cache_path.exists():
-        data = await asyncio.to_thread(cache_path.read_bytes)
-        return Response(content=data, media_type="image/webp")
+        try:
+            if cache_path.stat().st_size > 0:
+                data = await asyncio.to_thread(cache_path.read_bytes)
+                return _jacket_webp_response(data)
+        except OSError:
+            pass
 
     if use_gray:
 
         def _gray_pipeline():
             color_path = _ensure_color_jacket(sid)
             data = _jacket_to_grayscale_bytes(color_path)
-            cache_path.write_bytes(data)
+            tmp = cache_path.with_name(cache_path.name + ".tmp")
+            tmp.write_bytes(data)
+            os.replace(tmp, cache_path)
             return data
 
         try:
             data = await asyncio.to_thread(_gray_pipeline)
-            return Response(content=data, media_type="image/webp")
+            return _jacket_webp_response(data)
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 
     try:
         color_path = await asyncio.to_thread(_ensure_color_jacket, sid)
         data = await asyncio.to_thread(color_path.read_bytes)
-        return Response(content=data, media_type="image/webp")
+        return _jacket_webp_response(data)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch jacket: {e}")
 
