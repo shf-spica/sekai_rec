@@ -88,37 +88,45 @@ function getTotalNoteCountForDifficulty(song, difficulty) {
   return typeof n === 'number' && n > 0 && Number.isFinite(n) ? n : null;
 }
 
-function slotPointPercent(slot) {
+/** 記録あり・totalNoteCount ありのときだけ。Point/(totalNoteCount*3)*100 */
+function slotRecordScorePercent(slot) {
   if (!slot?.record || !slot.song) return null;
   const tn = getTotalNoteCountForDifficulty(slot.song, slot.difficulty);
   if (tn == null) return null;
   const pt = slot.record.point;
   if (typeof pt !== 'number' || !Number.isFinite(pt)) return null;
-  return (pt / tn) * 100;
+  return (pt / (tn * 3)) * 100;
 }
 
-function averageFinite(values) {
-  const v = values.filter((x) => x != null && Number.isFinite(x));
-  if (v.length === 0) return null;
-  return v.reduce((a, b) => a + b, 0) / v.length;
-}
-
+/**
+ * 総平均・レベル別平均: totalNoteCount が取れる全スロット（一覧に出る譜面）を母数。
+ * 記録なしは 0% として合算。母数に入れないのは DB に totalNoteCount が無い譜面のみ。
+ */
 function computePercentAggregates(groups) {
-  const allPercents = [];
+  const allContrib = [];
   const byLevel = new Map();
   for (const g of groups) {
-    const levelPercents = [];
+    let levelSum = 0;
+    let levelCount = 0;
     for (const df of g.difficulties) {
       for (const slot of df.slots) {
-        const p = slotPointPercent(slot);
-        if (p == null) continue;
-        allPercents.push(p);
-        levelPercents.push(p);
+        const tn = getTotalNoteCountForDifficulty(slot.song, slot.difficulty);
+        if (tn == null) continue;
+        const pt =
+          slot.record && typeof slot.record.point === 'number' && Number.isFinite(slot.record.point)
+            ? slot.record.point
+            : 0;
+        const pct = (pt / (tn * 3)) * 100;
+        allContrib.push(pct);
+        levelSum += pct;
+        levelCount += 1;
       }
     }
-    byLevel.set(String(g.playLevel), averageFinite(levelPercents));
+    byLevel.set(String(g.playLevel), levelCount > 0 ? levelSum / levelCount : null);
   }
-  return { overall: averageFinite(allPercents), byLevel };
+  const overall =
+    allContrib.length > 0 ? allContrib.reduce((a, b) => a + b, 0) / allContrib.length : null;
+  return { overall, byLevel };
 }
 
 function setOverallPctHeader(overall) {
@@ -656,7 +664,7 @@ function renderGroups() {
                 const imgUrl = hasRecord ? jacketUrl(slot.songId) : jacketProxyUrl(slot.songId, true);
                 const pm = hasRecord ? calcPointMinus(r) : 0;
                 const titleText = slot.song?.title || `ID:${slot.songId}`;
-                const pctVal = hasRecord ? slotPointPercent(slot) : null;
+                const pctVal = hasRecord ? slotRecordScorePercent(slot) : null;
                 const pointLine =
                   hasRecord && r
                     ? pctVal != null
@@ -733,7 +741,7 @@ function updateOneCard(songId, difficulty, record) {
     badge.hidden = false;
     const song = getSongById(songId);
     const slot = { song, difficulty: (difficulty || '').toLowerCase(), record };
-    const pctVal = slotPointPercent(slot);
+    const pctVal = slotRecordScorePercent(slot);
     const pl =
       pctVal != null
         ? `Point ${record.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
@@ -815,7 +823,7 @@ function openDetail(btn) {
   } else {
     pointEl.parentElement.classList.remove('record-detail-no-record');
     const tn = getTotalNoteCountForDifficulty(song, diffNorm);
-    const pctVal = tn != null ? (recordData.point / tn) * 100 : null;
+    const pctVal = tn != null ? (recordData.point / (tn * 3)) * 100 : null;
     pointEl.textContent =
       pctVal != null && Number.isFinite(pctVal)
         ? `Point: ${recordData.point.toLocaleString()} (${pctVal.toFixed(4)}%)`
